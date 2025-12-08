@@ -1,152 +1,39 @@
-const express = require("express");
-const session = require("express-session");
-const bodyParser = require("body-parser");
-const mysql = require("mysql2/promise");
-const path = require("path");
+services:
+  app:
+    container_name: darsinurse-app
+    build: .
+    restart: always
+    ports:
+      - "4000:4000"
+    environment:
+      DB_HOST: mysql
+      DB_USER: root
+      DB_PASSWORD: mysql123
+      DB_NAME: darsinurse
+    depends_on:
+      - mysql
 
-const app = express();
-const PORT = 4000;
+  mysql:
+    container_name: darsinurse-db
+    image: mysql:8
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: mysql123
+      MYSQL_DATABASE: darsinurse
+      TZ: Asia/Jakarta
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
 
-/* ==========================
-   DATABASE CONNECTION (MySQL)
-   ========================== */
-const db = mysql.createPool({
-  host: process.env.DB_HOST || "mysql",
-  user: process.env.DB_USER || "root",
-  password: process.env.DB_PASSWORD || "mysql123",
-  database: process.env.DB_NAME || "darsinurse",
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0
-});
+  adminer:
+    container_name: adminer
+    image: adminer
+    restart: always
+    ports:
+      - "8080:8080"
+    environment:
+      ADMINER_DEFAULT_SERVER: mysql
 
-// Test connection
-(async () => {
-  try {
-    await db.getConnection();
-    console.log("✓ MySQL Connected");
-  } catch (err) {
-    console.error("✗ MySQL Connection Failed:", err);
-  }
-})();
-
-/* ==========================
-   MIDDLEWARE
-   ========================== */
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(bodyParser.json());
-
-app.use(
-  session({
-    secret: "darsinurse-secret-key",
-    resave: false,
-    saveUninitialized: true,
-  })
-);
-
-app.set("view engine", "ejs");
-app.set("views", path.join(__dirname, "views"));
-app.use(express.static("public"));
-
-/* ==========================
-   AUTH MIDDLEWARE
-   ========================== */
-function requireLogin(req, res, next) {
-  if (!req.session.perawat) {
-    return res.redirect("/login");
-  }
-  next();
-}
-
-/* ==========================
-   ROUTES
-   ========================== */
-
-// Login Page
-app.get("/login", (req, res) => {
-  res.render("login", { error: null });
-});
-
-// Login Handler
-app.post("/login", async (req, res) => {
-  const { id_perawat } = req.body;
-
-  try {
-    const [rows] = await db.query(
-      "SELECT * FROM perawat WHERE id_perawat = ?",
-      [id_perawat]
-    );
-
-    if (rows.length === 0) {
-      return res.render("login", { error: "ID Perawat tidak ditemukan" });
-    }
-
-    req.session.perawat = rows[0];
-    res.redirect("/dashboard");
-  } catch (err) {
-    console.error(err);
-    res.render("login", { error: "Error server" });
-  }
-});
-
-// Dashboard
-app.get("/dashboard", requireLogin, async (req, res) => {
-  const [pasien] = await db.query("SELECT * FROM pasien");
-  res.render("dashboard", { perawat: req.session.perawat, pasien });
-});
-
-// Form pilih pasien + tambah device
-app.get("/gateway/:id_pasien", requireLogin, async (req, res) => {
-  const { id_pasien } = req.params;
-  const [rows] = await db.query("SELECT * FROM pasien WHERE id_pasien = ?", [
-    id_pasien,
-  ]);
-
-  if (rows.length === 0) {
-    return res.send("Pasien tidak ditemukan.");
-  }
-
-  res.render("gateway", {
-    pasien: rows[0],
-    perawat: req.session.perawat,
-  });
-});
-
-/* ==========================
-   API SIMPAN DATA BLE
-   ========================== */
-app.post("/api/device/save", requireLogin, async (req, res) => {
-  const { id_pasien, jenis, nilai } = req.body;
-
-  try {
-    await db.query(
-      "INSERT INTO data_medis (id_pasien, jenis, nilai, tanggal) VALUES (?, ?, ?, NOW())",
-      [id_pasien, jenis, nilai]
-    );
-
-    res.json({ success: true });
-  } catch (err) {
-    console.error("DB Error:", err);
-    res.json({ success: false });
-  }
-});
-
-/* ==========================
-   LOGOUT
-   ========================== */
-app.get("/logout", (req, res) => {
-  req.session.destroy();
-  res.redirect("/login");
-});
-
-/* ==========================
-   SERVER START
-   ========================== */
-app.listen(PORT, () => {
-  console.log(`
-╔════════════════════════════════════════╗
-║      DARSINURSE GATEWAY - MySQL        ║
-║   Server running on http://localhost:${PORT}  ║
-╚════════════════════════════════════════╝
-`);
-});
+volumes:
+  mysql_data:
