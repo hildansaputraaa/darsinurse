@@ -1,43 +1,39 @@
-version: "3.9"
-
 services:
-  app:
-    container_name: darsinurse-app
-    build: .
-    restart: always
-    ports:
-      - "4000:4000"
-    environment:
-      PORT: 4000
-      DB_HOST: mysql
-      DB_USER: root
-      DB_PASSWORD: mysql123
-      DB_NAME: darsinurse
-      TZ: Asia/Jakarta
-    depends_on:
-      - mysql
-
-  mysql:
+  darsinurse-db:
+    image: mysql:8.0
     container_name: darsinurse-db
-    image: mysql:8
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: mysql123
+      MYSQL_ROOT_PASSWORD: root123
       MYSQL_DATABASE: darsinurse
-      TZ: Asia/Jakarta
+      MYSQL_USER: darsinurse
+      MYSQL_PASSWORD: darsinurse123
+    volumes:
+      - darsinurse_mysql_data:/var/lib/mysql
     ports:
       - "3306:3306"
-    volumes:
-      - mysql_data:/var/lib/mysql
+
+  darsinurse-app:
+    build: .
+    container_name: darsinurse-app
+    restart: always
+    environment:
+      DB_HOST: darsinurse-db
+      DB_PORT: 3306
+      DB_USER: darsinurse
+      DB_PASSWORD: darsinurse123
+      DB_NAME: darsinurse
+    depends_on:
+      - darsinurse-db
+    ports:
+      - "4000:4000"
 
   adminer:
-    container_name: adminer
     image: adminer
+    container_name: adminer
     restart: always
     ports:
       - "8080:8080"
-    environment:
-      ADMINER_DEFAULT_SERVER: mysql
 
 volumes:
-  mysql_data:
+  darsinurse_mysql_data:
