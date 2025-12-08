@@ -29,12 +29,18 @@ services:
     ports:
       - "4000:4000"
 
-  adminer:
-    image: adminer
-    container_name: adminer
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:latest
+    container_name: darsinurse-phpmyadmin
     restart: always
+    environment:
+      PMA_HOST: darsinurse-db
+      PMA_USER: darsinurse
+      PMA_PASSWORD: darsinurse123
     ports:
-      - "8080:8080"
+      - "8080:80"
+    depends_on:
+      - darsinurse-db
 
 volumes:
   darsinurse_mysql_data:
