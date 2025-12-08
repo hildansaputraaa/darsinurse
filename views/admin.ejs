@@ -1,0 +1,44 @@
+<!-- views/admin.ejs -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Panel</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <h1>Admin Dashboard</h1>
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Nama</th>
+        <th>Email</th>
+        <th>Aksi</th>
+      </tr>
+    </thead>
+    <tbody id="userTable">
+      <% users.forEach(user => { %>
+        <tr>
+          <td><%= user.id %></td>
+          <td><%= user.name %></td>
+          <td><%= user.email %></td>
+          <td>
+            <button onclick="deleteUser(<%= user.id %>)">Hapus</button>
+          </td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+
+  <script src="/script.js"></script>
+  <script>
+    function deleteUser(id) {
+      fetch(`/admin/delete/${id}`, { method: 'DELETE' })
+        .then(res => res.json())
+        .then(data => location.reload())
+        .catch(err => console.error(err));
+    }
+  </script>
+</body>
+</html>

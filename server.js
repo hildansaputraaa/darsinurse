@@ -44,6 +44,15 @@ pool.getConnection()
    ============================================================ */
 async function initDatabase() {
   const conn = await pool.getConnection();
+  await conn.query(`
+    CREATE TABLE IF NOT EXISTS perawat (
+      id_perawat VARCHAR(10) PRIMARY KEY,
+      nama VARCHAR(100),
+      password VARCHAR(255),
+      role ENUM('admin','perawat') DEFAULT 'perawat',
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
 
   // Tabel PERAWAT
   await conn.query(`
