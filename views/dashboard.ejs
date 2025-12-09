@@ -895,27 +895,94 @@ html, body {
     }
 
     // ==== BP HANDLER ====
+    // ==== BP HANDLER (DIPERBAIKI UNTUK DATA LENGKAP) ====
     function handleBP(event) {
       try {
         const value = event.target.value;
         const bytes = new Uint8Array(value.buffer);
 
         if (bytes.length >= 5) {
-          const systolic = bytes[1] | (bytes[2] << 8);
-          const diastolic = bytes[3] | (bytes[4] << 8);
-          const bpValue = `${systolic}/${diastolic}`;
+          // Flags (byte 0)
+          const flags = bytes[0];
           
+          // Systolic (bytes 1-2, SFLOAT)
+          const systolicRaw = bytes[1] | (bytes[2] << 8);
+          const systolic = parseSFLOAT([bytes[1], bytes[2], 0]);
+          
+          // Diastolic (bytes 3-4, SFLOAT)
+          const diastolicRaw = bytes[3] | (bytes[4] << 8);
+          const diastolic = parseSFLOAT([bytes[3], bytes[4], 0]);
+          
+          let bpValue = `${Math.round(systolic)}/${Math.round(diastolic)}`;
+          let additionalData = {};
+          
+          let byteIndex = 5;
+          
+          // Mean Arterial Pressure (opsional, jika bit 0 flag = 1)
+          if ((flags & 0x01) && byteIndex + 2 < bytes.length) {
+            const meanAP = parseSFLOAT([bytes[byteIndex], bytes[byteIndex + 1], 0]);
+            additionalData.meanAP = Math.round(meanAP * 10) / 10;
+            byteIndex += 2;
+          }
+          
+          // Pulse Rate (opsional, jika bit 2 flag = 1)
+          if ((flags & 0x04) && byteIndex + 2 < bytes.length) {
+            const pulse = parseSFLOAT([bytes[byteIndex], bytes[byteIndex + 1], 0]);
+            additionalData.pulse = Math.round(pulse);
+            byteIndex += 2;
+          }
+                    
+          // Simpan data
           measurementData.bp = bpValue;
+          measurementData.bpFull = {
+            systolic: Math.round(systolic),
+            diastolic: Math.round(diastolic),
+            ...additionalData
+          };
+          
+          // Update display
           document.getElementById('bp-value').textContent = bpValue;
           document.getElementById('btn-save-bp').disabled = false;
-          addLog(`Tensi terukur: ${bpValue} mmHg`, 'success');
-          showStatus('bp', `✓ Tensi terukur: ${bpValue} mmHg`, 'success');
+          
+          // Log dengan data lengkap
+          let logMessage = `Tensi terukur: ${bpValue} mmHg`;
+          if (additionalData.meanAP) logMessage += `, Mean AP: ${additionalData.meanAP}`;
+          if (additionalData.pulse) logMessage += `, Pulse: ${additionalData.pulse} bpm`;
+          
+          addLog(logMessage, 'success');
+          showStatus('bp', `✓ ${logMessage}`, 'success');
+          
+          console.log('BP Data Lengkap:', measurementData.bpFull);
         }
       } catch (err) {
         addLog(`Error parsing tensi: ${err.message}`, 'error');
       }
     }
 
+    // ==== UPDATE SEND TO SERVER UNTUK BP ====
+    document.getElementById('form-bp').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const value = measurementData.bpFull || { systolic: 0, diastolic: 0 };
+      const idPasien = currentPatients.bp;
+      
+      if (value.systolic && idPasien) {
+        // Kirim data lengkap
+        const dataToSend = JSON.stringify(value);
+        const success = await sendToServer('tensimeter', idPasien, dataToSend);
+        
+        if (success) {
+          alert('Data Tekanan Darah berhasil disimpan!');
+          setTimeout(() => {
+            backToMenu();
+            document.getElementById('bp-value').textContent = '-';
+            document.getElementById('btn-save-bp').disabled = true;
+            stopConnection('bp');
+            measurementData.bp = null;
+            measurementData.bpFull = null;
+          }, 500);
+        }
+      }
+    });
     // ==== HR HANDLER ====
     function handleHR(event) {
       try {
@@ -1000,17 +1067,45 @@ html, body {
     }
 
     // ==== STOP CONNECTION ====
+// ==== STOP CONNECTION (DIPERBAIKI) ====
     function stopConnection(type) {
-      if (currentDevices[type] && currentDevices[type].gatt.connected) {
-        currentDevices[type].gatt.disconnect();
+      try {
+        // Cek apakah device ada
+        if (currentDevices[type]) {
+          // Coba disconnect
+          if (currentDevices[type].gatt && currentDevices[type].gatt.connected) {
+            currentDevices[type].gatt.disconnect();
+          }
+          
+          // Set device ke null
+          currentDevices[type] = null;
+          
+          // Update UI
+          document.getElementById(`btn-scan-${type}`).disabled = false;
+          document.getElementById(`btn-stop-${type}`).disabled = true;
+          
+          // Feedback
+          addLog(`Koneksi ${getMeasurementName(type)} dihentikan`, 'success');
+          showStatus(type, '✓ Koneksi dihentikan', 'success');
+        } else {
+          // Jika device tidak ada, pastikan UI tetap konsisten
+          document.getElementById(`btn-scan-${type}`).disabled = false;
+          document.getElementById(`btn-stop-${type}`).disabled = true;
+          addLog(`${getMeasurementName(type)} sudah tidak terhubung`, 'info');
+          showStatus(type, '✓ Device sudah tidak terhubung', 'info');
+        }
+      } catch (err) {
+        // Error handling
+        addLog(`Error saat disconnect: ${err.message}`, 'error');
+        showStatus(type, `✗ Error: ${err.message}`, 'danger');
+        
+        // Tetap reset UI walaupun error
         currentDevices[type] = null;
         document.getElementById(`btn-scan-${type}`).disabled = false;
         document.getElementById(`btn-stop-${type}`).disabled = true;
-        addLog(`Koneksi ${getMeasurementName(type)} dihentikan`, 'success');
-        showStatus(type, '✓ Koneksi dihentikan', 'success');
       }
     }
-
+    
     // ==== SCAN BLUETOOTH DEVICE ====
     async function scanBLE(type, service, characteristic, handler) {
       const idPasien = document.getElementById(`${type}-id-pasien`).value.trim();
