@@ -9,12 +9,15 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
 :root {
+  --primary-blue: #0056b3;
   --primary-green: #00B14F;
   --secondary-green: #008a3d;
-  --primary-blue: #0056b3;
   --secondary-teal: #20c997;
+  --primary-dark: #003d7a;
+  --light-bg: #f0f8f7;
   --dark-text: #1a3a3a;
   --gray-border: #e0e0e0;
+  --success-green: #28a745;
   --danger-red: #dc3545;
 }
 
@@ -33,6 +36,7 @@ html, body {
   flex-direction: column;
 }
 
+/* Header */
 .top-header {
   background: white;
   padding: 1rem 0;
@@ -81,6 +85,10 @@ html, body {
   color: var(--dark-text);
 }
 
+.user-info .user-name {
+  font-weight: 600;
+}
+
 .user-info a {
   color: var(--danger-red);
   text-decoration: none;
@@ -92,27 +100,65 @@ html, body {
   color: #c82333;
 }
 
+/* Main Content with padding for fixed header */
 .main-container {
-  padding-top: 120px;
-  padding-bottom: 40px;
+  padding-top: 100px !important;
   flex: 1;
 }
 
-.page-header {
+/* Navigation */
+.admin-nav {
   background: white;
-  padding: 30px;
+  padding: 15px 0;
   margin-bottom: 30px;
+  border-bottom: 2px solid var(--gray-border);
+  display: flex;
+  gap: 0;
+}
+
+.admin-nav a {
+  padding: 10px 20px;
+  color: var(--dark-text);
+  text-decoration: none;
+  font-weight: 500;
+  border-bottom: 3px solid transparent;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.admin-nav a:hover {
+  color: var(--primary-green);
+}
+
+.admin-nav a.active {
+  color: var(--primary-green);
+  border-bottom-color: var(--primary-green);
+}
+
+.card {
+  border: none;
   border-radius: 12px;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+  margin-bottom: 20px;
+}
+
+.card-header {
+  border-bottom: 2px solid var(--gray-border);
+  background: var(--primary-green);
+  color: white;
+  font-weight: 600;
+  padding: 15px 20px;
+  border-radius: 12px 12px 0 0;
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
-.page-header h2 {
-  margin: 0;
-  color: var(--dark-text);
-  font-weight: 700;
+.card-header i {
+  margin-right: 8px;
 }
 
 .btn {
@@ -120,7 +166,7 @@ html, body {
   font-weight: 600;
   transition: all 0.3s ease;
   border: none;
-  padding: 10px 20px;
+  padding: 8px 16px;
 }
 
 .btn-primary {
@@ -129,78 +175,133 @@ html, body {
 }
 
 .btn-primary:hover {
-  background: #003d7a;
+  background: var(--primary-dark);
+  color: white;
   transform: translateY(-2px);
   box-shadow: 0 8px 20px rgba(0, 86, 179, 0.3);
 }
 
 .btn-success {
-  background: var(--primary-green);
+  background: var(--success-green);
   color: white;
 }
 
 .btn-success:hover {
-  background: var(--secondary-green);
-  transform: translateY(-2px);
+  background: #218838;
+  color: white;
+}
+
+.btn-info {
+  background: var(--secondary-teal);
+  color: white;
+}
+
+.btn-info:hover {
+  background: #1aa179;
+  color: white;
+}
+
+.btn-warning {
+  background: #ffc107;
+  color: #212529;
+}
+
+.btn-warning:hover {
+  background: #e0a800;
+  color: #212529;
 }
 
 .btn-danger {
   background: var(--danger-red);
   color: white;
-  padding: 5px 10px;
-  font-size: 12px;
 }
 
 .btn-danger:hover {
   background: #c82333;
+  color: white;
+}
+
+.btn-light {
+  background: white;
+  color: var(--dark-text);
+  border: 1px solid var(--gray-border);
+}
+
+.btn-light:hover {
+  background: #f8f9fa;
+  color: var(--dark-text);
+}
+
+.btn-secondary {
+  background: #6c757d;
+  color: white;
+}
+
+.btn-secondary:hover {
+  background: #5a6268;
+  color: white;
 }
 
 .btn-sm {
-  padding: 5px 10px;
+  padding: 5px 12px;
   font-size: 12px;
 }
 
-.card {
-  border: none;
-  border-radius: 12px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
-  margin-bottom: 20px;
-}
-
-.card-header {
-  background: var(--primary-green);
-  color: white;
-  border-bottom: none;
-  border-radius: 12px 12px 0 0;
-  padding: 15px 20px;
-  font-weight: 600;
-}
-
 .table {
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
   margin-bottom: 0;
 }
 
+.table thead {
+  background: var(--primary-green);
+  color: white;
+}
+
 .table thead th {
-  border-bottom: 2px solid var(--gray-border);
-  color: var(--dark-text);
-  font-weight: 600;
+  border: none;
   padding: 12px;
+  font-weight: 600;
 }
 
 .table tbody td {
   padding: 12px;
-  vertical-align: middle;
   border-bottom: 1px solid var(--gray-border);
 }
 
+.table tbody tr {
+  transition: all 0.2s ease;
+}
+
 .table tbody tr:hover {
-  background: #f9f9f9;
+  background: #f8f9fa;
+}
+
+.badge {
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.badge.bg-primary {
+  background: var(--primary-blue) !important;
+}
+
+.badge.bg-success {
+  background: var(--success-green) !important;
+}
+
+.modal-content {
+  border-radius: 12px;
+  border: none;
 }
 
 .modal-header {
   background: var(--primary-green);
   color: white;
-  border-bottom: none;
+  border-radius: 12px 12px 0 0;
 }
 
 .modal-header .btn-close {
@@ -213,16 +314,16 @@ html, body {
   margin-bottom: 8px;
 }
 
-.form-control {
+.form-control, .form-select {
   border: 2px solid var(--gray-border);
   border-radius: 8px;
   padding: 10px 15px;
   transition: all 0.3s ease;
 }
 
-.form-control:focus {
-  border-color: var(--primary-green);
-  box-shadow: 0 0 0 0.2rem rgba(0, 177, 79, 0.15);
+.form-control:focus, .form-select:focus {
+  border-color: var(--secondary-teal);
+  box-shadow: 0 0 0 0.2rem rgba(32, 201, 151, 0.15);
   outline: none;
 }
 
@@ -246,6 +347,12 @@ html, body {
   border-left: 4px solid #dc3545;
 }
 
+.action-buttons {
+  display: flex;
+  gap: 5px;
+}
+
+/* Footer */
 .footer {
   background: #2c3e50;
   color: white;
@@ -254,42 +361,63 @@ html, body {
   margin-top: auto;
 }
 
-.nav-admin {
-  background: white;
-  padding: 15px 0;
-  margin-bottom: 20px;
-  border-bottom: 2px solid var(--gray-border);
+.footer-content {
   display: flex;
-  gap: 20px;
+  justify-content: center;
+  align-items: center;
+  gap: 15px;
 }
 
-.nav-admin a {
-  padding: 8px 15px;
-  color: var(--dark-text);
-  text-decoration: none;
-  font-weight: 500;
-  border-bottom: 3px solid transparent;
-  transition: all 0.3s ease;
+.footer-logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-.nav-admin a.active {
+.footer-logo i {
+  font-size: 20px;
   color: var(--primary-green);
-  border-bottom-color: var(--primary-green);
 }
 
-.nav-admin a:hover {
-  color: var(--primary-green);
+.footer p {
+  margin: 0;
+  font-size: 14px;
+  opacity: 0.9;
 }
 
 @media (max-width: 768px) {
-  .page-header {
-    flex-direction: column;
-    gap: 15px;
-    text-align: center;
+  .logo-info h1 {
+    font-size: 18px;
   }
   
-  .table {
+  .logo-info span {
+    display: none;
+  }
+  
+  .user-info {
     font-size: 12px;
+  }
+
+  .admin-nav {
+    flex-wrap: wrap;
+  }
+
+  .admin-nav a {
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+
+  .action-buttons {
+    flex-direction: column;
+  }
+  
+  .action-buttons .btn {
+    width: 100%;
+  }
+
+  .footer-content {
+    flex-direction: column;
+    gap: 10px;
   }
 }
   </style>
@@ -307,7 +435,7 @@ html, body {
           </div>
         </div>
         <div class="user-info">
-          <span><i class="fas fa-crown"></i> Admin: <strong><%= nama_perawat %></strong></span>
+          <span class="user-name"><i class="fas fa-user-shield"></i> <%= nama_perawat || 'Admin' %></span>
           <span>|</span>
           <a href="/logout" onclick="return confirm('Yakin logout?')">
             <i class="fas fa-sign-out-alt"></i> Logout
@@ -317,32 +445,31 @@ html, body {
     </div>
   </header>
 
-  <div class="container-fluid main-container">
-    <!-- Navigation -->
-    <div class="nav-admin">
-      <a href="/admin/manage-users"><i class="fas fa-users"></i> Kelola Perawat</a>
-      <a href="/admin/manage-patients" class="active"><i class="fas fa-user-injured"></i> Kelola Pasien</a>
-    </div>
-
-    <!-- Page Header -->
-    <div class="page-header">
-      <h2><i class="fas fa-user-injured"></i> Manajemen Data Pasien</h2>
-      <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addPatientModal">
-        <i class="fas fa-plus"></i> Tambah Pasien
-      </button>
+  <div class="container-fluid py-4 main-container">
+    <!-- Admin Navigation -->
+    <div class="admin-nav">
+      <a href="/admin/manage-users">
+        <i class="fas fa-users-cog"></i> Kelola User/Perawat
+      </a>
+      <a href="/admin/manage-patients" class="active">
+        <i class="fas fa-user-injured"></i> Kelola Pasien
+      </a>
     </div>
 
     <!-- Alert Messages -->
     <div id="alert-container"></div>
 
-    <!-- Patients Table -->
+    <!-- Main Card -->
     <div class="card">
       <div class="card-header">
-        <i class="fas fa-list"></i> Daftar Pasien
+        <span><i class="fas fa-user-injured"></i> Manajemen Data Pasien</span>
+        <button class="btn btn-light btn-sm" onclick="showAddModal()">
+          <i class="fas fa-plus"></i> Tambah Pasien
+        </button>
       </div>
-      <div class="card-body p-0">
+      <div class="card-body">
         <div class="table-responsive">
-          <table class="table">
+          <table class="table table-hover">
             <thead>
               <tr>
                 <th>ID Pasien</th>
@@ -369,7 +496,7 @@ html, body {
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title" id="modalTitle">Tambah Pasien Baru</h5>
+          <h5 class="modal-title" id="modalTitle"><i class="fas fa-user-plus"></i> Tambah Pasien Baru</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
@@ -395,7 +522,7 @@ html, body {
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-          <button type="button" class="btn btn-success" id="savePatientBtn">
+          <button type="button" class="btn btn-primary" id="savePatientBtn">
             <i class="fas fa-save"></i> Simpan
           </button>
         </div>
@@ -408,7 +535,7 @@ html, body {
     <div class="modal-dialog modal-lg">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title">Riwayat Pengukuran - <span id="patientNameModal"></span></h5>
+          <h5 class="modal-title"><i class="fas fa-chart-line"></i> Riwayat Pengukuran - <span id="patientNameModal"></span></h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
@@ -484,15 +611,17 @@ html, body {
               <td>${birthDate.toLocaleDateString('id-ID')}</td>
               <td><small>${createdDate.toLocaleDateString('id-ID')}</small></td>
               <td>
-                <button class="btn btn-primary btn-sm" onclick="editPatient('${patient.id_pasien}', '${patient.nama}', '${patient.alamat}', '${patient.tanggal_lahir}')">
-                  <i class="fas fa-edit"></i> Edit
-                </button>
-                <button class="btn btn-info btn-sm" onclick="viewMeasurements('${patient.id_pasien}', '${patient.nama}')">
-                  <i class="fas fa-chart-line"></i> Riwayat
-                </button>
-                <button class="btn btn-danger btn-sm" onclick="deletePatient('${patient.id_pasien}', '${patient.nama}')">
-                  <i class="fas fa-trash"></i> Hapus
-                </button>
+                <div class="action-buttons">
+                  <button class="btn btn-warning btn-sm" onclick="editPatient('${patient.id_pasien}', '${patient.nama}', '${patient.alamat}', '${patient.tanggal_lahir}')">
+                    <i class="fas fa-edit"></i> Edit
+                  </button>
+                  <button class="btn btn-info btn-sm" onclick="viewMeasurements('${patient.id_pasien}', '${patient.nama}')">
+                    <i class="fas fa-chart-line"></i> Riwayat
+                  </button>
+                  <button class="btn btn-danger btn-sm" onclick="deletePatient('${patient.id_pasien}', '${patient.nama}')">
+                    <i class="fas fa-trash"></i> Hapus
+                  </button>
+                </div>
               </td>
             </tr>
           `;
@@ -544,7 +673,7 @@ html, body {
       document.getElementById('nama').value = nama;
       document.getElementById('alamat').value = alamat;
       document.getElementById('tanggal_lahir').value = tanggal_lahir;
-      document.getElementById('modalTitle').textContent = 'Edit Data Pasien';
+      document.getElementById('modalTitle').textContent = '✏️ Edit Data Pasien';
       modal.show();
     }
 
@@ -597,12 +726,17 @@ html, body {
       currentEditId = null;
       document.getElementById('patientForm').reset();
       document.getElementById('id_pasien').disabled = false;
-      document.getElementById('modalTitle').textContent = 'Tambah Pasien Baru';
+      document.getElementById('modalTitle').textContent = '➕ Tambah Pasien Baru';
+    }
+
+    function showAddModal() {
+      resetForm();
+      modal.show();
     }
 
     function showAlert(message, type) {
       const alertDiv = document.getElementById('alert-container');
-      alertDiv.innerHTML = `<div class="alert alert-${type}">${message}</div>`;
+      alertDiv.innerHTML = `<div class="alert alert-${type} alert-dismissible fade show">${message}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>`;
       setTimeout(() => alertDiv.innerHTML = '', 5000);
     }
 
