@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Darsinurse Gateway - Manajemen Pasien</title>
+  <link rel="icon" type="image/png" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>🏥</text></svg>">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+:root {
+  --primary-green: #00B14F;
+  --secondary-green: #008a3d;
+  --primary-blue: #0056b3;
+  --secondary-teal: #20c997;
+  --dark-text: #1a3a3a;
+  --gray-border: #e0e0e0;
+  --danger-red: #dc3545;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  color: var(--dark-text);
+  background: #f5f5f5;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.top-header {
+  background: white;
+  padding: 1rem 0;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 1000;
+}
+
+.logo-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.logo-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.logo-info i {
+  font-size: 28px;
+  color: var(--primary-green);
+}
+
+.logo-info h1 {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--dark-text);
+  margin: 0;
+}
+
+.logo-info span {
+  font-size: 14px;
+  color: #666;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  font-size: 14px;
+  color: var(--dark-text);
+}
+
+.user-info a {
+  color: var(--danger-red);
+  text-decoration: none;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.user-info a:hover {
+  color: #c82333;
+}
+
+.main-container {
+  padding-top: 120px;
+  padding-bottom: 40px;
+  flex: 1;
+}
+
+.page-header {
+  background: white;
+  padding: 30px;
+  margin-bottom: 30px;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.page-header h2 {
+  margin: 0;
+  color: var(--dark-text);
+  font-weight: 700;
+}
+
+.btn {
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  border: none;
+  padding: 10px 20px;
+}
+
+.btn-primary {
+  background: var(--primary-blue);
+  color: white;
+}
+
+.btn-primary:hover {
+  background: #003d7a;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 86, 179, 0.3);
+}
+
+.btn-success {
+  background: var(--primary-green);
+  color: white;
+}
+
+.btn-success:hover {
+  background: var(--secondary-green);
+  transform: translateY(-2px);
+}
+
+.btn-danger {
+  background: var(--danger-red);
+  color: white;
+  padding: 5px 10px;
+  font-size: 12px;
+}
+
+.btn-danger:hover {
+  background: #c82333;
+}
+
+.btn-sm {
+  padding: 5px 10px;
+  font-size: 12px;
+}
+
+.card {
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+  margin-bottom: 20px;
+}
+
+.card-header {
+  background: var(--primary-green);
+  color: white;
+  border-bottom: none;
+  border-radius: 12px 12px 0 0;
+  padding: 15px 20px;
+  font-weight: 600;
+}
+
+.table {
+  margin-bottom: 0;
+}
+
+.table thead th {
+  border-bottom: 2px solid var(--gray-border);
+  color: var(--dark-text);
+  font-weight: 600;
+  padding: 12px;
+}
+
+.table tbody td {
+  padding: 12px;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--gray-border);
+}
+
+.table tbody tr:hover {
+  background: #f9f9f9;
+}
+
+.modal-header {
+  background: var(--primary-green);
+  color: white;
+  border-bottom: none;
+}
+
+.modal-header .btn-close {
+  filter: brightness(0) invert(1);
+}
+
+.form-label {
+  font-weight: 600;
+  color: var(--dark-text);
+  margin-bottom: 8px;
+}
+
+.form-control {
+  border: 2px solid var(--gray-border);
+  border-radius: 8px;
+  padding: 10px 15px;
+  transition: all 0.3s ease;
+}
+
+.form-control:focus {
+  border-color: var(--primary-green);
+  box-shadow: 0 0 0 0.2rem rgba(0, 177, 79, 0.15);
+  outline: none;
+}
+
+.alert {
+  border-radius: 8px;
+  border: none;
+  padding: 12px 15px;
+  font-size: 14px;
+  margin-bottom: 15px;
+}
+
+.alert-success {
+  background: #e6f9e6;
+  color: #28a745;
+  border-left: 4px solid #28a745;
+}
+
+.alert-danger {
+  background: #ffe6e6;
+  color: #dc3545;
+  border-left: 4px solid #dc3545;
+}
+
+.footer {
+  background: #2c3e50;
+  color: white;
+  padding: 20px 0;
+  text-align: center;
+  margin-top: auto;
+}
+
+.nav-admin {
+  background: white;
+  padding: 15px 0;
+  margin-bottom: 20px;
+  border-bottom: 2px solid var(--gray-border);
+  display: flex;
+  gap: 20px;
+}
+
+.nav-admin a {
+  padding: 8px 15px;
+  color: var(--dark-text);
+  text-decoration: none;
+  font-weight: 500;
+  border-bottom: 3px solid transparent;
+  transition: all 0.3s ease;
+}
+
+.nav-admin a.active {
+  color: var(--primary-green);
+  border-bottom-color: var(--primary-green);
+}
+
+.nav-admin a:hover {
+  color: var(--primary-green);
+}
+
+@media (max-width: 768px) {
+  .page-header {
+    flex-direction: column;
+    gap: 15px;
+    text-align: center;
+  }
+  
+  .table {
+    font-size: 12px;
+  }
+}
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header class="top-header">
+    <div class="container-fluid">
+      <div class="logo-header">
+        <div class="logo-info">
+          <i class="fas fa-heartbeat"></i>
+          <div>
+            <h1>Darsinurse Gateway</h1>
+            <span>Medical IoT Platform</span>
+          </div>
+        </div>
+        <div class="user-info">
+          <span><i class="fas fa-crown"></i> Admin: <strong><%= nama_perawat %></strong></span>
+          <span>|</span>
+          <a href="/logout" onclick="return confirm('Yakin logout?')">
+            <i class="fas fa-sign-out-alt"></i> Logout
+          </a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="container-fluid main-container">
+    <!-- Navigation -->
+    <div class="nav-admin">
+      <a href="/admin/manage-users"><i class="fas fa-users"></i> Kelola Perawat</a>
+      <a href="/admin/manage-patients" class="active"><i class="fas fa-user-injured"></i> Kelola Pasien</a>
+    </div>
+
+    <!-- Page Header -->
+    <div class="page-header">
+      <h2><i class="fas fa-user-injured"></i> Manajemen Data Pasien</h2>
+      <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addPatientModal">
+        <i class="fas fa-plus"></i> Tambah Pasien
+      </button>
+    </div>
+
+    <!-- Alert Messages -->
+    <div id="alert-container"></div>
+
+    <!-- Patients Table -->
+    <div class="card">
+      <div class="card-header">
+        <i class="fas fa-list"></i> Daftar Pasien
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>ID Pasien</th>
+                <th>Nama</th>
+                <th>Alamat</th>
+                <th>Tanggal Lahir</th>
+                <th>Terdaftar</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="patients-table-body">
+              <tr>
+                <td colspan="6" class="text-center text-muted">Loading...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add/Edit Patient Modal -->
+  <div class="modal fade" id="addPatientModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="modalTitle">Tambah Pasien Baru</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form id="patientForm">
+            <div class="mb-3">
+              <label class="form-label">ID Pasien</label>
+              <input type="text" class="form-control" id="id_pasien" placeholder="Contoh: PAT001" required>
+              <small class="text-muted">ID unik untuk pasien</small>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Nama Pasien</label>
+              <input type="text" class="form-control" id="nama" placeholder="Nama lengkap" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Alamat</label>
+              <textarea class="form-control" id="alamat" rows="2" placeholder="Alamat lengkap" required></textarea>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Tanggal Lahir</label>
+              <input type="date" class="form-control" id="tanggal_lahir" required>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+          <button type="button" class="btn btn-success" id="savePatientBtn">
+            <i class="fas fa-save"></i> Simpan
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Measurements History Modal -->
+  <div class="modal fade" id="measurementsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Riwayat Pengukuran - <span id="patientNameModal"></span></h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="table-responsive">
+            <table class="table table-sm">
+              <thead>
+                <tr>
+                  <th>Waktu</th>
+                  <th>Tipe Device</th>
+                  <th>Data</th>
+                  <th>Perawat</th>
+                </tr>
+              </thead>
+              <tbody id="measurements-table-body">
+                <tr>
+                  <td colspan="4" class="text-center text-muted">Loading...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-content">
+        <div class="footer-logo">
+          <i class="fas fa-flask"></i>
+          <strong>Hint-lab Team</strong>
+        </div>
+        <span>|</span>
+        <p>&copy; 2025 Darsinurse Gateway. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    let currentEditId = null;
+    const modal = new bootstrap.Modal(document.getElementById('addPatientModal'));
+    const measurementsModal = new bootstrap.Modal(document.getElementById('measurementsModal'));
+
+    // Load patients on page load
+    document.addEventListener('DOMContentLoaded', loadPatients);
+
+    async function loadPatients() {
+      try {
+        const response = await fetch('/admin/api/patients');
+        const result = await response.json();
+
+        if (!result.success) throw new Error(result.error);
+
+        const tbody = document.getElementById('patients-table-body');
+        tbody.innerHTML = '';
+
+        if (result.patients.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">Belum ada data pasien</td></tr>';
+          return;
+        }
+
+        result.patients.forEach(patient => {
+          const birthDate = new Date(patient.tanggal_lahir);
+          const createdDate = new Date(patient.created_at);
+          
+          const row = `
+            <tr>
+              <td><strong>${patient.id_pasien}</strong></td>
+              <td>${patient.nama}</td>
+              <td>${patient.alamat}</td>
+              <td>${birthDate.toLocaleDateString('id-ID')}</td>
+              <td><small>${createdDate.toLocaleDateString('id-ID')}</small></td>
+              <td>
+                <button class="btn btn-primary btn-sm" onclick="editPatient('${patient.id_pasien}', '${patient.nama}', '${patient.alamat}', '${patient.tanggal_lahir}')">
+                  <i class="fas fa-edit"></i> Edit
+                </button>
+                <button class="btn btn-info btn-sm" onclick="viewMeasurements('${patient.id_pasien}', '${patient.nama}')">
+                  <i class="fas fa-chart-line"></i> Riwayat
+                </button>
+                <button class="btn btn-danger btn-sm" onclick="deletePatient('${patient.id_pasien}', '${patient.nama}')">
+                  <i class="fas fa-trash"></i> Hapus
+                </button>
+              </td>
+            </tr>
+          `;
+          tbody.innerHTML += row;
+        });
+      } catch (error) {
+        showAlert('Gagal memuat data pasien: ' + error.message, 'danger');
+      }
+    }
+
+    document.getElementById('savePatientBtn').addEventListener('click', async () => {
+      const id = document.getElementById('id_pasien').value;
+      const nama = document.getElementById('nama').value;
+      const alamat = document.getElementById('alamat').value;
+      const tanggal_lahir = document.getElementById('tanggal_lahir').value;
+
+      if (!id || !nama || !alamat || !tanggal_lahir) {
+        alert('Semua field harus diisi');
+        return;
+      }
+
+      const method = currentEditId ? 'PUT' : 'POST';
+      const endpoint = currentEditId ? `/admin/api/patients/${currentEditId}` : '/admin/api/patients';
+
+      try {
+        const response = await fetch(endpoint, {
+          method: method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nama, alamat, tanggal_lahir })
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) throw new Error(result.error);
+
+        showAlert(result.message, 'success');
+        modal.hide();
+        loadPatients();
+        resetForm();
+      } catch (error) {
+        showAlert('Error: ' + error.message, 'danger');
+      }
+    });
+
+    function editPatient(id, nama, alamat, tanggal_lahir) {
+      currentEditId = id;
+      document.getElementById('id_pasien').value = id;
+      document.getElementById('id_pasien').disabled = true;
+      document.getElementById('nama').value = nama;
+      document.getElementById('alamat').value = alamat;
+      document.getElementById('tanggal_lahir').value = tanggal_lahir;
+      document.getElementById('modalTitle').textContent = 'Edit Data Pasien';
+      modal.show();
+    }
+
+    function deletePatient(id, nama) {
+      if (!confirm(`Yakin hapus pasien "${nama}"?\n\nData pengukuran juga akan dihapus!`)) return;
+
+      fetch(`/admin/api/patients/${id}`, { method: 'DELETE' })
+        .then(r => r.json())
+        .then(result => {
+          if (!result.success) throw new Error(result.error);
+          showAlert(result.message, 'success');
+          loadPatients();
+        })
+        .catch(err => showAlert('Error: ' + err.message, 'danger'));
+    }
+
+    function viewMeasurements(id, nama) {
+      document.getElementById('patientNameModal').textContent = nama;
+      
+      fetch(`/admin/api/patients/${id}/measurements`)
+        .then(r => r.json())
+        .then(result => {
+          const tbody = document.getElementById('measurements-table-body');
+          tbody.innerHTML = '';
+
+          if (result.measurements.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">Belum ada data pengukuran</td></tr>';
+            measurementsModal.show();
+            return;
+          }
+
+          result.measurements.forEach(m => {
+            const date = new Date(m.timestamp);
+            const row = `
+              <tr>
+                <td><small>${date.toLocaleString('id-ID')}</small></td>
+                <td>${m.tipe_device}</td>
+                <td><strong>${m.data}</strong></td>
+                <td>${m.nama_perawat}</td>
+              </tr>
+            `;
+            tbody.innerHTML += row;
+          });
+          measurementsModal.show();
+        })
+        .catch(err => showAlert('Error: ' + err.message, 'danger'));
+    }
+
+    function resetForm() {
+      currentEditId = null;
+      document.getElementById('patientForm').reset();
+      document.getElementById('id_pasien').disabled = false;
+      document.getElementById('modalTitle').textContent = 'Tambah Pasien Baru';
+    }
+
+    function showAlert(message, type) {
+      const alertDiv = document.getElementById('alert-container');
+      alertDiv.innerHTML = `<div class="alert alert-${type}">${message}</div>`;
+      setTimeout(() => alertDiv.innerHTML = '', 5000);
+    }
+
+    // Reset form when modal is closed
+    document.getElementById('addPatientModal').addEventListener('hidden.bs.modal', resetForm);
+  </script>
+</body>
+</html>

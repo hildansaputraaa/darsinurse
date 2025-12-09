@@ -395,6 +395,188 @@ app.post('/admin/api/users/:id/reset-password', requireAdmin, async (req, res) =
   }
 });
 
+// ========== ADMIN PASIEN ROUTES ==========
+
+// UPDATE LOGIN ROUTE - Tambahkan redirect ke manage-patients untuk admin
+app.post('/login', async (req, res) => {
+  const { id_perawat, password } = req.body;
+  
+  console.log('🔐 Login attempt:', id_perawat);
+  
+  const hash = hashPassword(password);
+  
+  try {
+    const conn = await pool.getConnection();
+    const [rows] = await conn.query(
+      'SELECT * FROM perawat WHERE id_perawat = ?',
+      [id_perawat]
+    );
+    conn.release();
+
+    if (rows.length === 0) {
+      console.log('❌ User not found:', id_perawat);
+      return res.render('login', { error: 'ID Perawat tidak ditemukan!' });
+    }
+
+    const user = rows[0];
+    console.log('👤 User found:', user.id_perawat, '- Role:', user.role);
+    console.log('🔑 Password match:', user.password === hash);
+
+    if (user.password === hash) {
+      req.session.id_perawat = user.id_perawat;
+      req.session.nama_perawat = user.nama;
+      req.session.role = user.role;
+      
+      console.log('✓ Login success:', user.nama);
+      
+      // Redirect berdasarkan role
+      if (user.role === 'admin') {
+        return res.redirect('/admin/manage-patients'); // UPDATED
+      }
+      return res.redirect('/dashboard');
+    } else {
+      console.log('❌ Wrong password for:', id_perawat);
+      return res.render('login', { error: 'Password salah!' });
+    }
+  } catch (err) {
+    console.error('❌ Login error:', err);
+    return res.render('login', { error: 'Terjadi kesalahan sistem!' });
+  }
+});
+
+// MANAGE PATIENTS PAGE
+app.get('/admin/manage-patients', requireAdmin, async (req, res) => {
+  const conn = await pool.getConnection();
+  const [patients] = await conn.query(
+    'SELECT id_pasien, nama, alamat, tanggal_lahir, created_at FROM pasien ORDER BY created_at DESC'
+  );
+  conn.release();
+
+  res.render('admin-patients', {
+    nama_perawat: req.session.nama_perawat,
+    id_perawat: req.session.id_perawat,
+    patients: patients
+  });
+});
+
+// GET ALL PATIENTS (API)
+app.get('/admin/api/patients', requireAdmin, async (req, res) => {
+  try {
+    const conn = await pool.getConnection();
+    const [patients] = await conn.query(
+      'SELECT id_pasien, nama, alamat, tanggal_lahir, created_at FROM pasien ORDER BY created_at DESC'
+    );
+    conn.release();
+    res.json({ success: true, patients });
+  } catch (err) {
+    console.error('❌ Get patients error:', err);
+    res.status(500).json({ error: 'Database error: ' + err.message });
+  }
+});
+
+// ADD NEW PATIENT
+app.post('/admin/api/patients', requireAdmin, async (req, res) => {
+  const { id_pasien, nama, alamat, tanggal_lahir } = req.body;
+  
+  if (!id_pasien || !nama || !alamat || !tanggal_lahir) {
+    return res.status(400).json({ error: 'Semua field harus diisi' });
+  }
+
+  try {
+    const conn = await pool.getConnection();
+    await conn.query(
+      'INSERT INTO pasien (id_pasien, nama, alamat, tanggal_lahir) VALUES (?, ?, ?, ?)',
+      [id_pasien, nama, alamat, tanggal_lahir]
+    );
+    conn.release();
+    
+    console.log('✓ New patient created:', id_pasien);
+    res.json({ success: true, message: 'Pasien berhasil ditambahkan' });
+  } catch (err) {
+    console.error('❌ Add patient error:', err);
+    if (err.code === 'ER_DUP_ENTRY') {
+      res.status(400).json({ error: 'ID Pasien sudah terdaftar' });
+    } else {
+      res.status(500).json({ error: 'Database error: ' + err.message });
+    }
+  }
+});
+
+// UPDATE PATIENT
+app.put('/admin/api/patients/:id', requireAdmin, async (req, res) => {
+  const { id } = req.params;
+  const { nama, alamat, tanggal_lahir } = req.body;
+  
+  if (!nama || !alamat || !tanggal_lahir) {
+    return res.status(400).json({ error: 'Semua field harus diisi' });
+  }
+
+  try {
+    const conn = await pool.getConnection();
+    await conn.query(
+      'UPDATE pasien SET nama = ?, alamat = ?, tanggal_lahir = ? WHERE id_pasien = ?',
+      [nama, alamat, tanggal_lahir, id]
+    );
+    conn.release();
+    
+    console.log('✓ Patient updated:', id);
+    res.json({ success: true, message: 'Pasien berhasil diupdate' });
+  } catch (err) {
+    console.error('❌ Update patient error:', err);
+    res.status(500).json({ error: 'Database error: ' + err.message });
+  }
+});
+
+// DELETE PATIENT
+app.delete('/admin/api/patients/:id', requireAdmin, async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const conn = await pool.getConnection();
+    
+    // Hapus data pengukuran terlebih dahulu (foreign key constraint)
+    await conn.query('DELETE FROM pengukuran WHERE id_pasien = ?', [id]);
+    
+    // Hapus pasien
+    await conn.query('DELETE FROM pasien WHERE id_pasien = ?', [id]);
+    conn.release();
+    
+    console.log('✓ Patient deleted:', id);
+    res.json({ success: true, message: 'Pasien berhasil dihapus' });
+  } catch (err) {
+    console.error('❌ Delete patient error:', err);
+    res.status(500).json({ error: 'Database error: ' + err.message });
+  }
+});
+
+// GET PATIENT MEASUREMENTS HISTORY
+app.get('/admin/api/patients/:id/measurements', requireAdmin, async (req, res) => {
+  const { id } = req.params;
+  
+  try {
+    const conn = await pool.getConnection();
+    const [measurements] = await conn.query(
+      `SELECT 
+        p.tipe_device, 
+        p.data, 
+        p.timestamp,
+        pr.nama as nama_perawat
+       FROM pengukuran p
+       JOIN perawat pr ON p.id_perawat = pr.id_perawat
+       WHERE p.id_pasien = ?
+       ORDER BY p.timestamp DESC
+       LIMIT 100`,
+      [id]
+    );
+    conn.release();
+    
+    res.json({ success: true, measurements });
+  } catch (err) {
+    console.error('❌ Get measurements error:', err);
+    res.status(500).json({ error: 'Database error: ' + err.message });
+  }
+});
+
 // ========== PERAWAT ROUTES ==========
 
 // SIMPAN DATA PENGUKURAN
