@@ -52,14 +52,10 @@ async function initDatabase() {
   const conn = await pool.getConnection();
   
   try {
-<<<<<<< HEAD
     // Disable foreign key checks sementara
     await conn.query('SET FOREIGN_KEY_CHECKS=0');
 
     // Tabel PERAWAT dengan EMR INTEGER
-=======
-    // Tabel PERAWAT dengan role
->>>>>>> parent of 76fece1 (update)
     await conn.query(`
       CREATE TABLE IF NOT EXISTS perawat (
         id_perawat VARCHAR(10) PRIMARY KEY,
@@ -81,7 +77,6 @@ async function initDatabase() {
       );
     `);
 
-<<<<<<< HEAD
     // Tabel KUNJUNGAN
     await conn.query(`
       CREATE TABLE IF NOT EXISTS kunjungan (
@@ -109,19 +104,6 @@ async function initDatabase() {
         FOREIGN KEY (id_kunjungan) REFERENCES kunjungan(id_kunjungan) ON DELETE CASCADE,
         FOREIGN KEY (emr_perawat) REFERENCES perawat(emr_perawat) ON DELETE CASCADE,
         FOREIGN KEY (emr_pasien) REFERENCES pasien(emr_pasien) ON DELETE CASCADE
-=======
-    // Tabel PENGUKURAN
-    await conn.query(`
-      CREATE TABLE IF NOT EXISTS pengukuran (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        id_perawat VARCHAR(10),
-        id_pasien VARCHAR(10),
-        tipe_device VARCHAR(50),
-        data VARCHAR(255),
-        timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (id_perawat) REFERENCES perawat(id_perawat),
-        FOREIGN KEY (id_pasien) REFERENCES pasien(id_pasien)
->>>>>>> parent of 76fece1 (update)
       );
     `);
 
