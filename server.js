@@ -52,6 +52,9 @@ async function initDatabase() {
   const conn = await pool.getConnection();
   
   try {
+    // Disable foreign key checks sementara
+    await conn.query('SET FOREIGN_KEY_CHECKS=0');
+
     // Tabel PERAWAT dengan EMR INTEGER
     await conn.query(`
       CREATE TABLE IF NOT EXISTS perawat (
@@ -80,13 +83,13 @@ async function initDatabase() {
     await conn.query(`
       CREATE TABLE IF NOT EXISTS kunjungan (
         id_kunjungan INT PRIMARY KEY,
-        emr_pasien INT,
-        emr_perawat INT,
+        emr_pasien INT NOT NULL,
+        emr_perawat INT NOT NULL,
         tanggal_kunjungan TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         keluhan TEXT,
         status ENUM('aktif','selesai') DEFAULT 'aktif',
-        FOREIGN KEY (emr_pasien) REFERENCES pasien(emr_pasien),
-        FOREIGN KEY (emr_perawat) REFERENCES perawat(emr_perawat)
+        FOREIGN KEY (emr_pasien) REFERENCES pasien(emr_pasien) ON DELETE CASCADE,
+        FOREIGN KEY (emr_perawat) REFERENCES perawat(emr_perawat) ON DELETE CASCADE
       );
     `);
 
@@ -94,17 +97,20 @@ async function initDatabase() {
     await conn.query(`
       CREATE TABLE IF NOT EXISTS pengukuran (
         id INT AUTO_INCREMENT PRIMARY KEY,
-        id_kunjungan INT,
-        emr_perawat INT,
-        emr_pasien INT,
+        id_kunjungan INT NOT NULL,
+        emr_perawat INT NOT NULL,
+        emr_pasien INT NOT NULL,
         tipe_device VARCHAR(50),
         data VARCHAR(255),
         timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (id_kunjungan) REFERENCES kunjungan(id_kunjungan),
-        FOREIGN KEY (emr_perawat) REFERENCES perawat(emr_perawat),
-        FOREIGN KEY (emr_pasien) REFERENCES pasien(emr_pasien)
+        FOREIGN KEY (id_kunjungan) REFERENCES kunjungan(id_kunjungan) ON DELETE CASCADE,
+        FOREIGN KEY (emr_perawat) REFERENCES perawat(emr_perawat) ON DELETE CASCADE,
+        FOREIGN KEY (emr_pasien) REFERENCES pasien(emr_pasien) ON DELETE CASCADE
       );
     `);
+
+    // Enable foreign key checks kembali
+    await conn.query('SET FOREIGN_KEY_CHECKS=1');
 
     // Check dan insert dummy data perawat
     const [perawat] = await conn.query(`SELECT COUNT(*) AS c FROM perawat`);
