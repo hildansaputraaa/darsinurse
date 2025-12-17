@@ -470,33 +470,19 @@
           <div class="stat-change">Pasien</div>
         </div>
 
-        <!-- <div class="stat-card">
-          <div class="stat-icon"><i class="fas fa-user"></i></div>
-          <div class="stat-label">Total Pasien Unik</div>
-          <div class="stat-number" id="total-patients">-</div>
-          <div class="stat-change">Orang</div>
-        </div> -->
-
         <div class="stat-card">
           <div class="stat-icon"><i class="fas fa-heartbeat"></i></div>
           <div class="stat-label">Total Pengukuran</div>
           <div class="stat-number" id="total-measurements">-</div>
           <div class="stat-change">Data</div>
         </div>
-
-        <!-- <div class="stat-card">
-          <div class="stat-icon"><i class="fas fa-clock"></i></div>
-          <div class="stat-label">Kunjungan Aktif</div>
-          <div class="stat-number" id="active-visits">-</div>
-          <div class="stat-change">Sedang berlangsung</div>
-        </div> -->
       </div>
 
       <!-- Visits Table -->
       <div class="data-container" style="margin-bottom: 30px;">
         <div class="data-header">
           <h3><i class="fas fa-list"></i> Daftar Kunjungan Hari Ini</h3>
-          <button class="refresh-btn" onclick="loadRawatJalanData()" style="background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.5); color: white; padding: 8px 15px; border-radius: 6px; cursor: pointer;">
+          <button class="refresh-btn" onclick="loadRawatJalanData()">
             <i class="fas fa-sync"></i> Refresh
           </button>
         </div>
@@ -522,12 +508,13 @@
             </tbody>
           </table>
         </div>
-        </div>
-<!-- Measurements Table -->
+      </div>
+
+      <!-- Measurements Table -->
       <div class="data-container">
         <div class="data-header">
           <h3><i class="fas fa-heartbeat"></i> Data Pengukuran Hari Ini <% if (role !== 'admin') { %><small style="font-size: 14px; opacity: 0.9;">(Data pasien Anda)</small><% } %></h3>
-          <button class="refresh-btn" onclick="loadMeasurementsData()" style="background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.5); color: white; padding: 8px 15px; border-radius: 6px; cursor: pointer;">
+          <button class="refresh-btn" onclick="loadMeasurementsData()">
             <i class="fas fa-sync"></i> Refresh
           </button>
         </div>
@@ -556,7 +543,7 @@
       </div>
       <div class="info-box">
         <i class="fas fa-info-circle"></i>
-        <strong>Informasi:</strong> Dashboard ini menampilkan data real-time kunjungan rawat jalan dan pengukuran vital sign dari semua pasien yang berkunjung hari ini.
+        <strong>Informasi:</strong> Dashboard ini menampilkan data real-time kunjungan rawat jalan dan pengukuran vital sign dari <% if (role === 'admin') { %>semua pasien<% } else { %>pasien yang Anda tangani<% } %> yang berkunjung hari ini.
       </div>
     </div>
 
@@ -630,18 +617,40 @@
         const statsData = await statsResponse.json();
         
         if (statsData.success) {
-          document.getElementById('total-visits').textContent = statsData.stats.totalVisits;
-          document.getElementById('total-patients').textContent = statsData.stats.totalPatients;
-          document.getElementById('total-measurements').textContent = statsData.stats.totalMeasurements;
-          document.getElementById('active-visits').textContent = statsData.stats.activeVisits;
+          const totalVisitsEl = document.getElementById('total-visits');
+          const totalMeasurementsEl = document.getElementById('total-measurements');
+          
+          if (totalVisitsEl) totalVisitsEl.textContent = statsData.stats.totalVisits;
+          if (totalMeasurementsEl) totalMeasurementsEl.textContent = statsData.stats.totalMeasurements;
         }
 
         // Load Visits
+        await loadVisitsData();
+
+        // Load Measurements
+        await loadMeasurementsData();
+
+      } catch (err) {
+        console.error('Error loading data:', err);
+        alert('Gagal memuat data: ' + err.message);
+      }
+    }
+
+    // ============================================
+    // LOAD VISITS TABLE
+    // ============================================
+    async function loadVisitsData() {
+      try {
         const visitsResponse = await fetch('/api/visits/today');
         const visitsData = await visitsResponse.json();
         
         if (visitsData.success) {
           const tbody = document.getElementById('visits-table-body');
+          
+          if (!tbody) {
+            console.error('visits-table-body element not found');
+            return;
+          }
           
           if (visitsData.visits.length === 0) {
             tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">Tidak ada data kunjungan hari ini</td></tr>';
@@ -659,31 +668,58 @@
             `).join('');
           }
         }
+      } catch (err) {
+        console.error('Error loading visits:', err);
+        const tbody = document.getElementById('visits-table-body');
+        if (tbody) {
+          tbody.innerHTML = '<tr><td colspan="7" class="text-center text-danger py-4">Error: ' + err.message + '</td></tr>';
+        }
+      }
+    }
 
-        // Load Measurements
+    // ============================================
+    // LOAD MEASUREMENTS TABLE
+    // ============================================
+    async function loadMeasurementsData() {
+      try {
         const measurementsResponse = await fetch('/api/measurements/today');
         const measurementsData = await measurementsResponse.json();
         
         if (measurementsData.success) {
           const tbody = document.getElementById('measurements-table-body');
           
+          if (!tbody) {
+            console.error('measurements-table-body element not found');
+            return;
+          }
+          
+          const isAdmin = '<%= role %>' === 'admin';
+          const colspan = isAdmin ? '5' : '4';
+          
           if (measurementsData.measurements.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4">Tidak ada pengukuran hari ini</td></tr>';
+            tbody.innerHTML = `<tr><td colspan="${colspan}" class="text-center text-muted py-4">Tidak ada pengukuran hari ini</td></tr>`;
           } else {
-            tbody.innerHTML = measurementsData.measurements.map(m => `
-              <tr>
-                <td>${new Date(m.timestamp).toLocaleTimeString('id-ID')}</td>
-                <td>${m.nama_pasien}</td>
-                <td><span class="badge bg-success">${m.tipe_device}</span></td>
-                <td><strong>${m.data}</strong></td>
-                <td>${m.nama_perawat}</td>
-              </tr>
-            `).join('');
+            tbody.innerHTML = measurementsData.measurements.map(m => {
+              const perawatColumn = isAdmin ? `<td>${m.nama_perawat}</td>` : '';
+              return `
+                <tr>
+                  <td>${new Date(m.timestamp).toLocaleTimeString('id-ID')}</td>
+                  <td>${m.nama_pasien}</td>
+                  <td><span class="badge bg-success">${m.tipe_device}</span></td>
+                  <td><strong>${m.data}</strong></td>
+                  ${perawatColumn}
+                </tr>
+              `;
+            }).join('');
           }
         }
       } catch (err) {
-        console.error('Error loading data:', err);
-        alert('Gagal memuat data: ' + err.message);
+        console.error('Error loading measurements:', err);
+        const tbody = document.getElementById('measurements-table-body');
+        if (tbody) {
+          const colspan = '<%= role %>' === 'admin' ? '5' : '4';
+          tbody.innerHTML = `<tr><td colspan="${colspan}" class="text-center text-danger py-4">Error: ${err.message}</td></tr>`;
+        }
       }
     }
 
@@ -693,6 +729,11 @@
     async function loadMetabaseDashboard() {
       const loadingDiv = document.getElementById('metabase-loading');
       const iframe = document.getElementById('metabase-iframe');
+      
+      if (!loadingDiv || !iframe) {
+        console.error('Metabase elements not found');
+        return;
+      }
       
       loadingDiv.style.display = 'flex';
       iframe.style.display = 'none';
@@ -728,6 +769,7 @@
     // LOAD DATA ON PAGE LOAD
     // ============================================
     document.addEventListener('DOMContentLoaded', function() {
+      console.log('Page loaded, initializing data...');
       loadRawatJalanData();
     });
 
@@ -735,6 +777,7 @@
     setInterval(() => {
       const activeTab = document.querySelector('.tab-button.active');
       if (activeTab && activeTab.dataset.tab === 'rawat-jalan') {
+        console.log('Auto-refreshing data...');
         loadRawatJalanData();
       }
     }, 5 * 60 * 1000);
