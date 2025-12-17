@@ -39,7 +39,6 @@ services:
       - /etc/localtime:/etc/localtime:ro
     ports:
       - "4000:4000"
-        
   phpmyadmin:
     image: phpmyadmin/phpmyadmin:latest
     container_name: darsinurse-phpmyadmin
@@ -48,6 +47,7 @@ services:
       PMA_HOST: darsinurse-db
       PMA_PORT: 3306
       PMA_FORCE_SSL: "false"
+      PMA_ABSOLUTE_URI: "https://db.darsinurse.hint-lab.id/"
       TZ: Asia/Jakarta
     volumes:
       - /etc/localtime:/etc/localtime:ro
