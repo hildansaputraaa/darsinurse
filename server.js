@@ -849,8 +849,7 @@ app.get('/monitoring', requireLogin, (req, res) => {
 // ============================================================
 // 4. ADD API ENDPOINTS FOR RAWAT JALAN DASHBOARD
 // ============================================================
-
-// API 1: Statistics Today (for stat cards)
+// API 1: Statistics Today (FIXED - with role-based filtering)
 app.get('/api/statistics/today', requireAdminOrPerawat, async (req, res) => {
   try {
     const conn = await pool.getConnection();
@@ -861,31 +860,36 @@ app.get('/api/statistics/today', requireAdminOrPerawat, async (req, res) => {
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
     
-    // Total visits today
+    // ✅ PERBAIKAN: Add WHERE clause for perawat
+    const whereClause = req.session.role === 'admin' 
+      ? '' 
+      : `AND emr_perawat = ${req.session.emr_perawat}`;
+    
+    // Total visits today (filtered by perawat if not admin)
     const [visits] = await conn.query(
       `SELECT COUNT(*) as total FROM kunjungan 
-       WHERE tanggal_kunjungan >= ? AND tanggal_kunjungan < ?`,
+       WHERE tanggal_kunjungan >= ? AND tanggal_kunjungan < ? ${whereClause}`,
       [today, tomorrow]
     );
     
-    // Total unique patients today
+    // Total unique patients today (filtered by perawat if not admin)
     const [patients] = await conn.query(
       `SELECT COUNT(DISTINCT emr_pasien) as total FROM kunjungan 
-       WHERE tanggal_kunjungan >= ? AND tanggal_kunjungan < ?`,
+       WHERE tanggal_kunjungan >= ? AND tanggal_kunjungan < ? ${whereClause}`,
       [today, tomorrow]
     );
     
-    // Total measurements today
+    // Total measurements today (filtered by perawat if not admin)
     const [measurements] = await conn.query(
       `SELECT COUNT(*) as total FROM pengukuran 
-       WHERE timestamp >= ? AND timestamp < ?`,
+       WHERE timestamp >= ? AND timestamp < ? ${whereClause}`,
       [today, tomorrow]
     );
     
-    // Active visits (status = 'aktif')
+    // Active visits (status = 'aktif') (filtered by perawat if not admin)
     const [active] = await conn.query(
       `SELECT COUNT(*) as total FROM kunjungan 
-       WHERE status = 'aktif' AND tanggal_kunjungan >= ? AND tanggal_kunjungan < ?`,
+       WHERE status = 'aktif' AND tanggal_kunjungan >= ? AND tanggal_kunjungan < ? ${whereClause}`,
       [today, tomorrow]
     );
     
@@ -906,7 +910,7 @@ app.get('/api/statistics/today', requireAdminOrPerawat, async (req, res) => {
   }
 });
 
-// API 2: Today's Visits (for visits table)
+// API 2: Today's Visits (FIXED - with role-based filtering)
 app.get('/api/visits/today', requireAdminOrPerawat, async (req, res) => {
   try {
     const conn = await pool.getConnection();
@@ -915,6 +919,11 @@ app.get('/api/visits/today', requireAdminOrPerawat, async (req, res) => {
     today.setHours(0, 0, 0, 0);
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    // ✅ PERBAIKAN: Add WHERE clause for perawat
+    const whereClause = req.session.role === 'admin' 
+      ? '' 
+      : `AND k.emr_perawat = ${req.session.emr_perawat}`;
     
     const [visits] = await conn.query(
       `SELECT 
@@ -929,7 +938,7 @@ app.get('/api/visits/today', requireAdminOrPerawat, async (req, res) => {
        FROM kunjungan k
        JOIN pasien p ON k.emr_pasien = p.emr_pasien
        JOIN perawat pr ON k.emr_perawat = pr.emr_perawat
-       WHERE k.tanggal_kunjungan >= ? AND k.tanggal_kunjungan < ?
+       WHERE k.tanggal_kunjungan >= ? AND k.tanggal_kunjungan < ? ${whereClause}
        ORDER BY k.tanggal_kunjungan DESC`,
       [today, tomorrow]
     );
@@ -946,7 +955,7 @@ app.get('/api/visits/today', requireAdminOrPerawat, async (req, res) => {
   }
 });
 
-// API 3: Today's Measurements (for measurements table)
+// API 3: Today's Measurements (FIXED - with role-based filtering)
 app.get('/api/measurements/today', requireAdminOrPerawat, async (req, res) => {
   try {
     const conn = await pool.getConnection();
@@ -955,6 +964,11 @@ app.get('/api/measurements/today', requireAdminOrPerawat, async (req, res) => {
     today.setHours(0, 0, 0, 0);
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    // ✅ PERBAIKAN: Add WHERE clause for perawat
+    const whereClause = req.session.role === 'admin' 
+      ? '' 
+      : `AND p.emr_perawat = ${req.session.emr_perawat}`;
     
     const [measurements] = await conn.query(
       `SELECT 
@@ -967,7 +981,7 @@ app.get('/api/measurements/today', requireAdminOrPerawat, async (req, res) => {
        FROM pengukuran p
        JOIN pasien pas ON p.emr_pasien = pas.emr_pasien
        JOIN perawat pr ON p.emr_perawat = pr.emr_perawat
-       WHERE p.timestamp >= ? AND p.timestamp < ?
+       WHERE p.timestamp >= ? AND p.timestamp < ? ${whereClause}
        ORDER BY p.timestamp DESC
        LIMIT 100`,
       [today, tomorrow]
