@@ -550,14 +550,26 @@ app.get('/api/patients/:emr/visits', requireLogin, async (req, res) => {
   
   try {
     const conn = await pool.getConnection();
-    const [visits] = await conn.query(
-      `SELECT k.*, p.nama as nama_perawat
-       FROM kunjungan k
-       JOIN perawat p ON k.emr_perawat = p.emr_perawat
-       WHERE k.emr_pasien = ?
-       ORDER BY k.tanggal_kunjungan DESC`,
-      [emrInt]
-    );
+    
+    // ✅ PERBAIKAN: Filter berdasarkan role
+    let query = `
+      SELECT k.*, p.nama as nama_perawat
+      FROM kunjungan k
+      JOIN perawat p ON k.emr_perawat = p.emr_perawat
+      WHERE k.emr_pasien = ?
+    `;
+    
+    const params = [emrInt];
+    
+    // Jika bukan admin, hanya tampilkan kunjungan yang ditangani perawat ini
+    if (req.session.role !== 'admin') {
+      query += ` AND k.emr_perawat = ?`;
+      params.push(req.session.emr_perawat);
+    }
+    
+    query += ` ORDER BY k.tanggal_kunjungan DESC`;
+    
+    const [visits] = await conn.query(query, params);
     conn.release();
     
     res.json({ success: true, visits });
@@ -670,6 +682,22 @@ app.get('/riwayat/kunjungan/:id_kunjungan', requireLogin, async (req, res) => {
   
   try {
     const conn = await pool.getConnection();
+    
+    // ✅ PERBAIKAN: Cek apakah perawat berhak akses kunjungan ini
+    if (req.session.role !== 'admin') {
+      const [checkAccess] = await conn.query(
+        'SELECT id_kunjungan FROM kunjungan WHERE id_kunjungan = ? AND emr_perawat = ?',
+        [idInt, req.session.emr_perawat]
+      );
+      
+      if (checkAccess.length === 0) {
+        conn.release();
+        return res.status(403).json({ 
+          error: 'Anda tidak memiliki akses ke kunjungan ini' 
+        });
+      }
+    }
+    
     const [rows] = await conn.query(
       `SELECT p.*, pr.nama as nama_perawat
        FROM pengukuran p
@@ -696,16 +724,27 @@ app.get('/riwayat/pasien/:emr', requireLogin, async (req, res) => {
   
   try {
     const conn = await pool.getConnection();
-    const [rows] = await conn.query(
-      `SELECT p.*, pr.nama as nama_perawat, k.id_kunjungan
-       FROM pengukuran p
-       JOIN perawat pr ON p.emr_perawat = pr.emr_perawat
-       JOIN kunjungan k ON p.id_kunjungan = k.id_kunjungan
-       WHERE p.emr_pasien = ?
-       ORDER BY p.timestamp DESC 
-       LIMIT 100`,
-      [emrInt]
-    );
+    
+    // ✅ PERBAIKAN: Filter berdasarkan role
+    let query = `
+      SELECT p.*, pr.nama as nama_perawat, k.id_kunjungan
+      FROM pengukuran p
+      JOIN perawat pr ON p.emr_perawat = pr.emr_perawat
+      JOIN kunjungan k ON p.id_kunjungan = k.id_kunjungan
+      WHERE p.emr_pasien = ?
+    `;
+    
+    const params = [emrInt];
+    
+    // Jika bukan admin, hanya tampilkan pengukuran dari kunjungan yang ditangani perawat ini
+    if (req.session.role !== 'admin') {
+      query += ` AND k.emr_perawat = ?`;
+      params.push(req.session.emr_perawat);
+    }
+    
+    query += ` ORDER BY p.timestamp DESC LIMIT 100`;
+    
+    const [rows] = await conn.query(query, params);
     conn.release();
 
     res.json({ success: true, data: rows });
