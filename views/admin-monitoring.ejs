@@ -608,20 +608,38 @@
     });
 
     // ============================================
-    // RAWAT JALAN DATA LOADING
+    // RAWAT JALAN DATA LOADING - FIXED VERSION
     // ============================================
     async function loadRawatJalanData() {
       try {
+        console.log('🔄 Loading Rawat Jalan data...');
+        
         // Load Statistics
         const statsResponse = await fetch('/api/statistics/today');
         const statsData = await statsResponse.json();
         
+        console.log('📊 Stats data:', statsData);
+        
         if (statsData.success) {
+          // ✅ FIX: Check if elements exist before setting textContent
           const totalVisitsEl = document.getElementById('total-visits');
           const totalMeasurementsEl = document.getElementById('total-measurements');
           
-          if (totalVisitsEl) totalVisitsEl.textContent = statsData.stats.totalVisits;
-          if (totalMeasurementsEl) totalMeasurementsEl.textContent = statsData.stats.totalMeasurements;
+          if (totalVisitsEl) {
+            totalVisitsEl.textContent = statsData.stats.totalVisits || 0;
+            console.log('✓ Total visits updated:', statsData.stats.totalVisits);
+          } else {
+            console.error('❌ Element #total-visits not found');
+          }
+          
+          if (totalMeasurementsEl) {
+            totalMeasurementsEl.textContent = statsData.stats.totalMeasurements || 0;
+            console.log('✓ Total measurements updated:', statsData.stats.totalMeasurements);
+          } else {
+            console.error('❌ Element #total-measurements not found');
+          }
+        } else {
+          console.error('❌ Stats API returned error:', statsData.error);
         }
 
         // Load Visits
@@ -630,30 +648,36 @@
         // Load Measurements
         await loadMeasurementsData();
 
+        console.log('✓ Rawat Jalan data loaded successfully');
       } catch (err) {
-        console.error('Error loading data:', err);
+        console.error('❌ Error loading data:', err);
         alert('Gagal memuat data: ' + err.message);
       }
     }
 
     // ============================================
-    // LOAD VISITS TABLE
+    // LOAD VISITS TABLE - FIXED VERSION
     // ============================================
     async function loadVisitsData() {
       try {
+        console.log('🔄 Loading visits...');
+        
         const visitsResponse = await fetch('/api/visits/today');
         const visitsData = await visitsResponse.json();
+        
+        console.log('📋 Visits data:', visitsData);
         
         if (visitsData.success) {
           const tbody = document.getElementById('visits-table-body');
           
           if (!tbody) {
-            console.error('visits-table-body element not found');
+            console.error('❌ Element #visits-table-body not found');
             return;
           }
           
           if (visitsData.visits.length === 0) {
             tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">Tidak ada data kunjungan hari ini</td></tr>';
+            console.log('ℹ️ No visits today');
           } else {
             tbody.innerHTML = visitsData.visits.map(visit => `
               <tr>
@@ -666,10 +690,13 @@
                 <td><span class="badge bg-info">${visit.total_measurements} data</span></td>
               </tr>
             `).join('');
+            console.log('✓ Visits table updated with', visitsData.visits.length, 'records');
           }
+        } else {
+          console.error('❌ Visits API returned error:', visitsData.error);
         }
       } catch (err) {
-        console.error('Error loading visits:', err);
+        console.error('❌ Error loading visits:', err);
         const tbody = document.getElementById('visits-table-body');
         if (tbody) {
           tbody.innerHTML = '<tr><td colspan="7" class="text-center text-danger py-4">Error: ' + err.message + '</td></tr>';
@@ -678,18 +705,22 @@
     }
 
     // ============================================
-    // LOAD MEASUREMENTS TABLE
+    // LOAD MEASUREMENTS TABLE - FIXED VERSION
     // ============================================
     async function loadMeasurementsData() {
       try {
+        console.log('🔄 Loading measurements...');
+        
         const measurementsResponse = await fetch('/api/measurements/today');
         const measurementsData = await measurementsResponse.json();
+        
+        console.log('💉 Measurements data:', measurementsData);
         
         if (measurementsData.success) {
           const tbody = document.getElementById('measurements-table-body');
           
           if (!tbody) {
-            console.error('measurements-table-body element not found');
+            console.error('❌ Element #measurements-table-body not found');
             return;
           }
           
@@ -698,6 +729,7 @@
           
           if (measurementsData.measurements.length === 0) {
             tbody.innerHTML = `<tr><td colspan="${colspan}" class="text-center text-muted py-4">Tidak ada pengukuran hari ini</td></tr>`;
+            console.log('ℹ️ No measurements today');
           } else {
             tbody.innerHTML = measurementsData.measurements.map(m => {
               const perawatColumn = isAdmin ? `<td>${m.nama_perawat}</td>` : '';
@@ -711,10 +743,13 @@
                 </tr>
               `;
             }).join('');
+            console.log('✓ Measurements table updated with', measurementsData.measurements.length, 'records');
           }
+        } else {
+          console.error('❌ Measurements API returned error:', measurementsData.error);
         }
       } catch (err) {
-        console.error('Error loading measurements:', err);
+        console.error('❌ Error loading measurements:', err);
         const tbody = document.getElementById('measurements-table-body');
         if (tbody) {
           const colspan = '<%= role %>' === 'admin' ? '5' : '4';
@@ -731,7 +766,7 @@
       const iframe = document.getElementById('metabase-iframe');
       
       if (!loadingDiv || !iframe) {
-        console.error('Metabase elements not found');
+        console.error('❌ Metabase elements not found');
         return;
       }
       
@@ -739,8 +774,12 @@
       iframe.style.display = 'none';
       
       try {
+        console.log('🔄 Loading Metabase dashboard...');
+        
         const response = await fetch('/api/metabase/rawat-inap-token');
         const data = await response.json();
+        
+        console.log('📊 Metabase response:', data);
         
         if (data.success && data.embedUrl) {
           iframe.src = data.embedUrl;
@@ -751,7 +790,7 @@
           throw new Error(data.error || 'Gagal memuat dashboard');
         }
       } catch (err) {
-        console.error('Error loading Metabase:', err);
+        console.error('❌ Error loading Metabase:', err);
         loadingDiv.innerHTML = `
           <div style="text-align: center; color: #dc3545;">
             <i class="fas fa-exclamation-circle" style="font-size: 48px; margin-bottom: 15px;"></i>
@@ -766,18 +805,22 @@
     }
 
     // ============================================
-    // LOAD DATA ON PAGE LOAD
+    // LOAD DATA ON PAGE LOAD - FIXED VERSION
     // ============================================
     document.addEventListener('DOMContentLoaded', function() {
-      console.log('Page loaded, initializing data...');
-      loadRawatJalanData();
+      console.log('✓ Page loaded, initializing data...');
+      
+      // ✅ FIX: Wait for DOM to be fully ready before loading data
+      setTimeout(() => {
+        loadRawatJalanData();
+      }, 100);
     });
 
     // Auto-refresh setiap 5 menit
     setInterval(() => {
       const activeTab = document.querySelector('.tab-button.active');
       if (activeTab && activeTab.dataset.tab === 'rawat-jalan') {
-        console.log('Auto-refreshing data...');
+        console.log('🔄 Auto-refreshing data...');
         loadRawatJalanData();
       }
     }, 5 * 60 * 1000);
