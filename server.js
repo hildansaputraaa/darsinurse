@@ -213,6 +213,19 @@ const requireAdmin = (req, res, next) => {
   next();
 };
 
+const requireAdminOrPerawat = (req, res, next) => {
+  if (!req.session.emr_perawat) {
+    return res.status(401).json({ error: 'Not authenticated' });
+  }
+
+  if (req.session.role === 'admin' || req.session.role === 'perawat') {
+    return next();
+  }
+
+  return res.status(403).json({ error: 'Access denied' });
+};
+
+
 /* ============================================================
    ROUTES
    ============================================================ */
@@ -825,7 +838,6 @@ app.get('/admin/monitoring', requireAdmin, (req, res) => {
 
 // Route untuk perawat (jika ingin mereka juga bisa lihat monitoring)
 app.get('/monitoring', requireLogin, (req, res) => {
-  // ✅ Semua user gunakan admin-monitoring
   res.render('admin-monitoring', {
     nama_perawat: req.session.nama_perawat,
     emr_perawat: req.session.emr_perawat,
@@ -839,7 +851,7 @@ app.get('/monitoring', requireLogin, (req, res) => {
 // ============================================================
 
 // API 1: Statistics Today (for stat cards)
-app.get('/api/statistics/today', requireAdmin, async (req, res) => {
+app.get('/api/statistics/today', requireAdminOrPerawat, async (req, res) => {
   try {
     const conn = await pool.getConnection();
     
@@ -895,7 +907,7 @@ app.get('/api/statistics/today', requireAdmin, async (req, res) => {
 });
 
 // API 2: Today's Visits (for visits table)
-app.get('/api/visits/today', requireAdmin, async (req, res) => {
+app.get('/api/visits/today', requireAdminOrPerawat, async (req, res) => {
   try {
     const conn = await pool.getConnection();
     
@@ -935,7 +947,7 @@ app.get('/api/visits/today', requireAdmin, async (req, res) => {
 });
 
 // API 3: Today's Measurements (for measurements table)
-app.get('/api/measurements/today', requireAdmin, async (req, res) => {
+app.get('/api/measurements/today', requireAdminOrPerawat, async (req, res) => {
   try {
     const conn = await pool.getConnection();
     
@@ -974,7 +986,7 @@ app.get('/api/measurements/today', requireAdmin, async (req, res) => {
 });
 
 // API 4: Metabase Embed Token for Rawat Inap Dashboard
-app.get('/api/metabase/rawat-inap-token', requireAdmin, (req, res) => {
+app.get('/api/metabase/rawat-inap-token', requireAdminOrPerawat, (req, res) => {
   try {
     // Dashboard ID untuk Rawat Inap - sesuaikan dengan ID di Metabase Anda
     const DASHBOARD_ID = 1; // ⚠️ CHANGE THIS to your actual Metabase dashboard ID
