@@ -3,398 +3,549 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Darsinurse - Manajemen Admin</title>
-  <link rel="icon" type="image/png" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>🏥</text></svg>">
+  <title>Darsinurse Admin - Kelola User</title>
+  <link rel="icon" type="image/png" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>👥</text></svg>">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
-:root {
-  --primary-blue: #0056b3;
-  --primary-green: #00B14F;
-  --secondary-green: #008a3d;
-  --secondary-teal: #20c997;
-  --primary-dark: #003d7a;
-  --light-bg: #f0f8f7;
-  --dark-text: #1a3a3a;
-  --gray-border: #e0e0e0;
-  --success-green: #28a745;
-  --danger-red: #dc3545;
-}
+    :root {
+      --primary-green: #00B14F;
+      --secondary-green: #008a3d;
+      --primary-blue: #0056b3;
+      --primary-dark: #003d7a;
+      --secondary-teal: #20c997;
+      --light-bg: #f0f8f7;
+      --dark-text: #1a3a3a;
+      --gray-border: #e0e0e0;
+    }
 
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
 
-html, body {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  color: var(--dark-text);
-  background: #f5f5f5;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
+    html, body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      color: var(--dark-text);
+      background: #f5f5f5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
 
-.top-header {
-  background: white;
-  padding: 1rem 0;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  z-index: 1000;
-}
+    /* Header */
+    .top-header {
+      background: white;
+      padding: 1rem 0;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 1000;
+    }
 
-.logo-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
+    .header-content {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
 
-.logo-info {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
+    .logo-section {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
 
-.logo-info i {
-  font-size: 28px;
-  color: var(--primary-green);
-}
+    .logo-section i {
+      font-size: 28px;
+      color: var(--primary-green);
+    }
 
-.logo-info h1 {
-  font-size: 24px;
-  font-weight: 700;
-  color: var(--dark-text);
-  margin: 0;
-}
+    .logo-section h1 {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--dark-text);
+      margin: 0;
+    }
 
-.logo-info span {
-  font-size: 14px;
-  color: #666;
-}
+    .nav-section {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      font-size: 14px;
+    }
 
-.user-info {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  font-size: 14px;
-  color: var(--dark-text);
-}
+    .nav-section a {
+      color: var(--primary-blue);
+      text-decoration: none;
+      font-weight: 600;
+      transition: all 0.3s;
+    }
 
-.user-info .user-name {
-  font-weight: 600;
-}
+    .nav-section a:hover {
+      color: var(--primary-dark);
+    }
 
-.user-info a {
-  color: var(--danger-red);
-  text-decoration: none;
-  font-weight: 500;
-  transition: all 0.3s ease;
-}
+    .nav-section a.active {
+      color: var(--primary-green);
+      border-bottom: 2px solid var(--primary-green);
+      padding-bottom: 3px;
+    }
 
-.user-info a:hover {
-  color: #c82333;
-}
+    .logout-btn {
+      color: #dc3545 !important;
+    }
 
-.main-container {
-  padding-top: 100px !important;
-  flex: 1;
-}
+    .logout-btn:hover {
+      color: #c82333 !important;
+    }
 
-.nav-tabs {
-  background: white;
-  border-bottom: 2px solid var(--gray-border);
-  margin-bottom: 30px;
-}
+    /* Main Container */
+    .main-container {
+      padding-top: 100px !important;
+      flex: 1;
+      padding-bottom: 40px;
+    }
 
-.nav-tabs .nav-link {
-  color: var(--dark-text);
-  border: none;
-  border-bottom: 3px solid transparent;
-  font-weight: 500;
-  padding: 12px 20px;
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
+    .page-header {
+      margin-bottom: 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
 
-.nav-tabs .nav-link:hover {
-  color: var(--primary-green);
-}
+    .page-title {
+      font-size: 32px;
+      font-weight: 700;
+      color: var(--dark-text);
+      margin-bottom: 8px;
+    }
 
-.nav-tabs .nav-link.active {
-  color: var(--primary-green);
-  border-bottom-color: var(--primary-green);
-  background: transparent;
-}
+    .page-subtitle {
+      font-size: 16px;
+      color: #666;
+    }
 
-.card {
-  border: none;
-  border-radius: 12px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
-  transition: all 0.3s ease;
-  margin-bottom: 20px;
-}
+    /* Action Button */
+    .btn-add {
+      background: var(--primary-green);
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-weight: 600;
+      transition: all 0.3s;
+      cursor: pointer;
+    }
 
-.card-header {
-  border-bottom: 2px solid var(--gray-border);
-  background: var(--primary-green);
-  color: white;
-  font-weight: 600;
-  padding: 15px 20px;
-  border-radius: 12px 12px 0 0;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
+    .btn-add:hover {
+      background: var(--secondary-green);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(0, 177, 79, 0.3);
+    }
 
-.btn {
-  border-radius: 8px;
-  font-weight: 600;
-  transition: all 0.3s ease;
-  border: none;
-  padding: 8px 16px;
-}
+    /* Users Table */
+    .users-container {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+      overflow: hidden;
+    }
 
-.btn-primary {
-  background: var(--primary-blue);
-  color: white;
-}
+    .users-header {
+      background: linear-gradient(135deg, var(--primary-green), var(--secondary-green));
+      color: white;
+      padding: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
 
-.btn-primary:hover {
-  background: var(--primary-dark);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(0, 86, 179, 0.3);
-}
+    .users-header h3 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 700;
+    }
 
-.btn-success {
-  background: var(--success-green);
-  color: white;
-}
+    .users-body {
+      padding: 20px;
+    }
 
-.btn-success:hover {
-  background: #218838;
-}
+    .users-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
 
-.btn-warning {
-  background: #ffc107;
-  color: #212529;
-}
+    .users-table thead {
+      background: #f9f9f9;
+      border-bottom: 2px solid var(--gray-border);
+    }
 
-.btn-warning:hover {
-  background: #e0a800;
-}
+    .users-table th {
+      padding: 12px;
+      text-align: left;
+      font-weight: 600;
+      color: var(--dark-text);
+    }
 
-.btn-danger {
-  background: var(--danger-red);
-  color: white;
-}
+    .users-table td {
+      padding: 12px;
+      border-bottom: 1px solid var(--gray-border);
+    }
 
-.btn-danger:hover {
-  background: #c82333;
-}
+    .users-table tbody tr:hover {
+      background: #f9f9f9;
+    }
 
-.btn-light {
-  background: white;
-  color: var(--dark-text);
-  border: 1px solid var(--gray-border);
-}
+    .badge-role {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+    }
 
-.btn-light:hover {
-  background: #f8f9fa;
-}
+    .badge-admin {
+      background: #fff3cd;
+      color: #856404;
+    }
 
-.btn-sm {
-  padding: 5px 12px;
-  font-size: 12px;
-}
+    .badge-perawat {
+      background: #e6f9e6;
+      color: #28a745;
+    }
 
-.table {
-  margin-bottom: 0;
-}
+    .action-buttons {
+      display: flex;
+      gap: 8px;
+    }
 
-.table thead {
-  background: var(--primary-green);
-  color: white;
-}
+    .btn-action {
+      padding: 6px 12px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      transition: all 0.3s;
+    }
 
-.table thead th {
-  border: none;
-  padding: 12px;
-  font-weight: 600;
-}
+    .btn-edit {
+      background: var(--primary-blue);
+      color: white;
+    }
 
-.table tbody td {
-  padding: 12px;
-  border-bottom: 1px solid var(--gray-border);
-}
+    .btn-edit:hover {
+      background: var(--primary-dark);
+    }
 
-.table tbody tr:hover {
-  background: #f8f9fa;
-}
+    .btn-delete {
+      background: #dc3545;
+      color: white;
+    }
 
-.badge {
-  padding: 6px 12px;
-  border-radius: 6px;
-  font-weight: 600;
-  font-size: 12px;
-}
+    .btn-delete:hover {
+      background: #c82333;
+    }
 
-.badge.bg-primary {
-  background: var(--primary-blue) !important;
-}
+    /* Modal */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 2000;
+      align-items: center;
+      justify-content: center;
+    }
 
-.badge.bg-success {
-  background: var(--success-green) !important;
-}
+    .modal.show {
+      display: flex;
+    }
 
-.modal-content {
-  border-radius: 12px;
-  border: none;
-}
+    .modal-content {
+      background: white;
+      border-radius: 12px;
+      width: 90%;
+      max-width: 500px;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+      animation: modalSlideIn 0.3s ease;
+    }
 
-.modal-header {
-  background: var(--primary-green);
-  color: white;
-  border-radius: 12px 12px 0 0;
-}
+    @keyframes modalSlideIn {
+      from {
+        transform: translateY(-50px);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
 
-.modal-header .btn-close {
-  filter: brightness(0) invert(1);
-}
+    .modal-header {
+      background: linear-gradient(135deg, var(--primary-green), var(--secondary-green));
+      color: white;
+      padding: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
 
-.form-label {
-  font-weight: 600;
-  color: var(--dark-text);
-  margin-bottom: 8px;
-}
+    .modal-header h3 {
+      margin: 0;
+      font-size: 20px;
+      font-weight: 700;
+    }
 
-.form-control, .form-select {
-  border: 2px solid var(--gray-border);
-  border-radius: 8px;
-  padding: 10px 15px;
-  transition: all 0.3s ease;
-}
+    .modal-close {
+      background: rgba(255, 255, 255, 0.2);
+      border: none;
+      color: white;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 18px;
+      transition: all 0.3s;
+    }
 
-.form-control:focus, .form-select:focus {
-  border-color: var(--secondary-teal);
-  box-shadow: 0 0 0 0.2rem rgba(32, 201, 151, 0.15);
-  outline: none;
-}
+    .modal-close:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
 
-.alert {
-  border-radius: 8px;
-  border: none;
-  padding: 12px 15px;
-  font-size: 14px;
-  margin-bottom: 15px;
-}
+    .modal-body {
+      padding: 20px;
+    }
 
-.stats-card {
-  background: linear-gradient(135deg, var(--primary-blue), var(--primary-dark));
-  color: white;
-  padding: 20px;
-  border-radius: 12px;
-  margin-bottom: 20px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-}
+    .form-group {
+      margin-bottom: 20px;
+    }
 
-.stats-card h3 {
-  font-size: 36px;
-  font-weight: 700;
-  margin: 10px 0;
-}
+    .form-label {
+      font-weight: 600;
+      color: var(--dark-text);
+      margin-bottom: 8px;
+      display: block;
+      font-size: 14px;
+    }
 
-.stats-card p {
-  margin: 0;
-  opacity: 0.9;
-}
+    .form-control {
+      width: 100%;
+      padding: 10px 15px;
+      border: 2px solid var(--gray-border);
+      border-radius: 8px;
+      font-size: 14px;
+      transition: all 0.3s;
+    }
 
-.action-buttons {
-  display: flex;
-  gap: 5px;
-}
+    .form-control:focus {
+      outline: none;
+      border-color: var(--primary-green);
+      box-shadow: 0 0 0 3px rgba(0, 177, 79, 0.1);
+    }
 
-.footer {
-  background: #2c3e50;
-  color: white;
-  padding: 20px 0;
-  text-align: center;
-  margin-top: auto;
-}
+    .form-select {
+      width: 100%;
+      padding: 10px 15px;
+      border: 2px solid var(--gray-border);
+      border-radius: 8px;
+      font-size: 14px;
+      transition: all 0.3s;
+    }
 
-.footer-content {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 15px;
-}
+    .form-select:focus {
+      outline: none;
+      border-color: var(--primary-green);
+      box-shadow: 0 0 0 3px rgba(0, 177, 79, 0.1);
+    }
 
-.footer-logo {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
+    .modal-footer {
+      padding: 15px 20px;
+      border-top: 1px solid var(--gray-border);
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+    }
 
-.footer-logo i {
-  font-size: 20px;
-  color: var(--primary-green);
-}
+    .btn-cancel {
+      background: #6c757d;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
 
-.footer p {
-  margin: 0;
-  font-size: 14px;
-  opacity: 0.9;
-}
+    .btn-cancel:hover {
+      background: #5a6268;
+    }
 
-@media (max-width: 768px) {
-  .logo-info h1 {
-    font-size: 18px;
-  }
-  
-  .logo-info span {
-    display: none;
-  }
-  
-  .user-info {
-    font-size: 12px;
-  }
+    .btn-submit {
+      background: var(--primary-green);
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
 
-  .nav-tabs .nav-link {
-    padding: 8px 12px;
-    font-size: 12px;
-  }
+    .btn-submit:hover {
+      background: var(--secondary-green);
+    }
 
-  .action-buttons {
-    flex-direction: column;
-  }
-  
-  .action-buttons .btn {
-    width: 100%;
-  }
-}
+    .btn-submit:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .alert {
+      padding: 12px 15px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      font-size: 14px;
+    }
+
+    .alert-success {
+      background: #e6f9e6;
+      color: #28a745;
+      border-left: 4px solid #28a745;
+    }
+
+    .alert-danger {
+      background: #ffe6e6;
+      color: #dc3545;
+      border-left: 4px solid #dc3545;
+    }
+
+    .loading-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.3);
+      z-index: 3000;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .loading-overlay.show {
+      display: flex;
+    }
+
+    .spinner {
+      width: 50px;
+      height: 50px;
+      border: 5px solid rgba(255, 255, 255, 0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #999;
+    }
+
+    .empty-state i {
+      font-size: 64px;
+      margin-bottom: 20px;
+      color: #ddd;
+    }
+
+    .empty-state h4 {
+      font-size: 18px;
+      margin-bottom: 10px;
+      color: #666;
+    }
+
+    .empty-state p {
+      font-size: 14px;
+    }
+
+    /* Footer */
+    .footer {
+      background: #2c3e50;
+      color: white;
+      padding: 20px 0;
+      text-align: center;
+      margin-top: auto;
+    }
+
+    .footer p {
+      margin: 0;
+      font-size: 14px;
+      opacity: 0.9;
+    }
+
+    @media (max-width: 768px) {
+      .header-content {
+        flex-direction: column;
+        gap: 15px;
+        text-align: center;
+      }
+
+      .nav-section {
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+
+      .page-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+      }
+
+      .page-title {
+        font-size: 24px;
+      }
+
+      .users-table {
+        font-size: 12px;
+      }
+
+      .action-buttons {
+        flex-direction: column;
+      }
+    }
   </style>
 </head>
 <body>
   <!-- Header -->
   <header class="top-header">
     <div class="container-fluid">
-      <div class="logo-header">
-        <div class="logo-info">
-          <i class="fas fa-heartbeat"></i>
-          <div>
-            <h1>Darsinurse Gateway</h1>
-            <span>Medical IoT Platform</span>
-          </div>
+      <div class="header-content">
+        <div class="logo-section">
+          <i class="fas fa-users-cog"></i>
+          <h1>Darsinurse Admin</h1>
         </div>
-        <div class="user-info">
-          <span class="user-name"><i class="fas fa-user-shield"></i> <%= nama_perawat || 'Admin' %></span>
+        <div class="nav-section">
+          <span><i class="fas fa-user-circle"></i> <%= nama_perawat %></span>
           <span>|</span>
-          <a href="/logout" onclick="return confirm('Yakin logout?')">
+          <a href="/admin/monitoring"><i class="fas fa-chart-line"></i> Monitoring</a>
+          <span>|</span>
+          <a href="/admin/manage-users" class="active"><i class="fas fa-users"></i> Kelola User</a>
+          <span>|</span>
+          <a href="/logout" class="logout-btn" onclick="return confirm('Yakin logout?')">
             <i class="fas fa-sign-out-alt"></i> Logout
           </a>
         </div>
@@ -402,560 +553,415 @@ html, body {
     </div>
   </header>
 
+  <!-- Main Content -->
   <div class="container-fluid py-4 main-container">
-    <!-- Tab Navigation -->
-    <ul class="nav nav-tabs" role="tablist">
-      <li class="nav-item" role="presentation">
-        <button class="nav-link active" id="users-tab" data-bs-toggle="tab" data-bs-target="#users-panel" type="button" role="tab">
-          <i class="fas fa-users-cog"></i> Kelola User/Perawat
-        </button>
-      </li>
-      <li class="nav-item" role="presentation">
-        <button class="nav-link" id="patients-tab" data-bs-toggle="tab" data-bs-target="#patients-panel" type="button" role="tab">
-          <i class="fas fa-user-injured"></i> Kelola Pasien
-        </button>
-      </li>
-    </ul>
+    <!-- Page Header -->
+    <div class="page-header">
+      <div>
+        <h2 class="page-title"><i class="fas fa-users"></i> Kelola User</h2>
+        <p class="page-subtitle">Manajemen akun perawat dan administrator</p>
+      </div>
+      <button class="btn-add" onclick="showAddModal()">
+        <i class="fas fa-plus"></i> Tambah User Baru
+      </button>
+    </div>
 
     <!-- Alert Container -->
     <div id="alert-container"></div>
 
-    <!-- Tab Content -->
-    <div class="tab-content">
-      <!-- Users Tab -->
-      <div class="tab-pane fade show active" id="users-panel" role="tabpanel">
-        <div class="row mb-4">
-          <div class="col-md-4">
-            <div class="stats-card">
-              <i class="fas fa-users fa-2x"></i>
-              <h3><%= users.length %></h3>
-              <p>Total Users</p>
-            </div>
-          </div>
-          <div class="col-md-4">
-            <div class="stats-card" style="background: linear-gradient(135deg, var(--success-green), #1e7e34);">
-              <i class="fas fa-user-nurse fa-2x"></i>
-              <h3><%= users.filter(u => u.role === 'perawat').length %></h3>
-              <p>Perawat</p>
-            </div>
-          </div>
-          <div class="col-md-4">
-            <div class="stats-card" style="background: linear-gradient(135deg, #ffc107, #e0a800);">
-              <i class="fas fa-user-shield fa-2x"></i>
-              <h3><%= users.filter(u => u.role === 'admin').length %></h3>
-              <p>Administrator</p>
-            </div>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card-header">
-            <span><i class="fas fa-users-cog"></i> Manajemen User</span>
-            <button class="btn btn-light btn-sm" onclick="showAddUserModal()">
-              <i class="fas fa-user-plus"></i> Tambah User
-            </button>
-          </div>
-          <div class="card-body">
-            <div class="table-responsive">
-              <table class="table table-hover">
-                <thead>
-                  <tr>
-                    <th>ID Perawat</th>
-                    <th>Nama</th>
-                    <th>Role</th>
-                    <th>Tanggal Dibuat</th>
-                    <th>Aksi</th>
-                  </tr>
-                </thead>
-                <tbody id="user-table-body">
-                  <% users.forEach(user => { %>
-                    <tr>
-                      <td><strong><%= user.id_perawat %></strong></td>
-                      <td><%= user.nama %></td>
-                      <td>
-                        <span class="badge <%= user.role === 'admin' ? 'bg-primary' : 'bg-success' %>">
-                          <i class="fas <%= user.role === 'admin' ? 'fa-crown' : 'fa-user-nurse' %>"></i>
-                          <%= user.role === 'admin' ? 'Admin' : 'Perawat' %>
-                        </span>
-                      </td>
-                      <td><%= new Date(user.created_at).toLocaleDateString('id-ID') %></td>
-                      <td>
-                        <div class="action-buttons">
-                          <button class="btn btn-sm btn-warning" onclick="showEditUserModal('<%= user.id_perawat %>', '<%= user.nama %>', '<%= user.role %>')">
-                            <i class="fas fa-edit"></i> Edit
-                          </button>
-                          <% if (user.id_perawat !== id_perawat) { %>
-                            <button class="btn btn-sm btn-danger" onclick="deleteUser('<%= user.id_perawat %>', '<%= user.nama %>')">
-                              <i class="fas fa-trash"></i> Hapus
-                            </button>
-                          <% } %>
-                        </div>
-                      </td>
-                    </tr>
-                  <% }) %>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
+    <!-- Users Table -->
+    <div class="users-container">
+      <div class="users-header">
+        <h3><i class="fas fa-list"></i> Daftar User</h3>
+        <button class="btn-add" onclick="loadUsers()" style="background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.5); padding: 8px 15px;">
+          <i class="fas fa-sync"></i> Refresh
+        </button>
       </div>
-
-      <!-- Patients Tab -->
-      <div class="tab-pane fade" id="patients-panel" role="tabpanel">
-        <div class="card">
-          <div class="card-header">
-            <span><i class="fas fa-user-injured"></i> Manajemen Data Pasien</span>
-            <button class="btn btn-light btn-sm" onclick="showAddPatientModal()">
-              <i class="fas fa-plus"></i> Tambah Pasien
-            </button>
-          </div>
-          <div class="card-body">
-            <div class="table-responsive">
-              <table class="table table-hover">
-                <thead>
-                  <tr>
-                    <th>ID Pasien</th>
-                    <th>Nama</th>
-                    <th>Alamat</th>
-                    <th>Tanggal Lahir</th>
-                    <th>Terdaftar</th>
-                    <th>Aksi</th>
-                  </tr>
-                </thead>
-                <tbody id="patients-table-body">
-                  <tr>
-                    <td colspan="6" class="text-center text-muted">Loading...</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
+      <div class="users-body">
+        <table class="users-table">
+          <thead>
+            <tr>
+              <th>EMR Perawat</th>
+              <th>Nama</th>
+              <th>Role</th>
+              <th>Tanggal Dibuat</th>
+              <th>Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="users-table-body">
+            <tr>
+              <td colspan="5" class="text-center text-muted py-4">
+                <i class="fas fa-spinner fa-spin"></i> Memuat data...
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
   </div>
 
   <!-- Footer -->
   <footer class="footer">
-    <div class="container">
-      <div class="footer-content">
-        <div class="footer-logo">
-          <i class="fas fa-flask"></i>
-          <strong>Hint-lab Team</strong>
-        </div>
-        <span>|</span>
-        <p>&copy; 2025 Darsinurse Gateway. All rights reserved.</p>
-      </div>
-    </div>
+    <p>&copy; 2025 Darsinurse Gateway - Medical IoT Platform. All rights reserved.</p>
   </footer>
 
-  <!-- Modals -->
-  <div class="modal fade" id="addUserModal" tabindex="-1">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title"><i class="fas fa-user-plus"></i> Tambah User Baru</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body">
-          <div class="mb-3">
-            <label class="form-label">ID Perawat</label>
-            <input type="text" class="form-control" id="add-id" placeholder="Contoh: P004" required>
+  <!-- Add/Edit User Modal -->
+  <div id="user-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="modal-title"><i class="fas fa-user-plus"></i> Tambah User Baru</h3>
+        <button class="modal-close" onclick="closeModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="user-form">
+          <input type="hidden" id="form-mode" value="add">
+          <input type="hidden" id="original-emr" value="">
+
+          <div class="form-group">
+            <label class="form-label" for="user-emr">
+              <i class="fas fa-id-card"></i> EMR Perawat (Angka)
+            </label>
+            <input 
+              type="number" 
+              class="form-control" 
+              id="user-emr" 
+              placeholder="Contoh: 5" 
+              required
+            >
+            <small class="text-muted">Nomor identitas unik perawat</small>
           </div>
-          <div class="mb-3">
-            <label class="form-label">Nama Lengkap</label>
-            <input type="text" class="form-control" id="add-nama" placeholder="Masukkan nama lengkap" required>
+
+          <div class="form-group">
+            <label class="form-label" for="user-name">
+              <i class="fas fa-user"></i> Nama Lengkap
+            </label>
+            <input 
+              type="text" 
+              class="form-control" 
+              id="user-name" 
+              placeholder="Contoh: Dr. Ahmad Wijaya" 
+              required
+            >
           </div>
-          <div class="mb-3">
-            <label class="form-label">Password</label>
-            <input type="password" class="form-control" id="add-password" placeholder="Masukkan password" required>
+
+          <div class="form-group">
+            <label class="form-label" for="user-password">
+              <i class="fas fa-lock"></i> Password
+            </label>
+            <input 
+              type="password" 
+              class="form-control" 
+              id="user-password" 
+              placeholder="Masukkan password"
+            >
+            <small class="text-muted" id="password-hint">Minimal 6 karakter. Kosongkan jika tidak ingin mengubah password (saat edit).</small>
           </div>
-          <div class="mb-3">
-            <label class="form-label">Role</label>
-            <select class="form-select" id="add-role" required>
+
+          <div class="form-group">
+            <label class="form-label" for="user-role">
+              <i class="fas fa-user-tag"></i> Role
+            </label>
+            <select class="form-select" id="user-role" required>
+              <option value="">-- Pilih Role --</option>
               <option value="perawat">Perawat</option>
-              <option value="admin">Admin</option>
+              <option value="admin">Administrator</option>
             </select>
           </div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-          <button type="button" class="btn btn-primary" onclick="addUser()">
-            <i class="fas fa-save"></i> Simpan
-          </button>
-        </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cancel" onclick="closeModal()">
+          <i class="fas fa-times"></i> Batal
+        </button>
+        <button class="btn-submit" onclick="submitForm()">
+          <i class="fas fa-save"></i> Simpan
+        </button>
       </div>
     </div>
   </div>
 
-  <div class="modal fade" id="editUserModal" tabindex="-1">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title"><i class="fas fa-edit"></i> Edit User</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body">
-          <input type="hidden" id="edit-id">
-          <div class="mb-3">
-            <label class="form-label">ID Perawat</label>
-            <input type="text" class="form-control" id="edit-id-display" disabled>
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Nama Lengkap</label>
-            <input type="text" class="form-control" id="edit-nama" required>
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Password Baru (kosongkan jika tidak ingin mengubah)</label>
-            <input type="password" class="form-control" id="edit-password" placeholder="Masukkan password baru">
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Role</label>
-            <select class="form-select" id="edit-role" required>
-              <option value="perawat">Perawat</option>
-              <option value="admin">Admin</option>
-            </select>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-          <button type="button" class="btn btn-primary" onclick="updateUser()">
-            <i class="fas fa-save"></i> Update
-          </button>
-        </div>
-      </div>
-    </div>
+  <!-- Loading Overlay -->
+  <div id="loading-overlay" class="loading-overlay">
+    <div class="spinner"></div>
   </div>
 
-  <div class="modal fade" id="addPatientModal" tabindex="-1">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="patientModalTitle"><i class="fas fa-user-plus"></i> Tambah Pasien Baru</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body">
-          <div class="mb-3">
-            <label class="form-label">ID Pasien</label>
-            <input type="text" class="form-control" id="id_pasien" placeholder="Contoh: PAT001" required>
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Nama Pasien</label>
-            <input type="text" class="form-control" id="nama" placeholder="Nama lengkap" required>
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Alamat</label>
-            <textarea class="form-control" id="alamat" rows="2" placeholder="Alamat lengkap" required></textarea>
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Tanggal Lahir</label>
-            <input type="date" class="form-control" id="tanggal_lahir" required>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-          <button type="button" class="btn btn-primary" id="savePatientBtn">
-            <i class="fas fa-save"></i> Simpan
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="modal fade" id="measurementsModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title"><i class="fas fa-chart-line"></i> Riwayat Pengukuran - <span id="patientNameModal"></span></h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body">
-          <div class="table-responsive">
-            <table class="table table-sm">
-              <thead>
-                <tr>
-                  <th>Waktu</th>
-                  <th>Tipe Device</th>
-                  <th>Data</th>
-                  <th>Perawat</th>
-                </tr>
-              </thead>
-              <tbody id="measurements-table-body">
-                <tr>
-                  <td colspan="4" class="text-center text-muted">Loading...</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
-    let addUserModal, editUserModal, addPatientModal, measurementsModal;
-    let currentEditPatientId = null;
+    // ============================================
+    // GLOBAL STATE
+    // ============================================
+    let allUsers = [];
 
-    document.addEventListener('DOMContentLoaded', () => {
-      addUserModal = new bootstrap.Modal(document.getElementById('addUserModal'));
-      editUserModal = new bootstrap.Modal(document.getElementById('editUserModal'));
-      addPatientModal = new bootstrap.Modal(document.getElementById('addPatientModal'));
-      measurementsModal = new bootstrap.Modal(document.getElementById('measurementsModal'));
-      document.getElementById('patients-tab').addEventListener('shown.bs.tab', loadPatients);
-    });
+    // ============================================
+    // LOAD USERS
+    // ============================================
+    async function loadUsers() {
+      try {
+        showLoading();
+        const response = await fetch('/admin/api/users');
+        const data = await response.json();
 
-    function showAlert(message, type = 'success') {
-      const alertContainer = document.getElementById('alert-container');
-      const alertDiv = document.createElement('div');
-      alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
-      alertDiv.innerHTML = `${message}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>`;
-      alertContainer.appendChild(alertDiv);
-      setTimeout(() => alertDiv.remove(), 5000);
+        if (data.success) {
+          allUsers = data.users;
+          renderUsersTable(allUsers);
+        } else {
+          showAlert('Gagal memuat data user', 'danger');
+        }
+      } catch (err) {
+        console.error('Error loading users:', err);
+        showAlert('Error: ' + err.message, 'danger');
+      } finally {
+        hideLoading();
+      }
     }
 
-    // USER MANAGEMENT
-    function showAddUserModal() {
-      document.getElementById('add-id').value = '';
-      document.getElementById('add-nama').value = '';
-      document.getElementById('add-password').value = '';
-      document.getElementById('add-role').value = 'perawat';
-      addUserModal.show();
-    }
-
-    function showEditUserModal(id, nama, role) {
-      document.getElementById('edit-id').value = id;
-      document.getElementById('edit-id-display').value = id;
-      document.getElementById('edit-nama').value = nama;
-      document.getElementById('edit-role').value = role;
-      document.getElementById('edit-password').value = '';
-      editUserModal.show();
-    }
-
-    async function addUser() {
-      const id = document.getElementById('add-id').value.trim();
-      const nama = document.getElementById('add-nama').value.trim();
-      const password = document.getElementById('add-password').value;
-      const role = document.getElementById('add-role').value;
-
-      if (!id || !nama || !password || !role) {
-        showAlert('Semua field harus diisi!', 'danger');
+    // ============================================
+    // RENDER USERS TABLE
+    // ============================================
+    function renderUsersTable(users) {
+      const tbody = document.getElementById('users-table-body');
+      
+      if (users.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="5">
+              <div class="empty-state">
+                <i class="fas fa-users"></i>
+                <h4>Belum Ada User</h4>
+                <p>Klik tombol "Tambah User Baru" untuk menambah user pertama</p>
+              </div>
+            </td>
+          </tr>
+        `;
         return;
       }
 
-      try {
-        const response = await fetch('/admin/api/users', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id_perawat: id, nama, password, role })
-        });
-
-        const result = await response.json();
-        if (result.success) {
-          showAlert('User berhasil ditambahkan!', 'success');
-          addUserModal.hide();
-          setTimeout(() => location.reload(), 1000);
-        } else {
-          showAlert(result.error || 'Gagal menambahkan user', 'danger');
-        }
-      } catch (err) {
-        showAlert('Error: ' + err.message, 'danger');
-      }
+      tbody.innerHTML = users.map(user => `
+        <tr>
+          <td><strong>${user.emr_perawat}</strong></td>
+          <td>${user.nama}</td>
+          <td>
+            <span class="badge-role badge-${user.role}">
+              ${user.role === 'admin' ? 'Administrator' : 'Perawat'}
+            </span>
+          </td>
+          <td>${formatDate(user.created_at)}</td>
+          <td>
+            <div class="action-buttons">
+              <button class="btn-action btn-edit" onclick="showEditModal(${user.emr_perawat})">
+                <i class="fas fa-edit"></i> Edit
+              </button>
+              <button class="btn-action btn-delete" onclick="deleteUser(${user.emr_perawat}, '${user.nama}')">
+                <i class="fas fa-trash"></i> Hapus
+              </button>
+            </div>
+          </td>
+        </tr>
+      `).join('');
     }
 
-    async function updateUser() {
-      const id = document.getElementById('edit-id').value;
-      const nama = document.getElementById('edit-nama').value.trim();
-      const password = document.getElementById('edit-password').value;
-      const role = document.getElementById('edit-role').value;
+    // ============================================
+    // SHOW ADD MODAL
+    // ============================================
+    function showAddModal() {
+      document.getElementById('form-mode').value = 'add';
+      document.getElementById('modal-title').innerHTML = '<i class="fas fa-user-plus"></i> Tambah User Baru';
+      document.getElementById('user-form').reset();
+      document.getElementById('user-emr').disabled = false;
+      document.getElementById('user-password').required = true;
+      document.getElementById('password-hint').textContent = 'Minimal 6 karakter';
+      document.getElementById('user-modal').classList.add('show');
+    }
 
-      if (!nama || !role) {
-        showAlert('Nama dan role harus diisi!', 'danger');
+    // ============================================
+    // SHOW EDIT MODAL
+    // ============================================
+    function showEditModal(emr) {
+      const user = allUsers.find(u => u.emr_perawat === emr);
+      if (!user) {
+        showAlert('User tidak ditemukan', 'danger');
         return;
       }
 
-      try {
-        const response = await fetch(`/admin/api/users/${id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ nama, password, role })
-        });
-
-        const result = await response.json();
-        if (result.success) {
-          showAlert('User berhasil diupdate!', 'success');
-          editUserModal.hide();
-          setTimeout(() => location.reload(), 1000);
-        } else {
-          showAlert(result.error || 'Gagal mengupdate user', 'danger');
-        }
-      } catch (err) {
-        showAlert('Error: ' + err.message, 'danger');
-      }
+      document.getElementById('form-mode').value = 'edit';
+      document.getElementById('original-emr').value = emr;
+      document.getElementById('modal-title').innerHTML = '<i class="fas fa-user-edit"></i> Edit User';
+      
+      document.getElementById('user-emr').value = user.emr_perawat;
+      document.getElementById('user-emr').disabled = true;
+      document.getElementById('user-name').value = user.nama;
+      document.getElementById('user-password').value = '';
+      document.getElementById('user-password').required = false;
+      document.getElementById('user-role').value = user.role;
+      document.getElementById('password-hint').textContent = 'Kosongkan jika tidak ingin mengubah password';
+      
+      document.getElementById('user-modal').classList.add('show');
     }
 
-    async function deleteUser(id, nama) {
-      if (!confirm(`Yakin ingin menghapus user "${nama}"?`)) return;
-
-      try {
-        const response = await fetch(`/admin/api/users/${id}`, { method: 'DELETE' });
-        const result = await response.json();
-        if (result.success) {
-          showAlert('User berhasil dihapus!', 'success');
-          setTimeout(() => location.reload(), 1000);
-        } else {
-          showAlert(result.error || 'Gagal menghapus user', 'danger');
-        }
-      } catch (err) {
-        showAlert('Error: ' + err.message, 'danger');
-      }
+    // ============================================
+    // CLOSE MODAL
+    // ============================================
+    function closeModal() {
+      document.getElementById('user-modal').classList.remove('show');
+      document.getElementById('user-form').reset();
     }
 
-    // PATIENT MANAGEMENT
-    async function loadPatients() {
-      try {
-        const response = await fetch('/admin/api/patients');
-        const result = await response.json();
+    // ============================================
+    // SUBMIT FORM
+    // ============================================
+    async function submitForm() {
+      const mode = document.getElementById('form-mode').value;
+      const emr = document.getElementById('user-emr').value;
+      const nama = document.getElementById('user-name').value;
+      const password = document.getElementById('user-password').value;
+      const role = document.getElementById('user-role').value;
 
-        if (!result.success) throw new Error(result.error);
-
-        const tbody = document.getElementById('patients-table-body');
-        tbody.innerHTML = '';
-
-        if (result.patients.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">Belum ada data pasien</td></tr>';
-          return;
-        }
-
-        result.patients.forEach(patient => {
-          const birthDate = new Date(patient.tanggal_lahir);
-          const createdDate = new Date(patient.created_at);
-          
-          tbody.innerHTML += `
-            <tr>
-              <td><strong>${patient.id_pasien}</strong></td>
-              <td>${patient.nama}</td>
-              <td>${patient.alamat}</td>
-              <td>${birthDate.toLocaleDateString('id-ID')}</td>
-              <td><small>${createdDate.toLocaleDateString('id-ID')}</small></td>
-              <td>
-                <div class="action-buttons">
-                  <button class="btn btn-sm btn-warning" onclick="editPatient('${patient.id_pasien}', '${patient.nama}', '${patient.alamat}', '${patient.tanggal_lahir}')">
-                    <i class="fas fa-edit"></i> Edit
-                  </button>
-                  <button class="btn btn-sm btn-info" onclick="viewMeasurements('${patient.id_pasien}', '${patient.nama}')">
-                    <i class="fas fa-chart-line"></i> Riwayat
-                  </button>
-                  <button class="btn btn-sm btn-danger" onclick="deletePatient('${patient.id_pasien}', '${patient.nama}')">
-                    <i class="fas fa-trash"></i> Hapus
-                  </button>
-                </div>
-              </td>
-            </tr>
-          `;
-        });
-      } catch (error) {
-        showAlert('Gagal memuat data pasien: ' + error.message, 'danger');
-      }
-    }
-
-    function showAddPatientModal() {
-      currentEditPatientId = null;
-      document.getElementById('id_pasien').value = '';
-      document.getElementById('id_pasien').disabled = false;
-      document.getElementById('nama').value = '';
-      document.getElementById('alamat').value = '';
-      document.getElementById('tanggal_lahir').value = '';
-      document.getElementById('patientModalTitle').textContent = '➕ Tambah Pasien Baru';
-      addPatientModal.show();
-    }
-
-    document.getElementById('savePatientBtn')?.addEventListener('click', async () => {
-      const id = document.getElementById('id_pasien').value;
-      const nama = document.getElementById('nama').value;
-      const alamat = document.getElementById('alamat').value;
-      const tanggal_lahir = document.getElementById('tanggal_lahir').value;
-
-      if (!id || !nama || !alamat || !tanggal_lahir) {
+      // Validation
+      if (!emr || !nama || !role) {
         showAlert('Semua field harus diisi', 'danger');
         return;
       }
 
-      const method = currentEditPatientId ? 'PUT' : 'POST';
-      const endpoint = currentEditPatientId ? `/admin/api/patients/${currentEditPatientId}` : '/admin/api/patients';
+      if (mode === 'add' && !password) {
+        showAlert('Password harus diisi saat menambah user baru', 'danger');
+        return;
+      }
+
+      if (password && password.length < 6) {
+        showAlert('Password minimal 6 karakter', 'danger');
+        return;
+      }
 
       try {
-        const response = await fetch(endpoint, {
-          method: method,
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ nama, alamat, tanggal_lahir })
+        showLoading();
+
+        const data = { nama, password, role };
+        
+        let response;
+        if (mode === 'add') {
+          data.emr_perawat = parseInt(emr);
+          response = await fetch('/admin/api/users', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+          });
+        } else {
+          const originalEmr = document.getElementById('original-emr').value;
+          response = await fetch(`/admin/api/users/${originalEmr}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+          });
+        }
+
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+          showAlert(
+            mode === 'add' ? 'User berhasil ditambahkan' : 'User berhasil diupdate',
+            'success'
+          );
+          closeModal();
+          loadUsers();
+        } else {
+          showAlert(result.error || 'Gagal menyimpan data', 'danger');
+        }
+      } catch (err) {
+        console.error('Error submitting form:', err);
+        showAlert('Error: ' + err.message, 'danger');
+      } finally {
+        hideLoading();
+      }
+    }
+
+    // ============================================
+    // DELETE USER
+    // ============================================
+    async function deleteUser(emr, nama) {
+      if (!confirm(`Yakin ingin menghapus user "${nama}" (EMR: ${emr})?\n\nTindakan ini tidak dapat dibatalkan!`)) {
+        return;
+      }
+
+      try {
+        showLoading();
+        
+        const response = await fetch(`/admin/api/users/${emr}`, {
+          method: 'DELETE'
         });
 
         const result = await response.json();
-        if (!response.ok) throw new Error(result.error);
 
-        showAlert(result.message, 'success');
-        addPatientModal.hide();
-        loadPatients();
-      } catch (error) {
-        showAlert('Error: ' + error.message, 'danger');
+        if (response.ok && result.success) {
+          showAlert('User berhasil dihapus', 'success');
+          loadUsers();
+        } else {
+          showAlert(result.error || 'Gagal menghapus user', 'danger');
+        }
+      } catch (err) {
+        console.error('Error deleting user:', err);
+        showAlert('Error: ' + err.message, 'danger');
+      } finally {
+        hideLoading();
+      }
+    }
+
+    // ============================================
+    // UTILITIES
+    // ============================================
+    function formatDate(dateString) {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('id-ID', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
+
+    function showAlert(message, type) {
+      const container = document.getElementById('alert-container');
+      const alert = document.createElement('div');
+      alert.className = `alert alert-${type}`;
+      alert.innerHTML = `
+        <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
+        ${message}
+      `;
+      container.appendChild(alert);
+
+      setTimeout(() => {
+        alert.remove();
+      }, 5000);
+    }
+
+    function showLoading() {
+      document.getElementById('loading-overlay').classList.add('show');
+    }
+
+    function hideLoading() {
+      document.getElementById('loading-overlay').classList.remove('show');
+    }
+
+    // ============================================
+    // INIT
+    // ============================================
+    document.addEventListener('DOMContentLoaded', function() {
+      loadUsers();
+    });
+
+    // Close modal on ESC key
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        closeModal();
       }
     });
 
-    function editPatient(id, nama, alamat, tanggal_lahir) {
-      currentEditPatientId = id;
-      document.getElementById('id_pasien').value = id;
-      document.getElementById('id_pasien').disabled = true;
-      document.getElementById('nama').value = nama;
-      document.getElementById('alamat').value = alamat;
-      document.getElementById('tanggal_lahir').value = tanggal_lahir;
-      document.getElementById('patientModalTitle').textContent = '✏️ Edit Data Pasien';
-      addPatientModal.show();
-    }
-
-    function deletePatient(id, nama) {
-      if (!confirm(`Yakin hapus pasien "${nama}"?\nData pengukuran juga akan dihapus!`)) return;
-
-      fetch(`/admin/api/patients/${id}`, { method: 'DELETE' })
-        .then(r => r.json())
-        .then(result => {
-          if (!result.success) throw new Error(result.error);
-          showAlert(result.message, 'success');
-          loadPatients();
-        })
-        .catch(err => showAlert('Error: ' + err.message, 'danger'));
-    }
-
-    function viewMeasurements(id, nama) {
-      document.getElementById('patientNameModal').textContent = nama;
-      
-      fetch(`/admin/api/patients/${id}/measurements`)
-        .then(r => r.json())
-        .then(result => {
-          const tbody = document.getElementById('measurements-table-body');
-          tbody.innerHTML = '';
-
-          if (result.measurements.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">Belum ada data pengukuran</td></tr>';
-            measurementsModal.show();
-            return;
-          }
-
-          result.measurements.forEach(m => {
-            const date = new Date(m.timestamp);
-            tbody.innerHTML += `
-              <tr>
-                <td><small>${date.toLocaleString('id-ID')}</small></td>
-                <td>${m.tipe_device}</td>
-                <td><strong>${m.data}</strong></td>
-                <td>${m.nama_perawat}</td>
-              </tr>
-            `;
-          });
-          measurementsModal.show();
-        })
-        .catch(err => showAlert('Error: ' + err.message, 'danger'));
-    }
+    // Submit form on Enter key
+    document.getElementById('user-form').addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        submitForm();
+      }
+    });
   </script>
 </body>
 </html>
