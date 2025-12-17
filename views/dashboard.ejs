@@ -470,7 +470,7 @@ html, body {
             
             <!-- Buat Kunjungan Baru -->
             <div class="col-md-6 col-lg-3 mb-3">
-              <div class="card selection-card kunjungan-card-select" onclick="showKunjungan()">
+              <div class="card selection-card kunjungan-card-select" data-action="kunjungan">
                 <div class="card-body">
                   <i class="fas fa-calendar-plus"></i>
                   <h5>Kunjungan Baru</h5>
@@ -480,7 +480,7 @@ html, body {
             </div>
 
             <div class="col-md-6 col-lg-3 mb-3">
-              <div class="card selection-card" onclick="showMeasurement('glucose')">
+              <div class="card selection-card" data-action="glucose">
                 <div class="card-body">
                   <i class="fas fa-droplet"></i>
                   <h5>Glukosa</h5>
@@ -547,7 +547,7 @@ html, body {
                   <button type="submit" class="btn btn-success">
                     <i class="fas fa-save"></i> Simpan Kunjungan
                   </button>
-                  <button type="button" class="btn btn-back" onclick="backToMenu()">
+                  <button type="button" class="btn btn-back" data-back-menu>
                     <i class="fas fa-arrow-left"></i> Kembali ke Menu
                   </button>
                 </div>
@@ -593,7 +593,7 @@ html, body {
                   <button type="button" class="btn btn-danger btn-sm" id="btn-stop-glucose" disabled>
                     <i class="fas fa-stop"></i> Stop Koneksi
                   </button>
-                  <button type="button" class="btn btn-back" onclick="backToMenu()">
+                  <button type="button" class="btn btn-back" data-back-menu>
                     <i class="fas fa-arrow-left"></i> Kembali ke Menu
                   </button>
                 </div>
@@ -639,7 +639,7 @@ html, body {
                   <button type="button" class="btn btn-danger btn-sm" id="btn-stop-bp" disabled>
                     <i class="fas fa-stop"></i> Stop Koneksi
                   </button>
-                  <button type="button" class="btn btn-back" onclick="backToMenu()">
+                  <button type="button" class="btn btn-back" data-back-menu>
                     <i class="fas fa-arrow-left"></i> Kembali ke Menu
                   </button>
                 </div>
@@ -685,7 +685,7 @@ html, body {
                   <button type="button" class="btn btn-danger btn-sm" id="btn-stop-hr" disabled>
                     <i class="fas fa-stop"></i> Stop Koneksi
                   </button>
-                  <button type="button" class="btn btn-back" onclick="backToMenu()">
+                  <button type="button" class="btn btn-back" data-back-menu>
                     <i class="fas fa-arrow-left"></i> Kembali ke Menu
                   </button>
                 </div>
@@ -743,7 +743,7 @@ html, body {
                   <button type="button" class="btn btn-danger btn-sm" id="btn-stop-weight" disabled>
                     <i class="fas fa-stop"></i> Stop Koneksi
                   </button>
-                  <button type="button" class="btn btn-back" onclick="backToMenu()">
+                  <button type="button" class="btn btn-back" data-back-menu>
                     <i class="fas fa-arrow-left"></i> Kembali ke Menu
                   </button>
                 </div>
@@ -1074,7 +1074,7 @@ html, body {
       let category = '';
       if (bmi < 18.5) category = 'Underweight';
       else if (bmi < 25) category = 'Normal';
-      else if (bmi <script 30) category = 'Overweight';
+      else if (bmi < 30) category = 'Overweight';
       else category = 'Obese';
       
       document.getElementById('bmi-category').textContent = category;
@@ -1371,6 +1371,22 @@ html, body {
       }
     });
 
+    // Selection cards - click handlers
+   document.querySelectorAll('.selection-card').forEach(card => {
+     card.addEventListener('click', function() {
+       const action = this.getAttribute('data-action');
+       if (action === 'kunjungan') {
+         showKunjungan();
+       } else {
+         showMeasurement(action);
+       }
+     });
+   });
+
+   // Back buttons - click handlers  
+   document.querySelectorAll('[data-back-menu]').forEach(btn => {
+     btn.addEventListener('click', backToMenu);
+   });
     // ==== CHECK BROWSER SUPPORT ====
     if (!navigator.bluetooth) {
       addLog('⚠ Browser tidak mendukung Web Bluetooth API', 'error');
