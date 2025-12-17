@@ -803,27 +803,39 @@
         `;
       }
     }
-
     // ============================================
     // LOAD DATA ON PAGE LOAD - FIXED VERSION
     // ============================================
     document.addEventListener('DOMContentLoaded', function() {
       console.log('✓ Page loaded, initializing data...');
       
-      // ✅ FIX: Wait for DOM to be fully ready before loading data
-      setTimeout(() => {
+      // ✅ FIX: Verify all required elements exist before loading data
+      const requiredElements = [
+        'total-visits',
+        'total-measurements',
+        'visits-table-body',
+        'measurements-table-body'
+      ];
+      
+      const allElementsExist = requiredElements.every(id => {
+        const exists = document.getElementById(id) !== null;
+        if (!exists) {
+          console.error(`❌ Required element #${id} not found`);
+        }
+        return exists;
+      });
+      
+      if (allElementsExist) {
+        console.log('✓ All required elements found, loading data...');
         loadRawatJalanData();
-      }, 100);
-    });
-
-    // Auto-refresh setiap 5 menit
-    setInterval(() => {
-      const activeTab = document.querySelector('.tab-button.active');
-      if (activeTab && activeTab.dataset.tab === 'rawat-jalan') {
-        console.log('🔄 Auto-refreshing data...');
-        loadRawatJalanData();
+      } else {
+        console.error('❌ Some required elements are missing, retrying...');
+        // Retry after a short delay
+        setTimeout(() => {
+          loadRawatJalanData();
+        }, 500);
       }
-    }, 5 * 60 * 1000);
+    });
   </script>
 </body>
 </html>
