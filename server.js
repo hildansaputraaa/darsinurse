@@ -802,10 +802,10 @@ function getMetabaseEmbedUrl(dashboardId, params = {}) {
   const METABASE_SECRET = process.env.METABASE_SECRET || 'a7dd79ccd6a69475c06533ca4d9ac152c443ed3c7550ec7be12ba06dd1b7ce55';
   
   const payload = {
-    resource: { dashboard: dashboardId },
-    params: params,
-    exp: Math.round(Date.now() / 1000) + (10 * 60)
-  };
+    resource: { dashboard: 2 },
+    params: {},
+    exp: Math.round(Date.now() / 1000) + (10 * 60) // 10 minute expiration
+  };  
   
   const token = jwt.sign(payload, METABASE_SECRET);
   return `${METABASE_URL}/embed/dashboard/${token}#bordered=true&titled=true`;
