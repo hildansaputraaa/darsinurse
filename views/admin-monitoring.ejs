@@ -582,7 +582,7 @@
 <body>
   <!-- Fall Alert Sound -->
   <audio id="fall-alert-sound" preload="auto">
-    <source src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFAxMoOPsvmcfCDGJ0fHJeCkGI3fH8N2RQAoUXrTp66hVFAxMoOPsvmcfCDGJ0fHJeCkGI3fH8N+RQAoTXrTp66hWFAxMoOPsv2cfCDGJ0fHKeCkGI3fH8N+RQAoTXrTp66hWFAxMoOPsv2cfCDGJ0fHKeCkGI3fH8N+RQAoTXrTp66hWFAxMoOPsv2cfCDGJ0fHKeCkGI3fH8N+RQAoTXrTp66hWFAxMoOPsv2cfCDGJ0fHKeCkGI3fH8N+RQAoTXrTp66hWFAxMoOPsv2cfCDGJ0fHKeCkGI3fH8N+RQAoTXrTp66hWFAxMoOPsv2cfCDGJ0fHKeCkGI3fH8N+RQAoTXrTp66hWFAxMoOPsv2cfCDGJ0fHKeCkGI3fH8N+RQAoTXrTp66hWFAxMoOPsv2cfCDGJ0fHKeCkGI3fH8N+RQAoTXrTp66hWFAxMoOPsv2cfCDGJ0fHKeCkG" type="audio/wav">
+    <source src="/static/sounds/beep-warning-6387.mp3" type="audio/mpeg">
   </audio>
 
   <!-- Fall Alert Container -->
@@ -799,25 +799,27 @@
     // ============================================
     // ALERT FUNCTIONS
     // ============================================
-
+    let currentAlertAudio = null;
     function playAlertSound() {
-      const audio = document.getElementById('fall-alert-sound');
-      if (audio) {
-        // Play 3 times
-        let playCount = 0;
-        const maxPlays = 3;
-        
-        audio.play().catch(err => {
-          console.warn('⚠️ Audio autoplay blocked:', err);
-        });
-        
-        audio.onended = function() {
-          playCount++;
-          if (playCount < maxPlays) {
-            audio.play();
-          }
-        };
-      }
+        const audio = document.getElementById('fall-alert-sound');
+        if (audio) {
+            currentAlertAudio = audio;
+            
+            // Play 3 times
+            let playCount = 0;
+            const maxPlays = 3;
+            
+            audio.play().catch(err => {
+            console.warn('⚠️ Audio autoplay blocked:', err);
+            });
+            
+            audio.onended = function() {
+            playCount++;
+            if (playCount < maxPlays) {
+                audio.play();
+            }
+            };
+        }
     }
 
     function showFallAlert(alert) {
@@ -896,37 +898,68 @@
     }
 
     function acknowledgeFallAlert(alertId) {
-      console.log('✓ Acknowledging alert:', alertId);
-      
-      fetch(`/api/fall-detection/${alertId}/acknowledge`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          acknowledged_by: '<%= nama_perawat %>'
-        })
-      })
-      .then(response => response.json())
-      .then(data => {
-        if (data.success) {
-          console.log('✓ Alert acknowledged:', data);
-          closeFallAlert(alertId);
+        console.log('✓ Acknowledging alert:', alertId);
+        stopAlertSound();
+        // STOP AUDIO
+        if (currentAlertAudio) {
+            currentAlertAudio.pause();
+            currentAlertAudio.currentTime = 0;
+            currentAlertAudio.onended = null; // Remove event listener
         }
-      })
-      .catch(err => {
-        console.error('❌ Acknowledge error:', err);
-      });
+        
+        fetch(`/api/fall-detection/${alertId}/acknowledge`, {
+            method: 'POST',
+            headers: {
+            'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+            acknowledged_by: '<%= nama_perawat %>'
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+            console.log('✓ Alert acknowledged:', data);
+            closeFallAlert(alertId);
+            }
+        })
+        .catch(err => {
+            console.error('❌ Acknowledge error:', err);
+        });
     }
 
     function closeFallAlert(alertId) {
-      const alertDiv = document.getElementById(`fall-alert-${alertId}`);
-      if (alertDiv) {
-        alertDiv.style.animation = 'slideOut 0.3s ease-in';
-        setTimeout(() => {
-          alertDiv.remove();
-        }, 300);
-      }
+        // STOP AUDIO
+        stopAlertSound();
+        if (currentAlertAudio) {
+            currentAlertAudio.pause();
+            currentAlertAudio.currentTime = 0;
+            currentAlertAudio.onended = null;
+        }
+        
+        const alertDiv = document.getElementById(`fall-alert-${alertId}`);
+        if (alertDiv) {
+            alertDiv.style.animation = 'slideOut 0.3s ease-in';
+            setTimeout(() => {
+            alertDiv.remove();
+            }, 300);
+        }
+    }
+
+    function stopAlertSound() {
+        const audio = document.getElementById('fall-alert-sound');
+        if (audio) {
+            audio.pause();
+            audio.currentTime = 0;
+            audio.onended = null;
+        }
+        
+        if (currentAlertAudio) {
+            currentAlertAudio.pause();
+            currentAlertAudio.currentTime = 0;
+            currentAlertAudio.onended = null;
+            currentAlertAudio = null;
+        }
     }
 
     // ============================================
