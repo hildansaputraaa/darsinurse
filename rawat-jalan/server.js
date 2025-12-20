@@ -1410,7 +1410,7 @@ app.get('/api/vitals/all', requireAdmin, async (req, res) => {
       conn.release();
       
       console.log('✓ New patient registered by nurse:', emrInt, '-', nama);
-      addLog(`Pasien baru didaftarkan: ${nama} (EMR: ${emrInt}) oleh ${req.session.nama_perawat}`, 'success');
+      // addLog(`Pasien baru didaftarkan: ${nama} (EMR: ${emrInt}) oleh ${req.session.nama_perawat}`, 'success');
       
       res.json({ 
         success: true, 
