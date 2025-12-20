@@ -81,10 +81,10 @@ services:
       MONITORING_PORT: 5000
       
       # CORS Configuration
-      CORS_ORIGIN: "http://darsinurse-app:4000,https://rawatjalan.darsinurse.hint-lab.id"
+      CORS_ORIGIN: "http://darsinurse-app:4000,https://darsinurse.hint-lab.id"
       
       # Metabase Configuration
-      METABASE_URL: "https://darsinurse.hint-lab.id"
+      METABASE_URL: "https://metabase.darsinurse.hint-lab.id"
       METABASE_SECRET: "a7dd79ccd6a69475c06533ca4d9ac152c443ed3c7550ec7be12ba06dd1b7ce55"
     depends_on:
       darsinurse-db:
