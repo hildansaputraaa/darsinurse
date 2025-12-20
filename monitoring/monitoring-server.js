@@ -108,7 +108,7 @@ const requireAdminOrPerawat = (req, res, next) => {
    METABASE HELPER
    ============================================================ */
 function getMetabaseEmbedUrl(dashboardId, params = {}) {
-  const METABASE_URL = process.env.METABASE_URL || 'https://darsinurse.hint-lab.id';
+  const METABASE_URL = process.env.METABASE_URL || 'https://metabase.darsinurse.hint-lab.id';
   const METABASE_SECRET = process.env.METABASE_SECRET || 'a7dd79ccd6a69475c06533ca4d9ac152c443ed3c7550ec7be12ba06dd1b7ce55';
   
   const payload = {
