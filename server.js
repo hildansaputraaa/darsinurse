@@ -66,7 +66,7 @@ async function initDatabase() {
     // Tabel PASIEN dengan EMR INTEGER
     await conn.query(`
       CREATE TABLE IF NOT EXISTS pasien (
-        emr_pasien INT PRIMARY KEY,
+        emr_no INT PRIMARY KEY,
         nama VARCHAR(100),
         tanggal_lahir DATE,
         jenis_kelamin ENUM('L','P'),
@@ -80,12 +80,12 @@ async function initDatabase() {
     await conn.query(`
       CREATE TABLE IF NOT EXISTS kunjungan (
         id_kunjungan INT PRIMARY KEY,
-        emr_pasien INT,
+        emr_no INT,
         emr_perawat INT,
         tanggal_kunjungan TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         keluhan TEXT,
         status ENUM('aktif','selesai') DEFAULT 'aktif',
-        FOREIGN KEY (emr_pasien) REFERENCES pasien(emr_pasien),
+        FOREIGN KEY (emr_no) REFERENCES pasien(emr_no),
         FOREIGN KEY (emr_perawat) REFERENCES perawat(emr_perawat)
       );
     `);
@@ -96,13 +96,13 @@ async function initDatabase() {
         id INT AUTO_INCREMENT PRIMARY KEY,
         id_kunjungan INT,
         emr_perawat INT,
-        emr_pasien INT,
+        emr_no INT,
         tipe_device VARCHAR(50),
         data VARCHAR(255),
         timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (id_kunjungan) REFERENCES kunjungan(id_kunjungan),
         FOREIGN KEY (emr_perawat) REFERENCES perawat(emr_perawat),
-        FOREIGN KEY (emr_pasien) REFERENCES pasien(emr_pasien)
+        FOREIGN KEY (emr_no) REFERENCES pasien(emr_no)
       );
     `);
 
@@ -137,7 +137,7 @@ async function initDatabase() {
       console.log('🔄 Initializing default patients...');
       
       await conn.query(`
-        INSERT INTO pasien (emr_pasien, nama, tanggal_lahir, jenis_kelamin, poli, alamat) VALUES
+        INSERT INTO pasien (emr_no, nama, tanggal_lahir, jenis_kelamin, poli, alamat) VALUES
         (101,'Budi Santoso','1980-05-15','L','Poli Umum','Jl. Merdeka No.10'),
         (102,'Susi Handini','1975-08-22','P','Poli Gigi','Jl. Ahmad Yani No.25'),
         (103,'Rudi Hermawan','1985-12-03','L','Poli Umum','Jl. Pemuda No.30'),
@@ -156,7 +156,7 @@ async function initDatabase() {
       console.log('🔄 Initializing default visits...');
       
       await conn.query(`
-        INSERT INTO kunjungan (id_kunjungan, emr_pasien, emr_perawat, keluhan, status) VALUES
+        INSERT INTO kunjungan (id_kunjungan, emr_no, emr_perawat, keluhan, status) VALUES
         (1001, 101, 2, 'Demam dan batuk','selesai'),
         (1002, 102, 3, 'Sakit gigi','aktif')
       `);
@@ -441,7 +441,7 @@ app.get('/admin/api/patients', requireAdmin, async (req, res) => {
   try {
     const conn = await pool.getConnection();
     const [patients] = await conn.query(
-      'SELECT emr_pasien, nama, tanggal_lahir, jenis_kelamin, poli, alamat, created_at FROM pasien ORDER BY created_at DESC'
+      'SELECT emr_no, nama, tanggal_lahir, jenis_kelamin, poli, alamat, created_at FROM pasien ORDER BY created_at DESC'
     );
     conn.release();
     res.json({ success: true, patients });
@@ -453,9 +453,9 @@ app.get('/admin/api/patients', requireAdmin, async (req, res) => {
 
 // ADD NEW PATIENT
 app.post('/admin/api/patients', requireAdmin, async (req, res) => {
-  const { emr_pasien, nama, tanggal_lahir, jenis_kelamin, poli, alamat } = req.body;
+  const { emr_no, nama, tanggal_lahir, jenis_kelamin, poli, alamat } = req.body;
   
-  const emrInt = parseInt(emr_pasien);
+  const emrInt = parseInt(emr_no);
   if (isNaN(emrInt)) {
     return res.status(400).json({ error: 'EMR Pasien harus berupa angka' });
   }
@@ -467,7 +467,7 @@ app.post('/admin/api/patients', requireAdmin, async (req, res) => {
   try {
     const conn = await pool.getConnection();
     await conn.query(
-      'INSERT INTO pasien (emr_pasien, nama, tanggal_lahir, jenis_kelamin, poli, alamat) VALUES (?, ?, ?, ?, ?, ?)',
+      'INSERT INTO pasien (emr_no, nama, tanggal_lahir, jenis_kelamin, poli, alamat) VALUES (?, ?, ?, ?, ?, ?)',
       [emrInt, nama, tanggal_lahir, jenis_kelamin, poli, alamat || '']
     );
     conn.release();
@@ -501,7 +501,7 @@ app.put('/admin/api/patients/:emr', requireAdmin, async (req, res) => {
   try {
     const conn = await pool.getConnection();
     await conn.query(
-      'UPDATE pasien SET nama = ?, tanggal_lahir = ?, jenis_kelamin = ?, poli = ?, alamat = ? WHERE emr_pasien = ?',
+      'UPDATE pasien SET nama = ?, tanggal_lahir = ?, jenis_kelamin = ?, poli = ?, alamat = ? WHERE emr_no = ?',
       [nama, tanggal_lahir, jenis_kelamin, poli, alamat || '', emrInt]
     );
     conn.release();
@@ -526,9 +526,9 @@ app.delete('/admin/api/patients/:emr', requireAdmin, async (req, res) => {
   try {
     const conn = await pool.getConnection();
     
-    await conn.query('DELETE FROM pengukuran WHERE emr_pasien = ?', [emrInt]);
-    await conn.query('DELETE FROM kunjungan WHERE emr_pasien = ?', [emrInt]);
-    await conn.query('DELETE FROM pasien WHERE emr_pasien = ?', [emrInt]);
+    await conn.query('DELETE FROM pengukuran WHERE emr_no = ?', [emrInt]);
+    await conn.query('DELETE FROM kunjungan WHERE emr_no = ?', [emrInt]);
+    await conn.query('DELETE FROM pasien WHERE emr_no = ?', [emrInt]);
     conn.release();
     
     console.log('✓ Patient deleted:', emrInt);
@@ -556,7 +556,7 @@ app.get('/api/patients/:emr/visits', requireLogin, async (req, res) => {
       SELECT k.*, p.nama as nama_perawat
       FROM kunjungan k
       JOIN perawat p ON k.emr_perawat = p.emr_perawat
-      WHERE k.emr_pasien = ?
+      WHERE k.emr_no = ?
     `;
     
     const params = [emrInt];
@@ -581,10 +581,10 @@ app.get('/api/patients/:emr/visits', requireLogin, async (req, res) => {
 
 // CREATE NEW VISIT
 app.post('/api/visits', requireLogin, async (req, res) => {
-  const { id_kunjungan, emr_pasien, keluhan } = req.body;
+  const { id_kunjungan, emr_no, keluhan } = req.body;
   
   const idInt = parseInt(id_kunjungan);
-  const emrInt = parseInt(emr_pasien);
+  const emrInt = parseInt(emr_no);
   
   if (isNaN(idInt) || isNaN(emrInt)) {
     return res.status(400).json({ error: 'ID Kunjungan dan EMR Pasien harus berupa angka' });
@@ -593,7 +593,7 @@ app.post('/api/visits', requireLogin, async (req, res) => {
   try {
     const conn = await pool.getConnection();
     await conn.query(
-      'INSERT INTO kunjungan (id_kunjungan, emr_pasien, emr_perawat, keluhan, status) VALUES (?, ?, ?, ?, ?)',
+      'INSERT INTO kunjungan (id_kunjungan, emr_no, emr_perawat, keluhan, status) VALUES (?, ?, ?, ?, ?)',
       [idInt, emrInt, req.session.emr_perawat, keluhan || '', 'aktif']
     );
     conn.release();
@@ -649,7 +649,7 @@ app.put('/api/visits/:id_kunjungan/status', requireLogin, async (req, res) => {
 // ==== FUNCTION: Save to Vitals Table ====
 async function saveToVitals(conn, data) {
   const {
-    emr_pasien,
+    emr_no,
     id_kunjungan,
     emr_perawat,
     heart_rate,
@@ -682,7 +682,7 @@ async function saveToVitals(conn, data) {
       fall_detected
     ) VALUES (?, ?, ?, NOW(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
-      emr_pasien,
+      emr_no,
       id_kunjungan || null,
       emr_perawat || null,
       heart_rate || null,
@@ -707,10 +707,10 @@ async function saveToVitals(conn, data) {
 
 // SIMPAN DATA PENGUKURAN (UPDATED - Save to BOTH tables)
 app.post('/simpan_data', requireLogin, async (req, res) => {
-  const { id_kunjungan, emr_pasien, tipe_device, data } = req.body;
+  const { id_kunjungan, emr_no, tipe_device, data } = req.body;
   
   const idInt = parseInt(id_kunjungan);
-  const emrInt = parseInt(emr_pasien);
+  const emrInt = parseInt(emr_no);
   
   if (isNaN(idInt) || isNaN(emrInt) || !tipe_device || !data) {
     return res.status(400).json({ error: 'Data tidak lengkap atau tidak valid' });
@@ -721,7 +721,7 @@ app.post('/simpan_data', requireLogin, async (req, res) => {
     
     // Prepare vitals data
     let vitalsData = {
-      emr_pasien: emrInt,
+      emr_no: emrInt,
       id_kunjungan: idInt,
       emr_perawat: req.session.emr_perawat
     };
@@ -803,7 +803,7 @@ app.post('/simpan_data', requireLogin, async (req, res) => {
 
     // ✅ Save to pengukuran table (backward compatibility)
     const [pengukuranResult] = await conn.query(
-      `INSERT INTO pengukuran (id_kunjungan, emr_perawat, emr_pasien, tipe_device, data)
+      `INSERT INTO pengukuran (id_kunjungan, emr_perawat, emr_no, tipe_device, data)
        VALUES (?, ?, ?, ?, ?)`,
       [idInt, req.session.emr_perawat, emrInt, tipe_device, data]
     );
@@ -858,7 +858,7 @@ app.get('/api/vitals/kunjungan/:id_kunjungan', requireLogin, async (req, res) =>
         p.nama as nama_pasien
        FROM vitals v
        LEFT JOIN perawat pr ON v.emr_perawat = pr.emr_perawat
-       LEFT JOIN pasien p ON v.emr_no = p.emr_pasien
+       LEFT JOIN pasien p ON v.emr_no = p.emr_no
        WHERE v.id_kunjungan = ?
        ORDER BY v.waktu DESC`,
       [idInt]
@@ -891,7 +891,7 @@ app.get('/api/vitals/pasien/:emr', requireLogin, async (req, res) => {
         k.keluhan
       FROM vitals v
       LEFT JOIN perawat pr ON v.emr_perawat = pr.emr_perawat
-      LEFT JOIN pasien p ON v.emr_no = p.emr_pasien
+      LEFT JOIN pasien p ON v.emr_no = p.emr_no
       LEFT JOIN kunjungan k ON v.id_kunjungan = k.id_kunjungan
       WHERE v.emr_no = ?
     `;
@@ -1061,7 +1061,7 @@ app.get('/api/vitals/all', requireAdmin, async (req, res) => {
         v.*,
         p.nama as nama_pasien
       FROM vitals v
-      LEFT JOIN pasien p ON v.emr_no = p.emr_pasien
+      LEFT JOIN pasien p ON v.emr_no = p.emr_no
       ORDER BY v.waktu DESC
       LIMIT 50`
     );
@@ -1088,7 +1088,7 @@ app.get('/validasi_pasien/:emr', requireLogin, async (req, res) => {
   try {
     const conn = await pool.getConnection();
     const [rows] = await conn.query(
-      'SELECT * FROM pasien WHERE emr_pasien = ?',
+      'SELECT * FROM pasien WHERE emr_no = ?',
       [emrInt]
     );
     conn.release();
@@ -1118,7 +1118,7 @@ app.get('/admin/api/patients/:emr/measurements', requireAdmin, async (req, res) 
         pr.nama as nama_perawat
        FROM pengukuran p
        JOIN perawat pr ON p.emr_perawat = pr.emr_perawat
-       WHERE p.emr_pasien = ?
+       WHERE p.emr_no = ?
        ORDER BY p.timestamp DESC
        LIMIT 100`,
       [emrInt]
@@ -1189,7 +1189,7 @@ async function checkForNewFalls() {
         rd.room_id,
         rd.device_id
       FROM vitals v
-      LEFT JOIN pasien p ON v.emr_no = p.emr_pasien
+      LEFT JOIN pasien p ON v.emr_no = p.emr_no
       LEFT JOIN room_device rd ON v.emr_no = rd.emr_no
       WHERE v.fall_detected = 1 
       AND v.id > ?
@@ -1268,7 +1268,7 @@ app.get('/api/fall-detection/latest', requireAdminOrPerawat, async (req, res) =>
         rd.room_id,
         rd.device_id
       FROM vitals v
-      LEFT JOIN pasien p ON v.emr_no = p.emr_pasien
+      LEFT JOIN pasien p ON v.emr_no = p.emr_no
       LEFT JOIN room_device rd ON v.emr_no = rd.emr_no
       WHERE v.fall_detected = 1 
       AND v.waktu >= ?
@@ -1399,7 +1399,7 @@ app.get('/api/statistics/today', requireAdminOrPerawat, async (req, res) => {
     );
     
     const [patients] = await conn.query(
-      `SELECT COUNT(DISTINCT emr_pasien) as total FROM kunjungan 
+      `SELECT COUNT(DISTINCT emr_no) as total FROM kunjungan 
        WHERE tanggal_kunjungan >= ? AND tanggal_kunjungan < ? ${whereClause}`,
       [today, tomorrow]
     );
@@ -1450,7 +1450,7 @@ app.get('/api/visits/today', requireAdminOrPerawat, async (req, res) => {
     const [visits] = await conn.query(
       `SELECT 
         k.id_kunjungan,
-        k.emr_pasien,
+        k.emr_no,
         k.keluhan,
         k.status,
         k.tanggal_kunjungan,
@@ -1458,7 +1458,7 @@ app.get('/api/visits/today', requireAdminOrPerawat, async (req, res) => {
         pr.nama as nama_perawat,
         (SELECT COUNT(*) FROM pengukuran WHERE id_kunjungan = k.id_kunjungan) as total_measurements
        FROM kunjungan k
-       JOIN pasien p ON k.emr_pasien = p.emr_pasien
+       JOIN pasien p ON k.emr_no = p.emr_no
        JOIN perawat pr ON k.emr_perawat = pr.emr_perawat
        WHERE k.tanggal_kunjungan >= ? AND k.tanggal_kunjungan < ? ${whereClause}
        ORDER BY k.tanggal_kunjungan DESC`,
@@ -1501,7 +1501,7 @@ app.get('/api/measurements/today', requireAdminOrPerawat, async (req, res) => {
         pas.nama as nama_pasien,
         pr.nama as nama_perawat
        FROM pengukuran p
-       JOIN pasien pas ON p.emr_pasien = pas.emr_pasien
+       JOIN pasien pas ON p.emr_no = pas.emr_no
        JOIN perawat pr ON p.emr_perawat = pr.emr_perawat
        WHERE p.timestamp >= ? AND p.timestamp < ? ${whereClause}
        ORDER BY p.timestamp DESC
