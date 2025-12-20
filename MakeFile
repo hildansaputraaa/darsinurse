@@ -51,22 +51,22 @@ setup: ## 🔧 Initial setup (first time only)
 
 build: ## 🔨 Build all Docker images
 	@echo "$(BLUE)🔨 Building Docker images...$(NC)"
-	docker-compose build --no-cache
+	docker compose build --no-cache
 	@echo "$(GREEN)✅ Build complete!$(NC)"
 
 build-app: ## 🔨 Build Rawat Jalan only
 	@echo "$(BLUE)🔨 Building Rawat Jalan image...$(NC)"
-	docker-compose build --no-cache darsinurse-app
+	docker compose build --no-cache darsinurse-app
 	@echo "$(GREEN)✅ Rawat Jalan built!$(NC)"
 
 build-monitoring: ## 🔨 Build Monitoring only
 	@echo "$(BLUE)🔨 Building Monitoring image...$(NC)"
-	docker-compose build --no-cache darsinurse-monitoring
+	docker compose build --no-cache darsinurse-monitoring
 	@echo "$(GREEN)✅ Monitoring built!$(NC)"
 
 up: ## 🚀 Start all services
 	@echo "$(BLUE)🚀 Starting all services...$(NC)"
-	docker-compose up -d
+	docker compose up -d
 	@echo ""
 	@echo "$(GREEN)✅ Services started!$(NC)"
 	@echo ""
@@ -80,31 +80,31 @@ up: ## 🚀 Start all services
 
 up-dev: ## 🚀 Start in development mode (with logs)
 	@echo "$(BLUE)🚀 Starting in development mode...$(NC)"
-	docker-compose up
+	docker compose up
 
 down: ## ⏹️  Stop all services
 	@echo "$(BLUE)⏹️  Stopping all services...$(NC)"
-	docker-compose down
+	docker compose down
 	@echo "$(GREEN)✅ Services stopped!$(NC)"
 
 restart: ## 🔄 Restart all services
 	@echo "$(BLUE)🔄 Restarting all services...$(NC)"
-	docker-compose restart
+	docker compose restart
 	@echo "$(GREEN)✅ Services restarted!$(NC)"
 
 restart-app: ## 🔄 Restart Rawat Jalan only
 	@echo "$(BLUE)🔄 Restarting Rawat Jalan...$(NC)"
-	docker-compose restart darsinurse-app
+	docker compose restart darsinurse-app
 	@echo "$(GREEN)✅ Rawat Jalan restarted!$(NC)"
 
 restart-monitoring: ## 🔄 Restart Monitoring only
 	@echo "$(BLUE)🔄 Restarting Monitoring...$(NC)"
-	docker-compose restart darsinurse-monitoring
+	docker compose restart darsinurse-monitoring
 	@echo "$(GREEN)✅ Monitoring restarted!$(NC)"
 
 restart-db: ## 🔄 Restart Database only
 	@echo "$(BLUE)🔄 Restarting Database...$(NC)"
-	docker-compose restart darsinurse-db
+	docker compose restart darsinurse-db
 	@echo "$(GREEN)✅ Database restarted!$(NC)"
 
 # ============================================================
@@ -112,22 +112,22 @@ restart-db: ## 🔄 Restart Database only
 # ============================================================
 
 logs: ## 📋 Show logs (all services, follow mode)
-	docker-compose logs -f
+	docker compose logs -f
 
 logs-app: ## 📋 Show Rawat Jalan logs
-	docker-compose logs -f darsinurse-app
+	docker compose logs -f darsinurse-app
 
 logs-monitoring: ## 📋 Show Monitoring logs
-	docker-compose logs -f darsinurse-monitoring
+	docker compose logs -f darsinurse-monitoring
 
 logs-db: ## 📋 Show Database logs
-	docker-compose logs -f darsinurse-db
+	docker compose logs -f darsinurse-db
 
 logs-meta: ## 📋 Show Metabase logs
-	docker-compose logs -f metabase
+	docker compose logs -f metabase
 
 logs-all: ## 📋 Show all logs (no follow)
-	docker-compose logs --tail=100
+	docker compose logs --tail=100
 
 # ============================================================
 # STATUS & HEALTH
@@ -135,7 +135,7 @@ logs-all: ## 📋 Show all logs (no follow)
 
 status: ## 📊 Show status of all services
 	@echo "$(BLUE)📊 Services Status:$(NC)"
-	@docker-compose ps
+	@docker compose ps
 	@echo ""
 
 ps: status ## Alias for status
@@ -178,7 +178,7 @@ info: ## ℹ️  Show detailed system info
 	@docker --version
 	@echo ""
 	@echo "$(YELLOW)Docker Compose Version:$(NC)"
-	@docker-compose --version
+	@docker compose --version
 	@echo ""
 	@echo "$(YELLOW)Running Containers:$(NC)"
 	@docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
@@ -307,12 +307,12 @@ clean: ## 🧹 Stop and remove all containers, volumes
 	@echo "$(YELLOW)⚠️  This will remove ALL containers and volumes!$(NC)"
 	@echo "$(YELLOW)⚠️  Press Ctrl+C to cancel, or wait 5 seconds...$(NC)"
 	@sleep 5
-	docker-compose down -v
+	docker compose down -v
 	@echo "$(GREEN)✅ Cleanup complete!$(NC)"
 
 clean-images: ## 🧹 Remove all images
 	@echo "$(BLUE)🧹 Removing Docker images...$(NC)"
-	docker-compose down -v --rmi all
+	docker compose down -v --rmi all
 	@echo "$(GREEN)✅ Images removed!$(NC)"
 
 clean-all: ## 🧹 Complete cleanup (containers, volumes, images, networks)
@@ -324,7 +324,7 @@ clean-all: ## 🧹 Complete cleanup (containers, volumes, images, networks)
 	@echo ""
 	@echo "$(YELLOW)Press Ctrl+C to cancel, or wait 10 seconds...$(NC)"
 	@sleep 10
-	docker-compose down -v --rmi all
+	docker compose down -v --rmi all
 	docker system prune -af --volumes
 	@echo "$(GREEN)✅ Complete cleanup done!$(NC)"
 
@@ -366,11 +366,11 @@ migrate: ## 🔄 Show migration guide
 validate: ## ✅ Validate setup before starting
 	@echo "$(BLUE)✅ Validating setup...$(NC)"
 	@echo ""
-	@if [ ! -f "docker-compose.yml" ]; then \
-		echo "$(RED)❌ docker-compose.yml not found$(NC)"; \
+	@if [ ! -f "docker compose.yml" ]; then \
+		echo "$(RED)❌ docker compose.yml not found$(NC)"; \
 		exit 1; \
 	else \
-		echo "$(GREEN)✅ docker-compose.yml found$(NC)"; \
+		echo "$(GREEN)✅ docker compose.yml found$(NC)"; \
 	fi
 	@if [ ! -d "rawat-jalan" ]; then \
 		echo "$(RED)❌ rawat-jalan folder not found$(NC)"; \
@@ -446,7 +446,7 @@ urls: ## 🔗 Show all access URLs
 ports: ## 🔌 Show used ports
 	@echo "$(BLUE)🔌 Used Ports:$(NC)"
 	@echo ""
-	@docker-compose ps --format "table {{.Name}}\t{{.Ports}}"
+	@docker compose ps --format "table {{.Name}}\t{{.Ports}}"
 
 version: ## 📌 Show versions
 	@echo "$(BLUE)📌 Darsinurse Gateway$(NC)"
@@ -454,7 +454,7 @@ version: ## 📌 Show versions
 	@echo "Build: $(shell date +%Y%m%d)"
 	@echo ""
 	@docker --version
-	@docker-compose --version
+	@docker compose --version
 	@node --version 2>/dev/null || echo "Node.js not installed locally"
 
 # ============================================================
