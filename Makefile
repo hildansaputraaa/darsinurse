@@ -13,6 +13,7 @@ help: ## Show this help message
 
 build: ## Build all Docker images
 	@echo "🔨 Building Docker images..."
+	git fetch && git pull origin main
 	docker compose build --no-cache
 	@echo "✅ Build complete!"
 
