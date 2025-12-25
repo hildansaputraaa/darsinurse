@@ -71,87 +71,108 @@ pool.on('connection', (connection) => {
    ============================================================ */
 
 // 1️⃣ TRUST PROXY (for production behind nginx)
+// ============================================================
+// SMART SESSION CONFIGURATION (AUTO-DETECT ENVIRONMENT)
+// ============================================================
 
-// 1️⃣ TRUST PROXY - HARUS PALING AWAL!
-app.set('trust proxy', 1); // Trust first proxy
+// 1️⃣ Detect environment
+const isDevelopment = !process.env.NODE_ENV || process.env.NODE_ENV === 'development';
+const isProduction = process.env.NODE_ENV === 'production';
 
-// 2️⃣ Custom middleware to detect HTTPS from proxy headers
+console.log('🌍 Environment detected:', {
+  NODE_ENV: process.env.NODE_ENV || 'development',
+  isDevelopment,
+  isProduction
+});
+
+// 2️⃣ TRUST PROXY (conditional)
+if (isProduction) {
+  app.set('trust proxy', 1);
+  console.log('✅ Trust proxy ENABLED (production mode)');
+} else {
+  app.set('trust proxy', false);
+  console.log('⚠️  Trust proxy DISABLED (development mode)');
+}
+
+// 3️⃣ Middleware to detect HTTPS (works in both environments)
 app.use((req, res, next) => {
-  // Detect if request came through HTTPS proxy
-  const forwardedProto = req.get('x-forwarded-proto');
-  const forwardedHost = req.get('x-forwarded-host');
+  // In production: check X-Forwarded-Proto from proxy
+  // In development: check req.protocol directly
+  const isHttps = isProduction 
+    ? (req.get('x-forwarded-proto') === 'https' || req.secure)
+    : req.protocol === 'https';
   
-  // Mark request as secure if forwarded from HTTPS
-  if (forwardedProto === 'https') {
-    req.isSecureProxy = true;
-  }
+  req.isHttps = isHttps;
   
-  if (req.path !== '/favicon.ico') {
-    console.log('🔍 Request Info:', {
+  if (req.path !== '/favicon.ico' && req.path !== '/debug/ping') {
+    console.log('🔍 Request:', {
       path: req.path,
+      environment: isProduction ? 'PRODUCTION' : 'DEVELOPMENT',
       protocol: req.protocol,
-      secure: req.secure,
-      isSecureProxy: req.isSecureProxy,
-      'x-forwarded-proto': forwardedProto,
-      'x-forwarded-host': forwardedHost
+      'x-forwarded-proto': req.get('x-forwarded-proto') || 'none',
+      isHttps: isHttps ? '✅ YES' : '❌ NO',
+      host: req.get('host')
     });
   }
   
   next();
 });
 
-// 3️⃣ BODY PARSER
+// 4️⃣ BODY PARSER
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-// 4️⃣ VIEWS & STATIC
+// 5️⃣ VIEWS & STATIC
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// 5️⃣ SESSION WITH PROXY-AWARE SETTINGS
-const sessionMiddleware = session({
+// 6️⃣ SESSION CONFIGURATION (environment-aware)
+const sessionConfig = {
   key: 'monitoring_session',
-  secret: process.env.SESSION_SECRET || crypto.randomBytes(32).toString('hex'),
+  secret: process.env.SESSION_SECRET || 'dev-secret-change-in-production',
   store: sessionStore,
   resave: false,
   saveUninitialized: false,
   rolling: true,
-  proxy: true, // ✅ CRITICAL for reverse proxy
+  proxy: isProduction, // Only trust proxy in production
   cookie: {
     httpOnly: true,
-    secure: 'auto', // ✅ Express will auto-detect based on req.secure
-    sameSite: 'lax', // ✅ 'lax' works better than 'none' with tunnels
-    maxAge: 24 * 60 * 60 * 1000,
+    secure: isProduction ? 'auto' : false, // ✅ false in dev, auto in prod
+    sameSite: isProduction ? 'lax' : 'lax',
+    maxAge: 24 * 60 * 60 * 1000, // 24 hours
     path: '/'
-    // ❌ NO domain setting - let it auto-detect
   }
+};
+
+console.log('🍪 Cookie settings:', {
+  secure: sessionConfig.cookie.secure,
+  sameSite: sessionConfig.cookie.sameSite,
+  proxy: sessionConfig.proxy
 });
 
-app.use(sessionMiddleware);
+app.use(session(sessionConfig));
 
-// 6️⃣ SESSION DEBUG MIDDLEWARE
+// 7️⃣ SESSION DEBUG MIDDLEWARE
 app.use((req, res, next) => {
-  if (req.path !== '/favicon.ico') {
-    const isHttps = req.get('x-forwarded-proto') === 'https' || req.secure;
-    
+  if (req.path !== '/favicon.ico' && req.path !== '/debug/ping') {
     console.log(`
 📍 ${req.method} ${req.path}
-   Original Protocol: ${req.protocol}
-   X-Forwarded-Proto: ${req.get('x-forwarded-proto')}
-   Is HTTPS: ${isHttps ? 'YES ✅' : 'NO ❌'}
+   Environment: ${isProduction ? 'PRODUCTION' : 'DEVELOPMENT'}
+   Protocol: ${req.protocol}
+   X-Forwarded-Proto: ${req.get('x-forwarded-proto') || 'none'}
+   Is HTTPS: ${req.isHttps ? 'YES ✅' : 'NO ❌'}
    Host: ${req.get('host')}
-   X-Forwarded-Host: ${req.get('x-forwarded-host')}
    Session ID: ${req.sessionID?.substring(0, 8)}...
    EMR in session: ${req.session?.emr_perawat || 'none'}
    Cookie received: ${req.get('cookie') ? 'YES ✓' : 'NO ✗'}
-   Cookie will be secure: ${isHttps}
+   Cookie secure setting: ${sessionConfig.cookie.secure}
     `);
   }
   next();
 });
 
-// 7️⃣ CORS (LAST)
+// 8️⃣ CORS (LAST)
 const allowedOrigins = [
   'https://gateway.darsinurse.hint-lab.id',
   'https://darsinurse.hint-lab.id',
@@ -161,7 +182,10 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) {
+    // Allow requests with no origin (like mobile apps or curl)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
       console.warn('❌ CORS blocked:', origin);
@@ -174,22 +198,18 @@ app.use(cors({
 }));
 
 // ============================================================
-// FIXED LOGIN ROUTE FOR PROXY
+// LOGIN ROUTE (works in both dev & prod)
 // ============================================================
 
 app.post('/login', async (req, res) => {
   const { emr_perawat, password } = req.body;
   
-  // Detect if request is from HTTPS proxy
-  const isHttps = req.get('x-forwarded-proto') === 'https' || req.secure;
-  
   console.log('🔐 Login attempt:', {
     emr: emr_perawat,
+    environment: isProduction ? 'PRODUCTION' : 'DEVELOPMENT',
     protocol: req.protocol,
-    'x-forwarded-proto': req.get('x-forwarded-proto'),
-    isHttps: isHttps,
-    host: req.get('host'),
-    'x-forwarded-host': req.get('x-forwarded-host')
+    isHttps: req.isHttps,
+    host: req.get('host')
   });
   
   if (!emr_perawat || !password) {
@@ -231,13 +251,13 @@ app.post('/login', async (req, res) => {
 
     console.log('✅ Credentials valid');
 
-    // ✅ Destroy old session completely
+    // Destroy old session first
     req.session.destroy((destroyErr) => {
       if (destroyErr) {
-        console.error('⚠️ Session destroy warning:', destroyErr);
+        console.warn('⚠️ Session destroy warning:', destroyErr);
       }
       
-      // ✅ Regenerate new session
+      // Regenerate session
       req.session.regenerate((regenerateErr) => {
         if (regenerateErr) {
           console.error('❌ Session regenerate error:', regenerateErr);
@@ -252,41 +272,42 @@ app.post('/login', async (req, res) => {
         req.session.role = user.role;
         req.session.loginTime = new Date().toISOString();
         
-        console.log('📝 Session created:', {
+        console.log('📝 Session data set:', {
           sessionID: req.sessionID.substring(0, 8) + '...',
           emr: user.emr_perawat,
-          nama: user.nama
+          nama: user.nama,
+          role: user.role
         });
         
-        // ✅ CRITICAL: Save session explicitly
+        // EXPLICITLY save session
         req.session.save((saveErr) => {
           if (saveErr) {
             console.error('❌ Session save error:', saveErr);
             return res.render('monitoring-login', { 
-              error: 'Gagal menyimpan session!' 
+              error: 'Gagal menyimpan session: ' + saveErr.message 
             });
           }
           
-          console.log('✅ Session saved to database');
-          console.log('📤 Cookie will be sent:', {
+          console.log('✅ Session saved successfully');
+          console.log('📤 Cookie settings:', {
             httpOnly: true,
-            secure: isHttps ? 'YES (HTTPS)' : 'NO (HTTP)',
+            secure: isProduction ? 'auto (HTTPS)' : 'false (HTTP)',
             sameSite: 'lax',
-            path: '/',
-            maxAge: '24h'
+            maxAge: '24h',
+            path: '/'
           });
           
-          // ✅ Add delay to ensure cookie is written
+          // Small delay to ensure cookie is set
           setTimeout(() => {
             console.log('↪️  Redirecting to /');
             res.redirect('/');
-          }, 150);
+          }, 100);
         });
       });
     });
     
   } catch (err) {
-    console.error('❌ Login error:', err);
+    console.error('❌ Database error:', err);
     return res.render('monitoring-login', { 
       error: 'Terjadi kesalahan sistem: ' + err.message 
     });
@@ -298,12 +319,13 @@ app.post('/login', async (req, res) => {
 // ============================================================
 
 const requireLogin = (req, res, next) => {
-  console.log('🔐 Auth middleware:', {
+  console.log('🔐 Auth check:', {
     path: req.path,
     sessionID: req.sessionID?.substring(0, 8) + '...',
     hasSession: !!req.session,
+    hasSessionData: !!req.session?.emr_perawat,
     emr: req.session?.emr_perawat,
-    hasCookie: !!req.get('cookie')
+    cookieHeader: req.get('cookie') ? 'present' : 'missing'
   });
   
   if (!req.session || !req.session.emr_perawat) {
@@ -322,21 +344,23 @@ const requireLogin = (req, res, next) => {
 app.get('/debug/session', (req, res) => {
   res.json({
     environment: {
-      NODE_ENV: process.env.NODE_ENV,
+      NODE_ENV: process.env.NODE_ENV || 'development',
+      isDevelopment,
+      isProduction,
       trustProxy: app.get('trust proxy')
     },
     request: {
       protocol: req.protocol,
       secure: req.secure,
+      isHttps: req.isHttps,
       hostname: req.hostname,
-      ip: req.ip,
-      ips: req.ips
+      host: req.get('host'),
+      ip: req.ip
     },
     proxy_headers: {
       'x-forwarded-proto': req.get('x-forwarded-proto'),
       'x-forwarded-host': req.get('x-forwarded-host'),
-      'x-forwarded-for': req.get('x-forwarded-for'),
-      'x-real-ip': req.get('x-real-ip')
+      'x-forwarded-for': req.get('x-forwarded-for')
     },
     session: {
       id: req.sessionID,
@@ -344,18 +368,41 @@ app.get('/debug/session', (req, res) => {
       cookie: req.session?.cookie
     },
     cookies: {
-      header: req.headers.cookie,
-      parsed: req.cookies
+      header: req.headers.cookie
     }
   });
 });
 
-// Test endpoint
+// Simple ping endpoint
 app.get('/debug/ping', (req, res) => {
-  res.json({
-    message: 'Server is running',
+  res.json({ 
+    status: 'ok',
     timestamp: new Date().toISOString(),
-    isHttps: req.get('x-forwarded-proto') === 'https' || req.secure
+    environment: isProduction ? 'production' : 'development'
+  });
+});
+
+// Test session persistence
+app.get('/debug/test-session', (req, res) => {
+  if (!req.session.counter) {
+    req.session.counter = 0;
+  }
+  req.session.counter++;
+  
+  req.session.save((err) => {
+    if (err) {
+      return res.json({ 
+        error: err.message,
+        sessionID: req.sessionID
+      });
+    }
+    
+    res.json({
+      message: 'Session test - refresh to see counter increment',
+      counter: req.session.counter,
+      sessionID: req.sessionID.substring(0, 8) + '...',
+      environment: isProduction ? 'production' : 'development'
+    });
   });
 });
 
