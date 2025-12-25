@@ -71,18 +71,87 @@ pool.on('connection', (connection) => {
    ============================================================ */
 
 // 1️⃣ TRUST PROXY (for production behind nginx)
-app.set('trust proxy', 1);
 
-// 2️⃣ BODY PARSER (FIRST)
+// 1️⃣ TRUST PROXY - HARUS PALING AWAL!
+app.set('trust proxy', 1); // Trust first proxy
+
+// 2️⃣ Custom middleware to detect HTTPS from proxy headers
+app.use((req, res, next) => {
+  // Detect if request came through HTTPS proxy
+  const forwardedProto = req.get('x-forwarded-proto');
+  const forwardedHost = req.get('x-forwarded-host');
+  
+  // Mark request as secure if forwarded from HTTPS
+  if (forwardedProto === 'https') {
+    req.isSecureProxy = true;
+  }
+  
+  if (req.path !== '/favicon.ico') {
+    console.log('🔍 Request Info:', {
+      path: req.path,
+      protocol: req.protocol,
+      secure: req.secure,
+      isSecureProxy: req.isSecureProxy,
+      'x-forwarded-proto': forwardedProto,
+      'x-forwarded-host': forwardedHost
+    });
+  }
+  
+  next();
+});
+
+// 3️⃣ BODY PARSER
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-// 3️⃣ VIEWS & STATIC
+// 4️⃣ VIEWS & STATIC
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// 6️⃣ CORS (LAST)
+// 5️⃣ SESSION WITH PROXY-AWARE SETTINGS
+const sessionMiddleware = session({
+  key: 'monitoring_session',
+  secret: process.env.SESSION_SECRET || crypto.randomBytes(32).toString('hex'),
+  store: sessionStore,
+  resave: false,
+  saveUninitialized: false,
+  rolling: true,
+  proxy: true, // ✅ CRITICAL for reverse proxy
+  cookie: {
+    httpOnly: true,
+    secure: 'auto', // ✅ Express will auto-detect based on req.secure
+    sameSite: 'lax', // ✅ 'lax' works better than 'none' with tunnels
+    maxAge: 24 * 60 * 60 * 1000,
+    path: '/'
+    // ❌ NO domain setting - let it auto-detect
+  }
+});
+
+app.use(sessionMiddleware);
+
+// 6️⃣ SESSION DEBUG MIDDLEWARE
+app.use((req, res, next) => {
+  if (req.path !== '/favicon.ico') {
+    const isHttps = req.get('x-forwarded-proto') === 'https' || req.secure;
+    
+    console.log(`
+📍 ${req.method} ${req.path}
+   Original Protocol: ${req.protocol}
+   X-Forwarded-Proto: ${req.get('x-forwarded-proto')}
+   Is HTTPS: ${isHttps ? 'YES ✅' : 'NO ❌'}
+   Host: ${req.get('host')}
+   X-Forwarded-Host: ${req.get('x-forwarded-host')}
+   Session ID: ${req.sessionID?.substring(0, 8)}...
+   EMR in session: ${req.session?.emr_perawat || 'none'}
+   Cookie received: ${req.get('cookie') ? 'YES ✓' : 'NO ✗'}
+   Cookie will be secure: ${isHttps}
+    `);
+  }
+  next();
+});
+
+// 7️⃣ CORS (LAST)
 const allowedOrigins = [
   'https://gateway.darsinurse.hint-lab.id',
   'https://darsinurse.hint-lab.id',
@@ -92,9 +161,6 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: (origin, callback) => {
-    if (origin) {
-      console.log('✅ CORS:', origin);
-    }
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
@@ -106,61 +172,192 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
-// 4️⃣ SESSION (WITH MYSQL STORE - BEFORE ROUTES)
-app.use(session({
-  key: 'monitoring_session',
-  secret: process.env.SESSION_SECRET || crypto.randomBytes(32).toString('hex'),
-  store: sessionStore,
-  resave: false,
-  saveUninitialized: false,
-  rolling: true,
-  proxy: true, // ✅ TAMBAHKAN INI - penting untuk proxy/tunnel
-  cookie: {
-    httpOnly: true,
-    secure: true,        // ✅ UBAH ke true untuk HTTPS
-    sameSite: 'lax',     // ✅ 'lax' lebih compatible daripada 'none'
-    maxAge: 24 * 60 * 60 * 1000,
-    path: '/',
-    domain: undefined    // ✅ Biarkan undefined agar auto-detect
-  }
-}));
 
-// 5️⃣ SESSION DEBUG MIDDLEWARE (helpful for debugging)
-app.use((req, res, next) => {
-  if (req.path !== '/favicon.ico') {
-    console.log(`
-📍 ${req.method} ${req.path}
-   Protocol: ${req.protocol}
-   Secure: ${req.secure}
-   X-Forwarded-Proto: ${req.get('x-forwarded-proto')}
-   Host: ${req.get('host')}
-   Origin: ${req.get('origin')}
-   Session ID: ${req.sessionID?.substring(0, 8)}...
-   EMR in session: ${req.session?.emr_perawat || 'none'}
-   Cookie header: ${req.get('cookie') ? 'present' : 'missing'}
-    `);
+// ============================================================
+// FIXED LOGIN ROUTE FOR PROXY
+// ============================================================
+
+app.post('/login', async (req, res) => {
+  const { emr_perawat, password } = req.body;
+  
+  // Detect if request is from HTTPS proxy
+  const isHttps = req.get('x-forwarded-proto') === 'https' || req.secure;
+  
+  console.log('🔐 Login attempt:', {
+    emr: emr_perawat,
+    protocol: req.protocol,
+    'x-forwarded-proto': req.get('x-forwarded-proto'),
+    isHttps: isHttps,
+    host: req.get('host'),
+    'x-forwarded-host': req.get('x-forwarded-host')
+  });
+  
+  if (!emr_perawat || !password) {
+    return res.render('monitoring-login', { 
+      error: 'EMR Perawat dan Password harus diisi!' 
+    });
   }
-  next();
+  
+  const emrInt = parseInt(emr_perawat);
+  if (isNaN(emrInt)) {
+    return res.render('monitoring-login', { 
+      error: 'EMR Perawat harus berupa angka!' 
+    });
+  }
+  
+  const hash = hashPassword(password);
+  
+  try {
+    const [rows] = await pool.query(
+      'SELECT * FROM perawat WHERE emr_perawat = ?',
+      [emrInt]
+    );
+
+    if (rows.length === 0) {
+      console.log('❌ User not found:', emrInt);
+      return res.render('monitoring-login', { 
+        error: 'EMR Perawat tidak ditemukan!' 
+      });
+    }
+
+    const user = rows[0];
+    
+    if (user.password !== hash) {
+      console.log('❌ Wrong password');
+      return res.render('monitoring-login', { 
+        error: 'Password salah!' 
+      });
+    }
+
+    console.log('✅ Credentials valid');
+
+    // ✅ Destroy old session completely
+    req.session.destroy((destroyErr) => {
+      if (destroyErr) {
+        console.error('⚠️ Session destroy warning:', destroyErr);
+      }
+      
+      // ✅ Regenerate new session
+      req.session.regenerate((regenerateErr) => {
+        if (regenerateErr) {
+          console.error('❌ Session regenerate error:', regenerateErr);
+          return res.render('monitoring-login', { 
+            error: 'Gagal membuat session!' 
+          });
+        }
+
+        // Set session data
+        req.session.emr_perawat = user.emr_perawat;
+        req.session.nama_perawat = user.nama;
+        req.session.role = user.role;
+        req.session.loginTime = new Date().toISOString();
+        
+        console.log('📝 Session created:', {
+          sessionID: req.sessionID.substring(0, 8) + '...',
+          emr: user.emr_perawat,
+          nama: user.nama
+        });
+        
+        // ✅ CRITICAL: Save session explicitly
+        req.session.save((saveErr) => {
+          if (saveErr) {
+            console.error('❌ Session save error:', saveErr);
+            return res.render('monitoring-login', { 
+              error: 'Gagal menyimpan session!' 
+            });
+          }
+          
+          console.log('✅ Session saved to database');
+          console.log('📤 Cookie will be sent:', {
+            httpOnly: true,
+            secure: isHttps ? 'YES (HTTPS)' : 'NO (HTTP)',
+            sameSite: 'lax',
+            path: '/',
+            maxAge: '24h'
+          });
+          
+          // ✅ Add delay to ensure cookie is written
+          setTimeout(() => {
+            console.log('↪️  Redirecting to /');
+            res.redirect('/');
+          }, 150);
+        });
+      });
+    });
+    
+  } catch (err) {
+    console.error('❌ Login error:', err);
+    return res.render('monitoring-login', { 
+      error: 'Terjadi kesalahan sistem: ' + err.message 
+    });
+  }
 });
 
-/* ============================================================
-   AUTH MIDDLEWARE (IMPROVED)
-   ============================================================ */
+// ============================================================
+// AUTH MIDDLEWARE
+// ============================================================
+
 const requireLogin = (req, res, next) => {
-  console.log('🔐 Auth check:');
-  console.log('   Path:', req.path);
-  console.log('   Session ID:', req.sessionID?.substring(0, 8) + '...');
-  console.log('   EMR in session:', req.session.emr_perawat);
-  console.log('   Session object:', JSON.stringify(req.session, null, 2));
+  console.log('🔐 Auth middleware:', {
+    path: req.path,
+    sessionID: req.sessionID?.substring(0, 8) + '...',
+    hasSession: !!req.session,
+    emr: req.session?.emr_perawat,
+    hasCookie: !!req.get('cookie')
+  });
   
   if (!req.session || !req.session.emr_perawat) {
-    console.log('❌ No valid session, redirecting to login');
+    console.log('❌ No valid session → redirect /login');
     return res.redirect('/login');
   }
   
-  console.log('✅ Session valid for:', req.session.nama_perawat);
+  console.log('✅ Auth OK:', req.session.nama_perawat);
   next();
 };
+
+// ============================================================
+// DEBUG ENDPOINTS
+// ============================================================
+
+app.get('/debug/session', (req, res) => {
+  res.json({
+    environment: {
+      NODE_ENV: process.env.NODE_ENV,
+      trustProxy: app.get('trust proxy')
+    },
+    request: {
+      protocol: req.protocol,
+      secure: req.secure,
+      hostname: req.hostname,
+      ip: req.ip,
+      ips: req.ips
+    },
+    proxy_headers: {
+      'x-forwarded-proto': req.get('x-forwarded-proto'),
+      'x-forwarded-host': req.get('x-forwarded-host'),
+      'x-forwarded-for': req.get('x-forwarded-for'),
+      'x-real-ip': req.get('x-real-ip')
+    },
+    session: {
+      id: req.sessionID,
+      data: req.session,
+      cookie: req.session?.cookie
+    },
+    cookies: {
+      header: req.headers.cookie,
+      parsed: req.cookies
+    }
+  });
+});
+
+// Test endpoint
+app.get('/debug/ping', (req, res) => {
+  res.json({
+    message: 'Server is running',
+    timestamp: new Date().toISOString(),
+    isHttps: req.get('x-forwarded-proto') === 'https' || req.secure
+  });
+});
 
 const requireAdmin = (req, res, next) => {
   if (!req.session.emr_perawat) {
