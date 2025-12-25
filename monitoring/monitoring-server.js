@@ -104,23 +104,6 @@ app.use(session({
     path: '/'
   }
 }));
-// 5️⃣ SESSION DEBUG MIDDLEWARE
-app.use((req, res, next) => {
-  if (req.path !== '/favicon.ico') {
-    console.log(`
-📍 ${req.method} ${req.path}
-   Protocol: ${req.protocol}
-   Secure: ${req.secure}
-   X-Forwarded-Proto: ${req.get('x-forwarded-proto')}
-   Host: ${req.get('host')}
-   Session ID: ${req.sessionID?.substring(0, 8)}...
-   EMR in session: ${req.session?.emr_perawat || 'none'}
-   Cookie: ${req.get('cookie') ? 'present' : 'missing'}
-    `);
-  }
-  next();
-});
-
 // 6️⃣ CORS (LAST)
 const allowedOrigins = [
   'https://gateway.darsinurse.hint-lab.id',
