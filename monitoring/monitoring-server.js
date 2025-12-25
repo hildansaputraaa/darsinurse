@@ -204,14 +204,15 @@ app.post('/login', async (req, res) => {
       req.session.role = user.role;
       
       console.log('✓ Monitoring Login success:', user.nama);
+      
+      // ✅ SAVE SESSION BEFORE REDIRECT
       req.session.save((err) => {
-          if (err) {
-            console.error('❌ Session save error:', err);
-            return res.render('monitoring-login', { error: 'Terjadi kesalahan sistem!' });
-          }
-          return res.redirect('/');  // Redirect setelah session tersave
-        });
-      return res.redirect('/');
+        if (err) {
+          console.error('❌ Session save error:', err);
+          return res.render('monitoring-login', { error: 'Terjadi kesalahan sistem!' });
+        }
+        return res.redirect('/');
+      });
     } else {
       console.log('❌ Wrong password for:', emrInt);
       return res.render('monitoring-login', { error: 'Password salah!' });
