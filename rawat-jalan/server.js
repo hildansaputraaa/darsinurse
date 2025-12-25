@@ -577,6 +577,33 @@ app.post('/simpan_data', requireLogin, async (req, res) => {
 
     const vitalsId = result.insertId;
     
+    // 🔥 TAMBAHKAN NOTIFIKASI FALL DETECTION
+    if (vitalsData.fall_detected === 1) {
+      console.log('🚨 FALL DETECTED! EMR:', emr_no);
+      
+      // Emit ke monitoring server
+      if (monitoringConnected) {
+        monitoringSocket.emit('new-fall-alert', {
+          id: vitalsId,
+          emr_no: emr_no,
+          id_kunjungan: id_kunjungan,
+          emr_perawat: req.session.emr_perawat,
+          nama_perawat: req.session.nama_perawat,
+          timestamp: new Date().toISOString(),
+          heart_rate: vitalsData.heart_rate,
+          sistolik: vitalsData.sistolik,
+          diastolik: vitalsData.diastolik
+        });
+      }
+      
+      // Broadcast ke semua client di server ini juga
+      io.emit('fall-alert', {
+        id: vitalsId,
+        emr_no: emr_no,
+        timestamp: new Date()
+      });
+    }
+    
     res.json({
       success: true,
       id: vitalsId,
@@ -715,13 +742,31 @@ app.post('/api/fall-detection/:id/acknowledge', requireAdminOrPerawat, async (re
     const { id } = req.params;
     const { acknowledged_by } = req.body;
     
+    // UPDATE database untuk mark sebagai acknowledged
+    const conn = await pool.getConnection();
+    await conn.query(
+      `UPDATE vitals 
+       SET acknowledged_at = NOW(), acknowledged_by = ? 
+       WHERE id = ? AND fall_detected = 1`,
+      [acknowledged_by || req.session.nama_perawat, id]
+    );
+    conn.release();
+    
+    // Broadcast acknowledge event
+    io.emit('fall-acknowledged', {
+      id: id,
+      acknowledged_by: acknowledged_by || req.session.nama_perawat,
+      timestamp: new Date()
+    });
+    
     res.json({ 
       success: true, 
       message: 'Fall alert acknowledged',
-      acknowledged_by,
+      acknowledged_by: acknowledged_by || req.session.nama_perawat,
       timestamp: new Date()
     });
   } catch (err) {
+    console.error('❌ Acknowledge error:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -775,6 +820,22 @@ monitoringSocket.on('connect_error', (error) => {
   console.error('❌ Socket connection error:', error);
 });
 
+let monitoringConnected = false;
+
+monitoringSocket.on('connect', () => {
+  console.log('✓ Connected to Monitoring Server at', MONITORING_SERVER);
+  monitoringConnected = true;
+  
+  monitoringSocket.emit('join-monitoring', {
+    server: 'rawat-jalan',
+    port: PORT
+  });
+});
+
+monitoringSocket.on('disconnect', () => {
+  console.warn('⚠ Disconnected from Monitoring Server');
+  monitoringConnected = false;
+});
 /* ============================================================
    DARSINURSE - ROOM MANAGEMENT API ENDPOINTS
    Tambahkan kode ini ke server.js Anda

@@ -457,7 +457,6 @@ const io = socketIo(server, {
   }
 });
 
-// Socket.IO Connection Handler
 io.on('connection', (socket) => {
   console.log('🔌 Client connected:', socket.id);
   
@@ -465,13 +464,23 @@ io.on('connection', (socket) => {
     console.log('❌ Client disconnected:', socket.id);
   });
   
+  // TERIMA fall alert dari Rawat Jalan
   socket.on('new-fall-alert', (alert) => {
-    console.log('🚨 FALL ALERT FROM RAWAT-JALAN:', alert);
-    io.to('monitoring-room').emit('fall-alert', alert);
+    console.log('🚨 FALL ALERT RECEIVED:', alert);
+    
+    // Broadcast ke SEMUA client yang connected
+    io.emit('fall-alert-broadcast', alert);
   });
+  
+  // TERIMA acknowledge dari Rawat Jalan
+  socket.on('fall-acknowledged', (data) => {
+    console.log('✓ Fall acknowledged:', data);
+    io.emit('fall-acknowledged-broadcast', data);
+  });
+  
   socket.on('join-monitoring', (data) => {
     socket.join('monitoring-room');
-    console.log('👀 Client joined monitoring room:', data);
+    console.log('👀 Gateway connected:', data);
   });
 });
 
