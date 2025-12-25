@@ -785,34 +785,25 @@
     });
 
     // Connection event handlers
-    socket.on('connect', () => {
-      console.log('✓ Socket.IO connected:', socket.id);
-      socket.emit('join-monitoring', { 
-        user: '<%= nama_perawat %>', 
-        role: '<%= role %>' 
-      });
-    });
-
-    socket.on('disconnect', () => {
-      console.log('❌ Socket.IO disconnected');
-    });
-
     socket.on('connect_error', (error) => {
-      console.error('❌ Socket.IO connection error:', error);
+      console.error('❌ Socket connection error:', error);
+      addLog('Koneksi monitoring terputus - coba reload', 'error');
+      // Retry otomatis
+      setTimeout(() => socket.connect(), 3000);
     });
-
-    // ============================================
-    // FALL ALERT HANDLER
-    // ============================================
 
     socket.on('fall-alert', (alert) => {
       console.log('🚨 FALL ALERT RECEIVED:', alert);
       
-      // Play alert sound
-      playAlertSound();
+      // Validasi alert object
+      if (!alert || !alert.nama_pasien) {
+        console.error('❌ Invalid alert data');
+        return;
+      }
       
-      // Show alert notification
+      playAlertSound();
       showFallAlert(alert);
+      addLog(`🚨 FALL DETECTED: ${alert.nama_pasien}`, 'error');
     });
 
     // ============================================
