@@ -56,14 +56,15 @@ services:
     networks:
       - darsinurse_network
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "https://gateway.darsinurse.hint-lab.id/health"]
+      # ✅ FIXED: Pakai localhost internal, bukan external HTTPS
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:4000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
 
   # ========================================
-  # Monitoring Application (Port 5000) - NEW!
+  # Monitoring Application (Port 5000)
   # ========================================
   darsinurse-monitoring:
     build:
@@ -80,16 +81,20 @@ services:
       TZ: Asia/Jakarta
       NODE_ENV: production
       MONITORING_PORT: 5000
+      
+      # ✅ CRITICAL: Internal Docker network connection
       RAWAT_JALAN_URL: http://darsinurse-app:4000
 
-      # CORS Configuration
-      CORS_ORIGIN: "http://darsinurse-app:4000,https://darsinurse.hint-lab.id"
+      # ✅ FIXED: CORS hanya untuk browser (external URLs)
+      CORS_ORIGIN: "https://darsinurse.hint-lab.id,https://gateway.darsinurse.hint-lab.id"
       
       # Metabase Configuration
       METABASE_URL: "https://metabase.darsinurse.hint-lab.id"
       METABASE_SECRET: "a7dd79ccd6a69475c06533ca4d9ac152c443ed3c7550ec7be12ba06dd1b7ce55"
     depends_on:
       darsinurse-db:
+        condition: service_healthy
+      darsinurse-app:
         condition: service_healthy
     volumes:
       - /etc/localtime:/etc/localtime:ro
@@ -98,7 +103,7 @@ services:
     networks:
       - darsinurse_network
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:5000/health"]
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:5000/login"]
       interval: 30s
       timeout: 10s
       retries: 3
