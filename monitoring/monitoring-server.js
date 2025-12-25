@@ -71,117 +71,57 @@ pool.on('connection', (connection) => {
    ============================================================ */
 
 // 1️⃣ TRUST PROXY (for production behind nginx)
-// ============================================================
-// SMART SESSION CONFIGURATION (AUTO-DETECT ENVIRONMENT)
-// ============================================================
+/* ============================================================
+   MINIMAL FIX - SESSION CONFIGURATION
+   ============================================================ */
 
-// 1️⃣ Detect environment
-const isDevelopment = !process.env.NODE_ENV || process.env.NODE_ENV === 'development';
-const isProduction = process.env.NODE_ENV === 'production';
+// 1️⃣ TRUST PROXY (for production behind nginx/tunnel)
+app.set('trust proxy', 1);
 
-// ✅ Allow forcing insecure cookies (for local testing in production mode)
-const forceInsecure = process.env.FORCE_INSECURE_COOKIES === 'true';
-
-console.log('🌍 Environment detected:', {
-  NODE_ENV: process.env.NODE_ENV || 'development',
-  isDevelopment,
-  isProduction,
-  forceInsecure: forceInsecure ? '⚠️ YES (testing only!)' : 'no'
-});
-
-// 2️⃣ TRUST PROXY (conditional)
-if (isProduction) {
-  app.set('trust proxy', 1);
-  console.log('✅ Trust proxy ENABLED (production mode)');
-} else {
-  app.set('trust proxy', false);
-  console.log('⚠️  Trust proxy DISABLED (development mode)');
-}
-
-// 3️⃣ Middleware to detect HTTPS (works in both environments)
-app.use((req, res, next) => {
-  // In production: check X-Forwarded-Proto from proxy
-  // In development: check req.protocol directly
-  const isHttps = isProduction 
-    ? (req.get('x-forwarded-proto') === 'https' || req.secure)
-    : req.protocol === 'https';
-  
-  req.isHttps = isHttps;
-  
-  if (req.path !== '/favicon.ico' && req.path !== '/debug/ping') {
-    console.log('🔍 Request:', {
-      path: req.path,
-      environment: isProduction ? 'PRODUCTION' : 'DEVELOPMENT',
-      protocol: req.protocol,
-      'x-forwarded-proto': req.get('x-forwarded-proto') || 'none',
-      isHttps: isHttps ? '✅ YES' : '❌ NO',
-      host: req.get('host')
-    });
-  }
-  
-  next();
-});
-
-// 4️⃣ BODY PARSER
+// 2️⃣ BODY PARSER (FIRST)
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-// 5️⃣ VIEWS & STATIC
+// 3️⃣ VIEWS & STATIC
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// 6️⃣ SESSION CONFIGURATION (environment-aware)
-const sessionConfig = {
+// 4️⃣ SESSION (WITH MYSQL STORE - BEFORE ROUTES)
+app.use(session({
   key: 'monitoring_session',
-  secret: process.env.SESSION_SECRET || 'dev-secret-change-in-production',
+  secret: process.env.SESSION_SECRET || crypto.randomBytes(32).toString('hex'),
   store: sessionStore,
   resave: false,
   saveUninitialized: false,
   rolling: true,
-  proxy: isProduction, // Only trust proxy in production
+  proxy: true,
   cookie: {
     httpOnly: true,
-    // ✅ Smart cookie security:
-    // - Development: always false (HTTP OK)
-    // - Production + force insecure: false (for local testing)
-    // - Production normal: 'auto' (requires HTTPS)
-    secure: isDevelopment ? false : (forceInsecure ? false : 'auto'),
-    sameSite: isProduction ? 'lax' : 'lax',
-    maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    secure: 'auto',
+    sameSite: 'lax',
+    maxAge: 24 * 60 * 60 * 1000,
     path: '/'
   }
-};
-
-console.log('🍪 Cookie settings:', {
-  secure: sessionConfig.cookie.secure,
-  sameSite: sessionConfig.cookie.sameSite,
-  proxy: sessionConfig.proxy,
-  warning: forceInsecure ? '⚠️ INSECURE COOKIES ENABLED - DO NOT USE IN REAL PRODUCTION!' : null
-});
-
-app.use(session(sessionConfig));
-
-// 7️⃣ SESSION DEBUG MIDDLEWARE
+}));
+// 5️⃣ SESSION DEBUG MIDDLEWARE
 app.use((req, res, next) => {
-  if (req.path !== '/favicon.ico' && req.path !== '/debug/ping') {
+  if (req.path !== '/favicon.ico') {
     console.log(`
 📍 ${req.method} ${req.path}
-   Environment: ${isProduction ? 'PRODUCTION' : 'DEVELOPMENT'}
    Protocol: ${req.protocol}
-   X-Forwarded-Proto: ${req.get('x-forwarded-proto') || 'none'}
-   Is HTTPS: ${req.isHttps ? 'YES ✅' : 'NO ❌'}
+   Secure: ${req.secure}
+   X-Forwarded-Proto: ${req.get('x-forwarded-proto')}
    Host: ${req.get('host')}
    Session ID: ${req.sessionID?.substring(0, 8)}...
    EMR in session: ${req.session?.emr_perawat || 'none'}
-   Cookie received: ${req.get('cookie') ? 'YES ✓' : 'NO ✗'}
-   Cookie secure setting: ${sessionConfig.cookie.secure}
+   Cookie: ${req.get('cookie') ? 'present' : 'missing'}
     `);
   }
   next();
 });
 
-// 8️⃣ CORS (LAST)
+// 6️⃣ CORS (LAST)
 const allowedOrigins = [
   'https://gateway.darsinurse.hint-lab.id',
   'https://darsinurse.hint-lab.id',
@@ -191,10 +131,7 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow requests with no origin (like mobile apps or curl)
-    if (!origin) return callback(null, true);
-    
-    if (allowedOrigins.includes(origin)) {
+    if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
       console.warn('❌ CORS blocked:', origin);
@@ -206,214 +143,25 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-// ============================================================
-// LOGIN ROUTE (works in both dev & prod)
-// ============================================================
-
-app.post('/login', async (req, res) => {
-  const { emr_perawat, password } = req.body;
-  
-  console.log('🔐 Login attempt:', {
-    emr: emr_perawat,
-    environment: isProduction ? 'PRODUCTION' : 'DEVELOPMENT',
-    protocol: req.protocol,
-    isHttps: req.isHttps,
-    host: req.get('host')
-  });
-  
-  if (!emr_perawat || !password) {
-    return res.render('monitoring-login', { 
-      error: 'EMR Perawat dan Password harus diisi!' 
-    });
-  }
-  
-  const emrInt = parseInt(emr_perawat);
-  if (isNaN(emrInt)) {
-    return res.render('monitoring-login', { 
-      error: 'EMR Perawat harus berupa angka!' 
-    });
-  }
-  
-  const hash = hashPassword(password);
-  
-  try {
-    const [rows] = await pool.query(
-      'SELECT * FROM perawat WHERE emr_perawat = ?',
-      [emrInt]
-    );
-
-    if (rows.length === 0) {
-      console.log('❌ User not found:', emrInt);
-      return res.render('monitoring-login', { 
-        error: 'EMR Perawat tidak ditemukan!' 
-      });
-    }
-
-    const user = rows[0];
-    
-    if (user.password !== hash) {
-      console.log('❌ Wrong password');
-      return res.render('monitoring-login', { 
-        error: 'Password salah!' 
-      });
-    }
-
-    console.log('✅ Credentials valid');
-
-    // Destroy old session first
-    req.session.destroy((destroyErr) => {
-      if (destroyErr) {
-        console.warn('⚠️ Session destroy warning:', destroyErr);
-      }
-      
-      // Regenerate session
-      req.session.regenerate((regenerateErr) => {
-        if (regenerateErr) {
-          console.error('❌ Session regenerate error:', regenerateErr);
-          return res.render('monitoring-login', { 
-            error: 'Gagal membuat session!' 
-          });
-        }
-
-        // Set session data
-        req.session.emr_perawat = user.emr_perawat;
-        req.session.nama_perawat = user.nama;
-        req.session.role = user.role;
-        req.session.loginTime = new Date().toISOString();
-        
-        console.log('📝 Session data set:', {
-          sessionID: req.sessionID.substring(0, 8) + '...',
-          emr: user.emr_perawat,
-          nama: user.nama,
-          role: user.role
-        });
-        
-        // EXPLICITLY save session
-        req.session.save((saveErr) => {
-          if (saveErr) {
-            console.error('❌ Session save error:', saveErr);
-            return res.render('monitoring-login', { 
-              error: 'Gagal menyimpan session: ' + saveErr.message 
-            });
-          }
-          
-          console.log('✅ Session saved successfully');
-          console.log('📤 Cookie settings:', {
-            httpOnly: true,
-            secure: isProduction ? 'auto (HTTPS)' : 'false (HTTP)',
-            sameSite: 'lax',
-            maxAge: '24h',
-            path: '/'
-          });
-          
-          // Small delay to ensure cookie is set
-          setTimeout(() => {
-            console.log('↪️  Redirecting to /');
-            res.redirect('/');
-          }, 100);
-        });
-      });
-    });
-    
-  } catch (err) {
-    console.error('❌ Database error:', err);
-    return res.render('monitoring-login', { 
-      error: 'Terjadi kesalahan sistem: ' + err.message 
-    });
-  }
-});
-
-// ============================================================
-// AUTH MIDDLEWARE
-// ============================================================
-
+/* ============================================================
+   AUTH MIDDLEWARE (IMPROVED)
+   ============================================================ */
 const requireLogin = (req, res, next) => {
-  console.log('🔐 Auth check:', {
-    path: req.path,
-    sessionID: req.sessionID?.substring(0, 8) + '...',
-    hasSession: !!req.session,
-    hasSessionData: !!req.session?.emr_perawat,
-    emr: req.session?.emr_perawat,
-    cookieHeader: req.get('cookie') ? 'present' : 'missing'
-  });
+  console.log('🔐 Auth check:');
+  console.log('   Path:', req.path);
+  console.log('   Session ID:', req.sessionID?.substring(0, 8) + '...');
+  console.log('   EMR in session:', req.session.emr_perawat);
+  console.log('   Session object:', JSON.stringify(req.session, null, 2));
   
   if (!req.session || !req.session.emr_perawat) {
-    console.log('❌ No valid session → redirect /login');
+    console.log('❌ No valid session, redirecting to login');
     return res.redirect('/login');
   }
   
-  console.log('✅ Auth OK:', req.session.nama_perawat);
+  console.log('✅ Session valid for:', req.session.nama_perawat);
   next();
 };
 
-// ============================================================
-// DEBUG ENDPOINTS
-// ============================================================
-
-app.get('/debug/session', (req, res) => {
-  res.json({
-    environment: {
-      NODE_ENV: process.env.NODE_ENV || 'development',
-      isDevelopment,
-      isProduction,
-      trustProxy: app.get('trust proxy')
-    },
-    request: {
-      protocol: req.protocol,
-      secure: req.secure,
-      isHttps: req.isHttps,
-      hostname: req.hostname,
-      host: req.get('host'),
-      ip: req.ip
-    },
-    proxy_headers: {
-      'x-forwarded-proto': req.get('x-forwarded-proto'),
-      'x-forwarded-host': req.get('x-forwarded-host'),
-      'x-forwarded-for': req.get('x-forwarded-for')
-    },
-    session: {
-      id: req.sessionID,
-      data: req.session,
-      cookie: req.session?.cookie
-    },
-    cookies: {
-      header: req.headers.cookie
-    }
-  });
-});
-
-// Simple ping endpoint
-app.get('/debug/ping', (req, res) => {
-  res.json({ 
-    status: 'ok',
-    timestamp: new Date().toISOString(),
-    environment: isProduction ? 'production' : 'development'
-  });
-});
-
-// Test session persistence
-app.get('/debug/test-session', (req, res) => {
-  if (!req.session.counter) {
-    req.session.counter = 0;
-  }
-  req.session.counter++;
-  
-  req.session.save((err) => {
-    if (err) {
-      return res.json({ 
-        error: err.message,
-        sessionID: req.sessionID
-      });
-    }
-    
-    res.json({
-      message: 'Session test - refresh to see counter increment',
-      counter: req.session.counter,
-      sessionID: req.sessionID.substring(0, 8) + '...',
-      environment: isProduction ? 'production' : 'development'
-    });
-  });
-});
 const requireAdmin = (req, res, next) => {
   if (!req.session.emr_perawat) {
     return res.redirect('/login');
@@ -452,25 +200,22 @@ function getMetabaseEmbedUrl(dashboardId, params = {}) {
   return `${METABASE_URL}/public/dashboard/${uuid}`;
 }
 
-/* ============================================================
-   ROUTES - AUTH
-   ============================================================ */
+// LOGIN PAGE (GET)
+app.get('/login', (req, res) => {
+  // Kalau sudah login, redirect ke dashboard
+  if (req.session && req.session.emr_perawat) {
+    return res.redirect('/');
+  }
+  res.render('monitoring-login', { error: null });
+});
 
-// LOGIN PAGE// PROSES LOGIN - IMPROVED
-// ============================================================
-// LOGIN ROUTE - HTTPS TUNNEL COMPATIBLE
-// ============================================================
-
+// PROSES LOGIN (POST) - SIMPLE & WORKING
 app.post('/login', async (req, res) => {
   const { emr_perawat, password } = req.body;
   
-  console.log('🔐 Login attempt');
-  console.log('   EMR:', emr_perawat);
-  console.log('   Protocol:', req.protocol);
-  console.log('   Host:', req.get('host'));
-  console.log('   X-Forwarded-Proto:', req.get('x-forwarded-proto'));
-  console.log('   X-Forwarded-Host:', req.get('x-forwarded-host'));
+  console.log('🔐 Login attempt for EMR:', emr_perawat);
   
+  // Validasi input
   if (!emr_perawat || !password) {
     return res.render('monitoring-login', { 
       error: 'EMR Perawat dan Password harus diisi!' 
@@ -487,13 +232,14 @@ app.post('/login', async (req, res) => {
   const hash = hashPassword(password);
   
   try {
+    // Query database
     const [rows] = await pool.query(
       'SELECT * FROM perawat WHERE emr_perawat = ?',
       [emrInt]
     );
 
     if (rows.length === 0) {
-      console.log('❌ User not found:', emrInt);
+      console.log('❌ User not found');
       return res.render('monitoring-login', { 
         error: 'EMR Perawat tidak ditemukan!' 
       });
@@ -508,62 +254,35 @@ app.post('/login', async (req, res) => {
       });
     }
 
-    console.log('✅ Credentials valid');
+    console.log('✅ Credentials valid for:', user.nama);
 
-    // ✅ Destroy old session first (prevent session fixation)
-    req.session.destroy((err) => {
-      if (err) {
-        console.error('❌ Session destroy error:', err);
+    // Set session data LANGSUNG (no destroy, no regenerate)
+    req.session.emr_perawat = user.emr_perawat;
+    req.session.nama_perawat = user.nama;
+    req.session.role = user.role;
+    req.session.loginTime = new Date().toISOString();
+    
+    console.log('📝 Session set:', {
+      sessionID: req.sessionID.substring(0, 8) + '...',
+      emr: user.emr_perawat,
+      nama: user.nama
+    });
+    
+    // Save session
+    req.session.save((saveErr) => {
+      if (saveErr) {
+        console.error('❌ Save error:', saveErr);
+        return res.render('monitoring-login', { 
+          error: 'Gagal menyimpan session!' 
+        });
       }
       
-      // ✅ Create new session
-      req.session.regenerate((regenerateErr) => {
-        if (regenerateErr) {
-          console.error('❌ Session regenerate error:', regenerateErr);
-          return res.render('monitoring-login', { 
-            error: 'Terjadi kesalahan sistem!' 
-          });
-        }
-
-        // Set session data
-        req.session.emr_perawat = user.emr_perawat;
-        req.session.nama_perawat = user.nama;
-        req.session.role = user.role;
-        req.session.loginTime = new Date().toISOString();
-        
-        console.log('📝 New session created:', {
-          sessionID: req.sessionID.substring(0, 8) + '...',
-          emr: user.emr_perawat,
-          nama: user.nama,
-          role: user.role
-        });
-        
-        // ✅ Save with explicit callback
-        req.session.save((saveErr) => {
-          if (saveErr) {
-            console.error('❌ Session save error:', saveErr);
-            return res.render('monitoring-login', { 
-              error: 'Gagal menyimpan session!' 
-            });
-          }
-          
-          console.log('✅ Session saved successfully');
-          console.log('   Cookie will be set as:');
-          console.log('   - httpOnly: true');
-          console.log('   - secure: true (HTTPS)');
-          console.log('   - sameSite: lax');
-          console.log('   - domain:', req.hostname);
-          
-          // ✅ Redirect dengan delay
-          setTimeout(() => {
-            res.redirect('/');
-          }, 200);
-        });
-      });
+      console.log('✅ Session saved, redirecting to /');
+      res.redirect('/');
     });
     
   } catch (err) {
-    console.error('❌ Login error:', err);
+    console.error('❌ Database error:', err);
     return res.render('monitoring-login', { 
       error: 'Terjadi kesalahan sistem: ' + err.message 
     });
