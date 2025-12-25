@@ -283,14 +283,13 @@
       color: var(--primary-blue);
     }
 
-    /* Metabase Container - FIXED */
     .metabase-container {
       background: white;
       border-radius: 12px;
       box-shadow: 0 4px 15px rgba(0,0,0,0.08);
       overflow: hidden;
       position: relative;
-      min-height: 850px; /* ← TAMBAHKAN INI! */
+      min-height: 850px; /* ← SUDAH ADA ✓ */
     }
 
     .loading-progress-bar {
@@ -309,10 +308,9 @@
       animation: progress 3s ease-in-out infinite;
     }
 
-    /* Loading Spinner - FIXED */
     .loading-spinner {
       position: absolute;
-      top: 60px; /* ← Mulai setelah header, bukan dari top: 0 */
+      top: 60px; /* ← SUDAH BENAR ✓ */
       left: 0;
       right: 0;
       bottom: 0;
@@ -741,11 +739,19 @@
             <i class="fas fa-sync"></i> Refresh
           </button>
         </div>
-        
         <div id="metabase-loading" class="loading-spinner" style="display:flex;">
-          ...
+          <i class="fas fa-spinner"></i>
+          <span>Memuat dashboard Metabase...</span>
+          
+          <!-- Progress Bar -->
+          <div class="loading-progress-bar">
+            <div class="loading-progress-fill"></div>
+          </div>
+          
+          <small style="color: #999; font-size: 12px; margin-top: 10px;">
+            Harap tunggu beberapa saat
+          </small>
         </div>
-        
         <iframe id="metabase-iframe" 
           class="metabase-iframe"
           style="display:none; width: 100%; height: 800px; border: none;"
@@ -1107,36 +1113,88 @@
       const loadingDiv = document.getElementById('metabase-loading');
       const iframe = document.getElementById('metabase-iframe');
       
-      // Show loading
+      if (!loadingDiv || !iframe) {
+        console.error('❌ Elements not found');
+        return;
+      }
+      
+      // Show loading with smooth fade
       loadingDiv.style.display = 'flex';
-      loadingDiv.style.position = 'absolute'; // PENTING
+      loadingDiv.style.opacity = '1';
+      loadingDiv.style.transition = 'opacity 0.3s ease';
       iframe.style.display = 'none';
       
       try {
+        console.log('🔄 Loading Metabase...');
+        
         const response = await fetch('/api/metabase/rawat-inap-token');
         const data = await response.json();
+        
+        console.log('📊 API Response:', data);
         
         if (data.success && data.embedUrl) {
           iframe.src = data.embedUrl;
           
-          // Wait for iframe to load
           iframe.onload = function() {
-            loadingDiv.style.display = 'none';
-            iframe.style.display = 'block';
-            console.log('✓ Metabase loaded and interactive');
+            console.log('✓ Iframe loaded');
+            
+            // Smooth fade out loading
+            loadingDiv.style.opacity = '0';
+            
+            setTimeout(() => {
+              loadingDiv.style.display = 'none';
+              iframe.style.display = 'block';
+              iframe.style.opacity = '0';
+              iframe.style.transition = 'opacity 0.3s ease';
+              
+              // Fade in iframe
+              requestAnimationFrame(() => {
+                iframe.style.opacity = '1';
+              });
+            }, 300);
           };
           
-          // Fallback timeout
+          iframe.onerror = function() {
+            console.error('❌ Iframe failed to load');
+            loadingDiv.innerHTML = `
+              <div style="text-align: center; color: #dc3545;">
+                <i class="fas fa-exclamation-triangle" style="font-size: 48px;"></i>
+                <p style="margin-top: 15px;"><strong>Gagal memuat dashboard</strong></p>
+                <button onclick="loadMetabaseDashboard()" class="btn btn-sm btn-primary mt-3">
+                  <i class="fas fa-sync"></i> Coba Lagi
+                </button>
+              </div>
+            `;
+          };
+          
+          // Fallback timeout (5 detik)
           setTimeout(() => {
-            loadingDiv.style.display = 'none';
-            iframe.style.display = 'block';
+            if (iframe.style.display === 'none') {
+              console.log('⏱️ Timeout: showing iframe anyway');
+              loadingDiv.style.opacity = '0';
+              setTimeout(() => {
+                loadingDiv.style.display = 'none';
+                iframe.style.display = 'block';
+                iframe.style.opacity = '1';
+              }, 300);
+            }
           }, 5000);
+          
+        } else {
+          throw new Error(data.error || 'Invalid response');
         }
       } catch (err) {
-        console.error('Error:', err);
+        console.error('❌ Error:', err);
         loadingDiv.innerHTML = `
-    ${err.message}
-    `;
+          <div style="text-align: center; color: #dc3545; padding: 40px;">
+            <i class="fas fa-exclamation-circle" style="font-size: 48px;"></i>
+            <p style="margin-top: 15px;"><strong>Gagal memuat dashboard</strong></p>
+            <p style="color: #666;">${err.message}</p>
+            <button onclick="loadMetabaseDashboard()" class="btn btn-sm btn-primary mt-3">
+              <i class="fas fa-sync"></i> Coba Lagi
+            </button>
+          </div>
+        `;
       }
     }
     // ============================================

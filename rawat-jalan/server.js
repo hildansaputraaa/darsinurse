@@ -1162,9 +1162,6 @@ console.log('  - DELETE /api/rooms/delete');
 console.log('  - GET    /api/rooms/available-patients');
 console.log('  - GET    /rooms (UI page)');
 
-initFallDetection();
-
-
 
 /* ============================================================
    START SERVER
