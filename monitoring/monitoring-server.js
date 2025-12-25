@@ -15,6 +15,7 @@ const http = require('http');
 const socketIo = require('socket.io');
 const jwt = require('jsonwebtoken');
 const cors = require('cors');
+const { io: io_client } = require('socket.io-client');
 
 const app = express();
 const PORT = process.env.MONITORING_PORT || 5000;
