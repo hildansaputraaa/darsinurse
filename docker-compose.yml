@@ -80,7 +80,7 @@ services:
       TZ: Asia/Jakarta
       NODE_ENV: production
       MONITORING_PORT: 5000
-      RAWAT_JALAN_URL: https://gateway.darsinurse.hint-lab.id
+      RAWAT_JALAN_URL: http://darsinurse-app:4000
 
       # CORS Configuration
       CORS_ORIGIN: "http://darsinurse-app:4000,https://darsinurse.hint-lab.id"

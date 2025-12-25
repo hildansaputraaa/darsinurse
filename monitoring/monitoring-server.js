@@ -461,7 +461,7 @@ const io = socketIo(server, {
    SOCKET.IO CLIENT - CONNECT TO RAWAT JALAN SERVER
    ============================================================ */
 
-const RAWAT_JALAN_URL = process.env.RAWAT_JALAN_URL || 'https://gateway.darsinurse.hint-lab.id';
+const RAWAT_JALAN_URL = process.env.RAWAT_JALAN_URL || 'http://darsinurse-app:4000';
 
 console.log(`🔄 Attempting to connect to Rawat Jalan Server: ${RAWAT_JALAN_URL}`);
 
