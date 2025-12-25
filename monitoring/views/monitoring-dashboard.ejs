@@ -288,7 +288,8 @@
       background: white;
       border-radius: 12px;
       box-shadow: 0 4px 15px rgba(0,0,0,0.08);
-      overflow: hidden;
+      overflow: visible;
+      position: relative;
     }
 
     .metabase-header {
@@ -314,9 +315,13 @@
       width: 100%;
       border: none;
       min-height: 800px;
+      pointer-events: auto !important; /* ← TAMBAHKAN INI */
+      position: relative;
+      z-index: 1;
     }
 
     .loading-spinner {
+      position: absolute;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -1097,42 +1102,36 @@
       const loadingDiv = document.getElementById('metabase-loading');
       const iframe = document.getElementById('metabase-iframe');
       
-      if (!loadingDiv || !iframe) {
-        console.error('❌ Metabase elements not found');
-        return;
-      }
-      
+      // Show loading
       loadingDiv.style.display = 'flex';
+      loadingDiv.style.position = 'absolute'; // PENTING
       iframe.style.display = 'none';
       
       try {
-        console.log('🔄 Loading Metabase dashboard...');
-        
         const response = await fetch('/api/metabase/rawat-inap-token');
         const data = await response.json();
         
-        console.log('📊 Metabase response:', data);
-        
         if (data.success && data.embedUrl) {
           iframe.src = data.embedUrl;
-          iframe.style.display = 'block';
-          loadingDiv.style.display = 'none';
-          console.log('✓ Metabase dashboard loaded');
-        } else {
-          throw new Error(data.error || 'Gagal memuat dashboard');
+          
+          // Wait for iframe to load
+          iframe.onload = function() {
+            loadingDiv.style.display = 'none';
+            iframe.style.display = 'block';
+            console.log('✓ Metabase loaded and interactive');
+          };
+          
+          // Fallback timeout
+          setTimeout(() => {
+            loadingDiv.style.display = 'none';
+            iframe.style.display = 'block';
+          }, 5000);
         }
       } catch (err) {
-        console.error('❌ Error loading Metabase:', err);
+        console.error('Error:', err);
         loadingDiv.innerHTML = `
-          <div style="text-align: center; color: #dc3545;">
-            <i class="fas fa-exclamation-circle" style="font-size: 48px; margin-bottom: 15px;"></i>
-            <p><strong>Gagal memuat dashboard</strong></p>
-            <p>${err.message}</p>
-            <button onclick="loadMetabaseDashboard()" class="btn btn-sm btn-primary" style="margin-top: 10px;">
-              <i class="fas fa-sync"></i> Coba Lagi
-            </button>
-          </div>
-        `;
+    ${err.message}
+    `;
       }
     }
     // ============================================
