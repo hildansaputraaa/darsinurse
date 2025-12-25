@@ -126,7 +126,7 @@ function getMetabaseEmbedUrl(dashboardId, params = {}) {
   };
   
   const token = jwt.sign(payload, METABASE_SECRET);
-  return `${METABASE_URL}/embed/dashboard/${token}#bordered=true&titled=true`;
+  return `${METABASE_URL}/embed/dashboard/${token}`;
 }
 
 /* ============================================================
