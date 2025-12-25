@@ -423,7 +423,7 @@ app.get('/api/measurements/today', requireAdminOrPerawat, async (req, res) => {
 // API: Metabase Embed Token
 app.get('/api/metabase/rawat-inap-token', requireAdminOrPerawat, (req, res) => {
   try {
-    const DASHBOARD_ID = 2; // Dashboard ID untuk Rawat Inap
+    const DASHBOARD_ID = 6; // Dashboard ID untuk Rawat Inap
     const embedUrl = getMetabaseEmbedUrl(DASHBOARD_ID);
     
     console.log('✓ Metabase embed URL generated for dashboard:', DASHBOARD_ID);
