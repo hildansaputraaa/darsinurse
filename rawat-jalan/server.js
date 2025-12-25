@@ -500,6 +500,80 @@ app.put('/admin/api/users/:emr', requireAdmin, async (req, res) => {
 /* ============================================================
    VITALS & MEASUREMENTS ROUTES
    ============================================================ */
+
+async function checkAndBroadcastFall(vitalsId, emrNo) {
+  try {
+    const conn = await pool.getConnection();
+    
+    // ✅ SELECT dari database untuk cek fall_detected
+    const [vitals] = await conn.query(`
+      SELECT 
+        v.id,
+        v.emr_no,
+        v.fall_detected,
+        v.waktu,
+        v.heart_rate,
+        v.sistolik,
+        v.diastolik,
+        p.nama as nama_pasien,
+        p.poli
+      FROM vitals v
+      JOIN pasien p ON v.emr_no = p.emr_no
+      WHERE v.id = ?
+    `, [vitalsId]);
+    
+    conn.release();
+    
+    // Jika ada data
+    if (vitals.length > 0) {
+      const vital = vitals[0];
+      
+      // ✅ Check apakah fall_detected = 1
+      if (vital.fall_detected === 1) {
+        console.log('🚨 FALL DETECTED FROM DATABASE!');
+        console.log('   Patient:', vital.nama_pasien);
+        console.log('   EMR:', vital.emr_no);
+        
+        // Siapkan alert data
+        const fallAlertData = {
+          id: vital.id,
+          emr_no: vital.emr_no,
+          nama_pasien: vital.nama_pasien,
+          poli: vital.poli,
+          room_id: `EMR-${vital.emr_no}`,
+          waktu: vital.waktu.toISOString(),
+          heart_rate: vital.heart_rate,
+          sistolik: vital.sistolik,
+          diastolik: vital.diastolik,
+          blood_pressure: vital.sistolik && vital.diastolik 
+            ? `${vital.sistolik}/${vital.diastolik}` 
+            : null
+        };
+        
+        console.log('✅ Fall alert data ready:', fallAlertData);        
+        // ✅ BROADCAST to local clients
+        io.emit('new-fall-alert', fallAlertData);
+        console.log('📤 Alert broadcasted to', io.engine.clientsCount, 'local clients');
+        
+        // ✅ SEND to monitoring server if connected
+        if (monitoringConnected) {
+          console.log('📤 Sending to monitoring server...');
+          monitoringSocket.emit('new-fall-alert', fallAlertData);
+          console.log('✓ Alert sent to monitoring server');
+        } else {
+          console.warn('⚠️ Monitoring server not connected');
+        }
+        
+        return true; // Fall detected
+      }
+    }
+    
+    return false; // No fall
+  } catch (err) {
+    console.error('❌ Error checking fall detection:', err);
+    return false;
+  }
+}
 app.post('/simpan_data', requireLogin, async (req, res) => {
   const { id_kunjungan, emr_no, tipe_device, data } = req.body;
   
@@ -624,66 +698,11 @@ app.post('/simpan_data', requireLogin, async (req, res) => {
         vitalsData.fall_detected
       ]
     );
+    const vitalsId = result.insertId;
 
     conn.release();
 
-    const vitalsId = result.insertId;
-    
-    // 🔥 TAMBAHKAN NOTIFIKASI FALL DETECTION
-    if (vitalsData.fall_detected === 1) {
-      console.log('🚨🚨🚨 FALL DETECTED! PROCESSING ALERT...');
-      console.log('   EMR:', emrInt);
-      console.log('   Kunjungan ID:', idInt);
-      console.log('   Vitals ID:', vitalsId);
-      
-      try {
-        // Ambil nama pasien dari database
-        const connInfo = await pool.getConnection();
-        const [patientInfo] = await connInfo.query(
-          'SELECT nama, poli FROM pasien WHERE emr_no = ?',
-          [emrInt]
-        );
-        connInfo.release();
-        
-        const patientName = patientInfo[0]?.nama || 'Pasien Tidak Dikenal';
-        const patientPoli = patientInfo[0]?.poli || 'Unknown';
-        
-        // Siapkan data alert
-        const fallAlertData = {
-          id: vitalsId,
-          emr_no: emrInt,
-          nama_pasien: patientName,  // ✅ PENTING: Nama pasien
-          poli: patientPoli,
-          room_id: `EMR-${emrInt}`,
-          waktu: new Date().toISOString(),
-          heart_rate: vitalsData.heart_rate || null,
-          sistolik: vitalsData.sistolik || null,
-          diastolik: vitalsData.diastolik || null,
-          blood_pressure: vitalsData.sistolik && vitalsData.diastolik 
-            ? `${vitalsData.sistolik}/${vitalsData.diastolik}` 
-            : null
-        };
-        
-        console.log('✅ Fall alert data siap:', JSON.stringify(fallAlertData, null, 2));
-        
-        // ✅ KIRIM KE MONITORING SERVER
-        if (monitoringConnected) {
-          console.log('📤 MENGIRIM KE MONITORING SERVER...');
-          monitoringSocket.emit('new-fall-alert', fallAlertData);
-          console.log('✓ Alert dikirim ke monitoring server!');
-        } else {
-          console.error('❌ ERROR: Monitoring server TIDAK TERHUBUNG!');
-          console.error('   Socket.connected:', monitoringSocket.connected);
-        }
-        
-        // ✅ KIRIM JUGA KE LOCAL CLIENTS
-        io.emit('fall-alert', fallAlertData);
-        console.log('✓ Alert juga dikirim ke', io.engine.clientsCount, 'local clients');
-        
-      } catch (err) {
-        console.error('❌ Error saat process fall alert:', err);
-      }
-    }
+    await checkAndBroadcastFall(vitalsId, emrInt);
     
     res.json({
       success: true,
@@ -818,40 +837,6 @@ app.get('/api/fall-detection/latest', requireAdminOrPerawat, async (req, res) =>
   }
 });
 
-app.post('/api/fall-detection/:id/acknowledge', requireAdminOrPerawat, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { acknowledged_by } = req.body;
-    
-    // UPDATE database untuk mark sebagai acknowledged
-    const conn = await pool.getConnection();
-    await conn.query(
-      `UPDATE vitals 
-       SET acknowledged_at = NOW(), acknowledged_by = ? 
-       WHERE id = ? AND fall_detected = 1`,
-      [acknowledged_by || req.session.nama_perawat, id]
-    );
-    conn.release();
-    
-    // Broadcast acknowledge event
-    io.emit('fall-acknowledged', {
-      id: id,
-      acknowledged_by: acknowledged_by || req.session.nama_perawat,
-      timestamp: new Date()
-    });
-    
-    res.json({ 
-      success: true, 
-      message: 'Fall alert acknowledged',
-      acknowledged_by: acknowledged_by || req.session.nama_perawat,
-      timestamp: new Date()
-    });
-  } catch (err) {
-    console.error('❌ Acknowledge error:', err);
-    res.status(500).json({ error: err.message });
-  }
-});
-
 /* ============================================================
    HEALTH CHECK
    ============================================================ */
@@ -898,6 +883,7 @@ console.log('✓ Socket.IO server initialized with CORS:', io.opts.cors);
 const MONITORING_SERVER = process.env.MONITORING_URL || 'http://darsinurse-monitoring:5000';
 
 console.log(`🔄 Connecting to Monitoring Server: ${MONITORING_SERVER}`);
+let monitoringConnected = false;  
 
 const monitoringSocket = ioClient(MONITORING_SERVER, {
   reconnection: true,
@@ -986,24 +972,6 @@ monitoringSocket.on('error', (error) => {
   console.error('❌ Socket.IO error:', error);
 });
 
-
-// ✅ Fall alert listeners
-monitoringSocket.on('new-fall-alert', (alert) => {
-  console.log('🚨 FALL ALERT from Monitoring Server:');
-  console.log('   Patient:', alert.nama_pasien);
-  console.log('   Room:', alert.room_id);
-  console.log('   Data:', JSON.stringify(alert, null, 2));
-  
-  // Broadcast to all clients
-  io.emit('new-fall-alert', alert);
-  console.log('📤 Alert broadcasted to', io.engine.clientsCount, 'clients');
-});
-
-monitoringSocket.on('fall-acknowledged', (data) => {
-  console.log('✅ Fall acknowledged:', data);
-  io.emit('fall-acknowledged-broadcast', data);
-});
-
 /* ============================================================
    SOCKET.IO SERVER - CLIENT CONNECTIONS
    ============================================================ */
@@ -1085,16 +1053,6 @@ io.on('connection', (socket) => {
       
     } catch (err) {
       console.error('❌ Error processing fall detection:', err);
-    }
-  });
-  
-  // ✅ Handle acknowledgment
-  socket.on('fall-acknowledged', (data) => {
-    console.log('✅ Fall acknowledged by client:', data);
-    io.emit('fall-acknowledged-broadcast', data);
-    
-    if (monitoringConnected) {
-      monitoringSocket.emit('fall-acknowledged', data);
     }
   });
   
@@ -1440,76 +1398,4 @@ app.get('/api/visits/by-patient/:emr', requireLogin, async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: 'Database error: ' + err.message });
   }
-});
-io.on('connection', (socket) => {
-  console.log('🔌 Client connected:', socket.id);
-  
-  // Listen untuk fall detection dari device
-  socket.on('fall-detected', async (data) => {
-    console.log('🚨 FALL DETECTED event received:', data);
-    
-    try {
-      const conn = await pool.getConnection();
-      
-      // Insert to database
-      const vitalsData = {
-        emr_no: data.emr_no,
-        id_kunjungan: data.id_kunjungan,
-        waktu: new Date(),
-        fall_detected: 1,
-        heart_rate: data.heart_rate,
-        sistolik: data.sistolik,
-        diastolik: data.diastolik,
-        respirasi: data.respirasi,
-        jarak_kasur_cm: data.jarak_kasur_cm,
-        emr_perawat: data.emr_perawat
-      };
-      
-      const [result] = await conn.query('INSERT INTO vitals SET ?', vitalsData);
-      
-      // Get patient info
-      const [patient] = await conn.query(
-        'SELECT p.nama, p.poli, rd.room_id, rd.device_id FROM pasien p LEFT JOIN room_device rd ON p.emr_no = rd.emr_no WHERE p.emr_no = ?',
-        [data.emr_no]
-      );
-      
-      conn.release();
-      
-      const patientInfo = patient[0] || {};
-      
-      // Broadcast fall alert ke semua clients
-      const alertData = {
-        alertId: result.insertId,
-        emr_no: data.emr_no,
-        nama_pasien: patientInfo.nama || data.nama_pasien || 'Unknown Patient',
-        room_id: patientInfo.room_id || data.room_id || 'Unknown Room',
-        device_id: patientInfo.device_id || data.device_id,
-        poli: patientInfo.poli,
-        waktu: vitalsData.waktu,
-        heart_rate: data.heart_rate,
-        sistolik: data.sistolik,
-        diastolik: data.diastolik,
-        respirasi: data.respirasi,
-        jarak_kasur_cm: data.jarak_kasur_cm,
-        timestamp: new Date().toISOString()
-      };
-      
-      console.log('   📤 Broadcasting fall alert:', alertData.nama_pasien);
-      io.emit('new-fall-alert', alertData);
-      console.log('   ✓ Alert sent to', io.engine.clientsCount, 'clients');
-      
-    } catch (err) {
-      console.error('❌ Error processing fall detection:', err);
-    }
-  });
-  
-  // Listen untuk acknowledgment dari monitoring server
-  socket.on('fall-acknowledged', (data) => {
-    console.log('✅ Fall acknowledged:', data);
-    io.emit('fall-acknowledged-broadcast', data);
-  });
-  
-  socket.on('disconnect', () => {
-    console.log('❌ Client disconnected:', socket.id);
-  });
 });

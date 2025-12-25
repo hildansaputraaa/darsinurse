@@ -47,22 +47,42 @@ const pool = mysql.createPool({
 
 
 // Cek koneksi
-pool.getConnection()
-  .then(conn => {
-    console.log('✓ MySQL Connected (Monitoring Server)');
-    conn.release();
-  })
-  .catch(err => {
-    console.error('✗ MySQL Connection Failed:', err);
-    process.exit(1);
-  });
+pool.on('error', (err) => {
+  console.error('❌ MySQL Pool Error:', err);
+  // Jangan exit, coba reconnect
+  if (err.code === 'PROTOCOL_CONNECTION_LOST') {
+    console.log('Attempting reconnection...');
+  }
+});
+
+pool.on('connection', (connection) => {
+  console.log('✓ New pool connection established');
+});
 
 /* ============================================================
    EXPRESS & MIDDLEWARE SETUP
    ============================================================ */
+const allowedOrigins = [
+  'https://gateway.darsinurse.hint-lab.id',
+  'https://darsinurse.hint-lab.id',
+  'http://localhost:3000',
+  'http://localhost:5000'
+];
+
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || ['https://gateway.darsinurse.hint-lab.id', 'https://darsinurse.hint-lab.id'],
-  credentials: true
+  origin: (origin, callback) => {
+    console.log('🔍 CORS origin check:', origin);
+    
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      console.warn('❌ CORS blocked:', origin);
+      callback(new Error('CORS policy violation'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 app.use(bodyParser.json());
@@ -72,16 +92,16 @@ app.set('views', path.join(__dirname, 'views'));
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use(session({
-  secret: 'darsinurse-monitoring-secret-2025',
+  secret: process.env.SESSION_SECRET || crypto.randomBytes(32).toString('hex'),
   resave: false,
   saveUninitialized: false,
   cookie: { 
     httpOnly: true, 
-    secure: false,
-    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    secure: process.env.NODE_ENV === 'production', // ← TRUE in production
+    sameSite: 'strict',
+    maxAge: 24 * 60 * 60 * 1000
   }
 }));
-
 /* ============================================================
    AUTH MIDDLEWARE
    ============================================================ */
@@ -229,15 +249,16 @@ app.get('/api/statistics/today', requireAdminOrPerawat, async (req, res) => {
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
     
-    const whereClause = req.session.role === 'admin' 
-      ? '' 
-      : `AND emr_perawat = ${req.session.emr_perawat}`;
-    
-    const [visits] = await conn.query(
-      `SELECT COUNT(*) as total FROM kunjungan 
-       WHERE tanggal_kunjungan >= ? AND tanggal_kunjungan < ? ${whereClause}`,
-      [today, tomorrow]
-    );
+    let query = `SELECT COUNT(*) as total FROM kunjungan 
+             WHERE tanggal_kunjungan >= ? AND tanggal_kunjungan < ?`;
+    let params = [today, tomorrow];
+
+    if (req.session.role !== 'admin') {
+      query += ` AND emr_perawat = ?`;
+      params.push(req.session.emr_perawat);
+    }
+
+    const [visits] = await conn.query(query, params);
     
     const [patients] = await conn.query(
       `SELECT COUNT(DISTINCT emr_no) as total FROM kunjungan 
@@ -463,78 +484,87 @@ const io = socketIo(server, {
 
 const RAWAT_JALAN_URL = process.env.RAWAT_JALAN_URL || 'http://darsinurse-app:4000';
 
-console.log(`🔄 Attempting to connect to Rawat Jalan Server: ${RAWAT_JALAN_URL}`);
+if (!RAWAT_JALAN_URL) {
+  console.error('❌ RAWAT_JALAN_URL tidak dikonfigurasi!');
+  process.exit(1);
+}
 
 const rawajalanSocket = io_client(RAWAT_JALAN_URL, {
   reconnection: true,
-  reconnectionDelay: 1000,
-  reconnectionDelayMax: 5000,
-  reconnectionAttempts: Infinity,
-  timeout: 20000,
+  reconnectionDelay: 2000,
+  reconnectionDelayMax: 10000,
+  reconnectionAttempts: 10, // ← BATAS MAKSIMAL
+  timeout: 10000, // ← KURANGI
   transports: ['websocket', 'polling'],
-  autoConnect: true
+  autoConnect: true,
+  forceNew: true
+});
+rawajalanSocket.on('connect', () => {
+  console.log('✅ Connected to Rawat Jalan Server');
+  io.emit('rawat-jalan-connected', {
+    message: 'Fall detection system is active',
+    timestamp: new Date()
+  });
 });
 
-// Connection handlers
-rawajalanSocket.on('connect', () => {
-  console.log('✅ Connected to Rawat Jalan Server for Fall Detection');
-  console.log('   Socket ID:', rawajalanSocket.id);
-  console.log('   Transport:', rawajalanSocket.io.engine.transport.name);
-  
-  rawajalanSocket.emit('join-monitoring', {
-    server: 'monitoring-server',
-    port: PORT,
-    timestamp: new Date().toISOString()
+rawajalanSocket.on('disconnect', (reason) => {
+  console.warn('⚠️ Disconnected from Rawat Jalan Server:', reason);
+  io.emit('rawat-jalan-disconnected', {
+    message: 'Fall detection system is offline',
+    timestamp: new Date()
   });
 });
 
 rawajalanSocket.on('connect_error', (error) => {
-  console.error('❌ Failed to connect to Rawat Jalan Server');
-  console.error('   Error:', error.message);
-  console.log('   Will retry automatically...');
-});
-
-rawajalanSocket.on('disconnect', (reason) => {
-  console.warn('⚠️ Disconnected from Rawat Jalan Server');
-  console.log('   Reason:', reason);
+  console.error('❌ Connection error to Rawat Jalan:', error.message);
   
-  if (reason === 'io server disconnect') {
-    console.log('   Attempting manual reconnect...');
-    rawajalanSocket.connect();
-  }
+  // Broadcast ke clients
+  io.emit('rawat-jalan-disconnected', {
+    message: 'Fall detection system is offline',
+    error: error.message,
+    timestamp: new Date()
+  });
 });
 
 rawajalanSocket.on('reconnect', (attemptNumber) => {
-  console.log('🔄 Reconnected to Rawat Jalan Server');
-  console.log('   Attempts:', attemptNumber);
+  console.log(`✅ Reconnected to Rawat Jalan (attempt ${attemptNumber})`);
+  io.emit('rawat-jalan-connected', {
+    message: 'Fall detection system is active',
+    timestamp: new Date()
+  });
 });
 
+
 // ⭐⭐⭐ FALL ALERT LISTENER ⭐⭐⭐
+// SATU listener saja
 rawajalanSocket.on('new-fall-alert', (alert) => {
-  console.log('🚨🚨🚨 FALL ALERT DITERIMA dari Rawat Jalan Server!');
-  console.log('   Patient:', alert.nama_pasien);
-  console.log('   EMR:', alert.emr_no);
-  console.log('   Data lengkap:', JSON.stringify(alert, null, 2));
+  console.log('🚨 FALL ALERT RECEIVED');
   
-  // Cek apakah data valid
   if (!alert || !alert.nama_pasien) {
-    console.error('❌ DATA ALERT TIDAK VALID!');
+    console.error('❌ Invalid alert data');
     return;
   }
   
-  // ✅ TERUSKAN KE SEMUA DASHBOARD
-  console.log('📤 Mengirim ke', io.engine.clientsCount, 'dashboard yang terbuka');
-  io.emit('fall-alert', alert);
+  // Enkripsi/validate alert
+  const validatedAlert = {
+    id: alert.id || crypto.randomUUID(),
+    nama_pasien: alert.nama_pasien,
+    emr_no: alert.emr_no,
+    room_id: alert.room_id,
+    heart_rate: alert.heart_rate,
+    blood_pressure: alert.blood_pressure,
+    waktu: alert.waktu || new Date().toISOString(),
+    fall_confidence: alert.fall_confidence || 0.95
+  };
   
-  // ✅ BONUS: Kirim dengan 2 nama event untuk compatibility
-  io.emit('new-fall-alert', alert);
+  // Satu emit saja
+  io.to('monitoring-room').emit('fall-alert', validatedAlert);
+  
+  console.log(`✓ Alert sent to ${io.engine.clientsCount} connected clients`);
 });
 
-// ✅ TAMBAHAN: Listener backup untuk event 'fall-alert'
-rawajalanSocket.on('fall-alert', (alert) => {
-  console.log('🚨 Fall alert (variant)', alert);
-  io.emit('fall-alert', alert);
-});
+// JANGAN ada listener kedua untuk 'fall-alert'
+
 rawajalanSocket.on('fall-acknowledged', (data) => {
   console.log('✅ Fall acknowledged notification received:', data);
   io.emit('fall-acknowledged-broadcast', data);
@@ -589,7 +619,83 @@ io.on('connection', (socket) => {
 /* ============================================================
    END OF SOCKET.IO SETUP
    ============================================================ */
+/* ============================================================
+   AUTO-POLLING FALL DETECTION FROM DATABASE
+   ============================================================ */
 
+let lastFallCheckTime = new Date(0); // Mulai dari epoch
+const FALL_CHECK_INTERVAL = 5000; // 5 detik
+
+async function checkFallDetectionFromDatabase() {
+  try {
+    const conn = await pool.getConnection();
+    
+    // Query falls yang lebih baru dari last check
+    const [falls] = await conn.query(`
+      SELECT 
+        v.id,
+        v.emr_no,
+        v.waktu,
+        v.fall_detected,
+        v.heart_rate,
+        v.sistolik,
+        v.diastolik,
+        p.nama as nama_pasien,
+        p.poli,
+        rd.room_id
+      FROM vitals v
+      LEFT JOIN pasien p ON v.emr_no = p.emr_no
+      LEFT JOIN room_device rd ON v.emr_no = rd.emr_no
+      WHERE v.fall_detected = 1 
+      AND v.waktu > ?
+      ORDER BY v.waktu DESC
+      LIMIT 50
+    `, [lastFallCheckTime]);
+    
+    conn.release();
+    
+    if (falls.length > 0) {
+      console.log(`📊 [AUTO-POLL] Found ${falls.length} new fall(s) in database`);
+      
+      // Update last check time
+      lastFallCheckTime = new Date();
+      
+      // Emit setiap fall ke clients
+      falls.forEach(fall => {
+        const alertData = {
+          id: fall.id,
+          emr_no: fall.emr_no,
+          nama_pasien: fall.nama_pasien,
+          room_id: fall.room_id || `EMR-${fall.emr_no}`,
+          poli: fall.poli,
+          waktu: fall.waktu.toISOString(),
+          heart_rate: fall.heart_rate,
+          sistolik: fall.sistolik,
+          diastolik: fall.diastolik,
+          blood_pressure: fall.sistolik && fall.diastolik 
+            ? `${fall.sistolik}/${fall.diastolik}` 
+            : 'N/A'
+        };
+        
+        console.log(`🚨 [AUTO-POLL] Broadcasting fall: ${fall.nama_pasien}`);
+        io.to('monitoring-room').emit('fall-alert', alertData);
+      });
+    }
+    
+  } catch (err) {
+    console.error('⚠️ [AUTO-POLL] Error checking database:', err.message);
+  }
+}
+
+// START AUTO-POLLING
+let fallCheckInterval = setInterval(checkFallDetectionFromDatabase, FALL_CHECK_INTERVAL);
+
+console.log(`✓ Fall detection auto-polling started (${FALL_CHECK_INTERVAL}ms interval)`);
+
+// CLEANUP ON SERVER SHUTDOWN
+process.on('SIGTERM', () => {
+  clearInterval(fallCheckInterval);
+});
 // Fall Detection API Endpoints
 app.get('/api/fall-detection/latest', requireAdminOrPerawat, async (req, res) => {
   try {
