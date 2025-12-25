@@ -45,7 +45,6 @@ const pool = mysql.createPool({
 
 });
 
-
 // Cek koneksi
 pool.on('error', (err) => {
   console.error('❌ MySQL Pool Error:', err);
@@ -59,9 +58,33 @@ pool.on('connection', (connection) => {
   console.log('✓ New pool connection established');
 });
 
-/* ============================================================
-   EXPRESS & MIDDLEWARE SETUP
+* ============================================================
+   MIDDLEWARE SETUP - CORRECT ORDER!
    ============================================================ */
+
+// 1️⃣ BODY PARSER (FIRST)
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
+
+// 2️⃣ VIEWS & STATIC
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'views'));
+app.use(express.static(path.join(__dirname, 'public')));
+
+// 3️⃣ SESSION (BEFORE ROUTES)
+app.use(session({
+  secret: process.env.SESSION_SECRET || crypto.randomBytes(32).toString('hex'),
+  resave: true,
+  saveUninitialized: true,
+  cookie: {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: 24 * 60 * 60 * 1000
+  }
+}));
+
+// 4️⃣ CORS (LAST)
 const allowedOrigins = [
   'https://gateway.darsinurse.hint-lab.id',
   'https://darsinurse.hint-lab.id',
@@ -71,8 +94,9 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: (origin, callback) => {
-    console.log('🔍 CORS origin check:', origin);
-    
+    if (origin) {
+      console.log('✅ CORS:', origin);
+    }
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
@@ -83,24 +107,6 @@ app.use(cors({
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization']
-}));
-
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
-app.set('view engine', 'ejs');
-app.set('views', path.join(__dirname, 'views'));
-app.use(express.static(path.join(__dirname, 'public')));
-
-app.use(session({
-  secret: process.env.SESSION_SECRET || crypto.randomBytes(32).toString('hex'),
-  resave: true,  // ← BERUBAH
-  saveUninitialized: true,  // ← BERUBAH
-  cookie: { 
-    httpOnly: true, 
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',  // ← BERUBAH
-    maxAge: 24 * 60 * 60 * 1000
-  }
 }));
 /* ============================================================
    AUTH MIDDLEWARE
