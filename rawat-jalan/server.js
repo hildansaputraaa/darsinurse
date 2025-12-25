@@ -1532,3 +1532,75 @@ app.get('/api/visits/by-patient/:emr', requireLogin, async (req, res) => {
     res.status(500).json({ error: 'Database error: ' + err.message });
   }
 });
+io.on('connection', (socket) => {
+  console.log('🔌 Client connected:', socket.id);
+  
+  // Listen untuk fall detection dari device
+  socket.on('fall-detected', async (data) => {
+    console.log('🚨 FALL DETECTED event received:', data);
+    
+    try {
+      const conn = await pool.getConnection();
+      
+      // Insert to database
+      const vitalsData = {
+        emr_no: data.emr_no,
+        id_kunjungan: data.id_kunjungan,
+        waktu: new Date(),
+        fall_detected: 1,
+        heart_rate: data.heart_rate,
+        sistolik: data.sistolik,
+        diastolik: data.diastolik,
+        respirasi: data.respirasi,
+        jarak_kasur_cm: data.jarak_kasur_cm,
+        emr_perawat: data.emr_perawat
+      };
+      
+      const [result] = await conn.query('INSERT INTO vitals SET ?', vitalsData);
+      
+      // Get patient info
+      const [patient] = await conn.query(
+        'SELECT p.nama, p.poli, rd.room_id, rd.device_id FROM pasien p LEFT JOIN room_device rd ON p.emr_no = rd.emr_no WHERE p.emr_no = ?',
+        [data.emr_no]
+      );
+      
+      conn.release();
+      
+      const patientInfo = patient[0] || {};
+      
+      // Broadcast fall alert ke semua clients
+      const alertData = {
+        alertId: result.insertId,
+        emr_no: data.emr_no,
+        nama_pasien: patientInfo.nama || data.nama_pasien || 'Unknown Patient',
+        room_id: patientInfo.room_id || data.room_id || 'Unknown Room',
+        device_id: patientInfo.device_id || data.device_id,
+        poli: patientInfo.poli,
+        waktu: vitalsData.waktu,
+        heart_rate: data.heart_rate,
+        sistolik: data.sistolik,
+        diastolik: data.diastolik,
+        respirasi: data.respirasi,
+        jarak_kasur_cm: data.jarak_kasur_cm,
+        timestamp: new Date().toISOString()
+      };
+      
+      console.log('   📤 Broadcasting fall alert:', alertData.nama_pasien);
+      io.emit('new-fall-alert', alertData);
+      console.log('   ✓ Alert sent to', io.engine.clientsCount, 'clients');
+      
+    } catch (err) {
+      console.error('❌ Error processing fall detection:', err);
+    }
+  });
+  
+  // Listen untuk acknowledgment dari monitoring server
+  socket.on('fall-acknowledged', (data) => {
+    console.log('✅ Fall acknowledged:', data);
+    io.emit('fall-acknowledged-broadcast', data);
+  });
+  
+  socket.on('disconnect', () => {
+    console.log('❌ Client disconnected:', socket.id);
+  });
+});
