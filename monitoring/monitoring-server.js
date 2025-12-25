@@ -82,31 +82,6 @@ app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// 4️⃣ SESSION (WITH MYSQL STORE - BEFORE ROUTES)
-app.use(session({
-  key: 'monitoring_session',
-  secret: process.env.SESSION_SECRET || crypto.randomBytes(32).toString('hex'),
-  store: sessionStore,
-  resave: false, // ⭐ CHANGED from true
-  saveUninitialized: false, // ⭐ CHANGED from true
-  rolling: true, // ⭐ ADDED - refresh session on each request
-  cookie: {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-    maxAge: 24 * 60 * 60 * 1000, // 1 day
-    path: '/'
-  }
-}));
-
-// 5️⃣ SESSION DEBUG MIDDLEWARE (helpful for debugging)
-app.use((req, res, next) => {
-  if (req.path !== '/favicon.ico') {
-    console.log(`📍 ${req.method} ${req.path} - Session ID: ${req.sessionID?.substring(0, 8)}... - Authenticated: ${!!req.session.emr_perawat}`);
-  }
-  next();
-});
-
 // 6️⃣ CORS (LAST)
 const allowedOrigins = [
   'https://gateway.darsinurse.hint-lab.id',
@@ -131,19 +106,59 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
+// 4️⃣ SESSION (WITH MYSQL STORE - BEFORE ROUTES)
+app.use(session({
+  key: 'monitoring_session',
+  secret: process.env.SESSION_SECRET || crypto.randomBytes(32).toString('hex'),
+  store: sessionStore,
+  resave: false,
+  saveUninitialized: false,
+  rolling: true,
+  proxy: true, // ✅ TAMBAHKAN INI - penting untuk proxy/tunnel
+  cookie: {
+    httpOnly: true,
+    secure: true,        // ✅ UBAH ke true untuk HTTPS
+    sameSite: 'lax',     // ✅ 'lax' lebih compatible daripada 'none'
+    maxAge: 24 * 60 * 60 * 1000,
+    path: '/',
+    domain: undefined    // ✅ Biarkan undefined agar auto-detect
+  }
+}));
+
+// 5️⃣ SESSION DEBUG MIDDLEWARE (helpful for debugging)
+app.use((req, res, next) => {
+  if (req.path !== '/favicon.ico') {
+    console.log(`
+📍 ${req.method} ${req.path}
+   Protocol: ${req.protocol}
+   Secure: ${req.secure}
+   X-Forwarded-Proto: ${req.get('x-forwarded-proto')}
+   Host: ${req.get('host')}
+   Origin: ${req.get('origin')}
+   Session ID: ${req.sessionID?.substring(0, 8)}...
+   EMR in session: ${req.session?.emr_perawat || 'none'}
+   Cookie header: ${req.get('cookie') ? 'present' : 'missing'}
+    `);
+  }
+  next();
+});
 
 /* ============================================================
    AUTH MIDDLEWARE (IMPROVED)
    ============================================================ */
 const requireLogin = (req, res, next) => {
-  console.log('🔐 Auth check - EMR:', req.session.emr_perawat, 'Path:', req.path);
+  console.log('🔐 Auth check:');
+  console.log('   Path:', req.path);
+  console.log('   Session ID:', req.sessionID?.substring(0, 8) + '...');
+  console.log('   EMR in session:', req.session.emr_perawat);
+  console.log('   Session object:', JSON.stringify(req.session, null, 2));
   
   if (!req.session || !req.session.emr_perawat) {
-    console.log('❌ No session, redirecting to login');
+    console.log('❌ No valid session, redirecting to login');
     return res.redirect('/login');
   }
   
-  console.log('✅ Session valid:', req.session.nama_perawat);
+  console.log('✅ Session valid for:', req.session.nama_perawat);
   next();
 };
 
@@ -189,89 +204,117 @@ function getMetabaseEmbedUrl(dashboardId, params = {}) {
    ROUTES - AUTH
    ============================================================ */
 
-// LOGIN PAGE
-app.get('/login', (req, res) => {
-  if (req.session.emr_perawat) {
-    console.log('ℹ️ Already logged in, redirecting to dashboard');
-    return res.redirect('/');
-  }
-  res.render('monitoring-login', { error: null });
-});
+// LOGIN PAGE// PROSES LOGIN - IMPROVED
+// ============================================================
+// LOGIN ROUTE - HTTPS TUNNEL COMPATIBLE
+// ============================================================
 
-// PROSES LOGIN (IMPROVED)
 app.post('/login', async (req, res) => {
   const { emr_perawat, password } = req.body;
   
-  console.log('🔐 Monitoring Login attempt - EMR:', emr_perawat);
+  console.log('🔐 Login attempt');
+  console.log('   EMR:', emr_perawat);
+  console.log('   Protocol:', req.protocol);
+  console.log('   Host:', req.get('host'));
+  console.log('   X-Forwarded-Proto:', req.get('x-forwarded-proto'));
+  console.log('   X-Forwarded-Host:', req.get('x-forwarded-host'));
   
   if (!emr_perawat || !password) {
-    return res.render('monitoring-login', { error: 'EMR Perawat dan Password harus diisi!' });
+    return res.render('monitoring-login', { 
+      error: 'EMR Perawat dan Password harus diisi!' 
+    });
   }
   
   const emrInt = parseInt(emr_perawat);
   if (isNaN(emrInt)) {
-    return res.render('monitoring-login', { error: 'EMR Perawat harus berupa angka!' });
+    return res.render('monitoring-login', { 
+      error: 'EMR Perawat harus berupa angka!' 
+    });
   }
   
   const hash = hashPassword(password);
   
   try {
-    const conn = await pool.getConnection();
-    const [rows] = await conn.query(
+    const [rows] = await pool.query(
       'SELECT * FROM perawat WHERE emr_perawat = ?',
       [emrInt]
     );
-    conn.release();
 
     if (rows.length === 0) {
       console.log('❌ User not found:', emrInt);
-      return res.render('monitoring-login', { error: 'EMR Perawat tidak ditemukan!' });
+      return res.render('monitoring-login', { 
+        error: 'EMR Perawat tidak ditemukan!' 
+      });
     }
 
     const user = rows[0];
-    console.log('👤 User found:', user.emr_perawat, '- Role:', user.role);
-
+    
     if (user.password !== hash) {
-      console.log('❌ Wrong password for:', emrInt);
-      return res.render('monitoring-login', { error: 'Password salah!' });
+      console.log('❌ Wrong password');
+      return res.render('monitoring-login', { 
+        error: 'Password salah!' 
+      });
     }
 
-    // ⭐ REGENERATE SESSION (security best practice)
-    req.session.regenerate((err) => {
-      if (err) {
-        console.error('❌ Session regenerate error:', err);
-        return res.render('monitoring-login', { error: 'Terjadi kesalahan sistem!' });
-      }
+    console.log('✅ Credentials valid');
 
-      // Set session data
-      req.session.emr_perawat = user.emr_perawat;
-      req.session.nama_perawat = user.nama;
-      req.session.role = user.role;
+    // ✅ Destroy old session first (prevent session fixation)
+    req.session.destroy((err) => {
+      if (err) {
+        console.error('❌ Session destroy error:', err);
+      }
       
-      console.log('✓ Session data set:', {
-        emr: user.emr_perawat,
-        nama: user.nama,
-        role: user.role
-      });
-      
-      // ⭐ SAVE SESSION EXPLICITLY
-      req.session.save((saveErr) => {
-        if (saveErr) {
-          console.error('❌ Session save error:', saveErr);
-          return res.render('monitoring-login', { error: 'Terjadi kesalahan sistem!' });
+      // ✅ Create new session
+      req.session.regenerate((regenerateErr) => {
+        if (regenerateErr) {
+          console.error('❌ Session regenerate error:', regenerateErr);
+          return res.render('monitoring-login', { 
+            error: 'Terjadi kesalahan sistem!' 
+          });
         }
+
+        // Set session data
+        req.session.emr_perawat = user.emr_perawat;
+        req.session.nama_perawat = user.nama;
+        req.session.role = user.role;
+        req.session.loginTime = new Date().toISOString();
         
-        console.log('✅ Session saved successfully, redirecting...');
-        console.log('   Session ID:', req.sessionID.substring(0, 8) + '...');
+        console.log('📝 New session created:', {
+          sessionID: req.sessionID.substring(0, 8) + '...',
+          emr: user.emr_perawat,
+          nama: user.nama,
+          role: user.role
+        });
         
-        // ⭐ REDIRECT SETELAH SESSION SAVED
-        return res.redirect('/');
+        // ✅ Save with explicit callback
+        req.session.save((saveErr) => {
+          if (saveErr) {
+            console.error('❌ Session save error:', saveErr);
+            return res.render('monitoring-login', { 
+              error: 'Gagal menyimpan session!' 
+            });
+          }
+          
+          console.log('✅ Session saved successfully');
+          console.log('   Cookie will be set as:');
+          console.log('   - httpOnly: true');
+          console.log('   - secure: true (HTTPS)');
+          console.log('   - sameSite: lax');
+          console.log('   - domain:', req.hostname);
+          
+          // ✅ Redirect dengan delay
+          setTimeout(() => {
+            res.redirect('/');
+          }, 200);
+        });
       });
     });
     
   } catch (err) {
     console.error('❌ Login error:', err);
-    return res.render('monitoring-login', { error: 'Terjadi kesalahan sistem!' });
+    return res.render('monitoring-login', { 
+      error: 'Terjadi kesalahan sistem: ' + err.message 
+    });
   }
 });
 
@@ -797,6 +840,51 @@ app.post('/api/fall-detection/:id/acknowledge', requireAdminOrPerawat, async (re
   }
 });
 
+app.get('/debug/session', (req, res) => {
+  res.json({
+    sessionID: req.sessionID,
+    session: req.session,
+    cookies: req.headers.cookie,
+    secure: req.secure,
+    protocol: req.protocol,
+    hostname: req.hostname,
+    headers: {
+      'x-forwarded-proto': req.get('x-forwarded-proto'),
+      'x-forwarded-host': req.get('x-forwarded-host'),
+      'x-forwarded-for': req.get('x-forwarded-for')
+    }
+  });
+});
+
+app.get('/debug/force-login', async (req, res) => {
+  try {
+    const [rows] = await pool.query('SELECT * FROM perawat LIMIT 1');
+    if (rows.length === 0) {
+      return res.send('No users in database');
+    }
+    
+    const user = rows[0];
+    
+    req.session.regenerate((err) => {
+      if (err) {
+        return res.send('Regenerate error: ' + err.message);
+      }
+      
+      req.session.emr_perawat = user.emr_perawat;
+      req.session.nama_perawat = user.nama;
+      req.session.role = user.role;
+      
+      req.session.save((saveErr) => {
+        if (saveErr) {
+          return res.send('Save error: ' + saveErr.message);
+        }
+        res.redirect('/');
+      });
+    });
+  } catch (err) {
+    res.send('Database error: ' + err.message);
+  }
+});
 /* ============================================================
    START SERVER
    ============================================================ */

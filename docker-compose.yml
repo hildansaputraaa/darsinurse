@@ -26,7 +26,6 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-
   # ========================================
   # Rawat Jalan Application (Port 4000)
   # ========================================
@@ -45,7 +44,19 @@ services:
       TZ: Asia/Jakarta
       NODE_ENV: production
       PORT: 4000
-      MONITORING_URL: "http://darsinurse-monitoring:5000"  # ✅ Use internal Docker network
+      
+      # ✅ MONITORING CONNECTION
+      MONITORING_URL: "http://darsinurse-monitoring:5000"
+      
+      # ✅ TRUST PROXY
+      TRUST_PROXY: "1"
+      
+      # ✅ SESSION SECRET
+      SESSION_SECRET: "darsinurse-rawatjalan-secret-key-2025-change-this"
+      
+      # ✅ ALLOWED ORIGINS
+      ALLOWED_ORIGINS: "https://darsinurse.hint-lab.id,https://gateway.darsinurse.hint-lab.id"
+      
     depends_on:
       darsinurse-db:
         condition: service_healthy
@@ -61,7 +72,6 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
-
   # ========================================
   # Monitoring Application (Port 5000)
   # ========================================
@@ -78,18 +88,31 @@ services:
       DB_PASSWORD: darsinurse123
       DB_NAME: darsinurse
       TZ: Asia/Jakarta
+      
+      # ✅ NODE_ENV untuk production (HTTPS)
       NODE_ENV: production
       MONITORING_PORT: 5000
       
-      # ✅ CRITICAL: Internal Docker network for server-to-server
+      # ✅ TRUST PROXY - penting untuk reverse proxy/tunnel
+      TRUST_PROXY: "1"
+      
+      # ✅ SESSION SECRET - ganti dengan random string
+      SESSION_SECRET: "darsinurse-monitoring-secret-key-2025-change-this-to-random"
+      
+      # ✅ RAWAT JALAN CONNECTION
       RAWAT_JALAN_URL: http://darsinurse-app:4000
 
-      # ✅ CORS for browser (external URLs)
-      CORS_ORIGIN: "https://darsinurse.hint-lab.id,https://gateway.darsinurse.hint-lab.id"
+      # ✅ CORS ORIGINS - tambahkan semua domain yang valid
+      ALLOWED_ORIGINS: "https://darsinurse.hint-lab.id,https://gateway.darsinurse.hint-lab.id,https://db.darsinurse.hint-lab.id,https://metabase.darsinurse.hint-lab.id"
+      
+      # ✅ COOKIE SETTINGS untuk HTTPS
+      COOKIE_SECURE: "true"
+      COOKIE_SAME_SITE: "lax"
       
       # Metabase Configuration
       METABASE_URL: "https://metabase.darsinurse.hint-lab.id"
       METABASE_SECRET: "a7dd79ccd6a69475c06533ca4d9ac152c443ed3c7550ec7be12ba06dd1b7ce55"
+      
     depends_on:
       darsinurse-db:
         condition: service_healthy
