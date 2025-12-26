@@ -407,7 +407,7 @@ app.get('/dashboard', requireLogin, (req, res) => {
    ROOM MANAGEMENT ROUTES
    ============================================================ */
 app.get('/rooms', requireLogin, async (req, res) => {
-  res.render('rooms', {
+  res.render('room-management', {
     nama_perawat: req.session.nama_perawat,
     emr_perawat: req.session.emr_perawat
   });
