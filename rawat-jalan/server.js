@@ -131,7 +131,7 @@ async function initDatabase() {
         emr_no INT,
         room_id VARCHAR(50),
         device_id VARCHAR(50),
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        assigned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (emr_no) REFERENCES pasien(emr_no)
       );
     `);
@@ -524,7 +524,7 @@ app.post('/api/rooms/add', requireAdminOrPerawat, async (req, res) => {
     
     // ✅ INSERT tanpa created_at, gunakan assigned_at jika diperlukan
     await conn.query(
-      'INSERT INTO room_device (room_id, device_id, emr_no, assigned_at) VALUES (?, ?, ?, NOW())',
+      'INSERT INTO room_device (room_id, device_id, emr_no) VALUES (?, ?, ?)',
       [room_id.trim(), device_id.trim(), emrValue]
     );
     
@@ -628,7 +628,7 @@ app.post('/api/rooms/assign', requireAdminOrPerawat, async (req, res) => {
     }
     
     await conn.query(
-      'UPDATE room_device SET emr_no = ?, assigned_at = NOW() WHERE room_id = ?',
+      'UPDATE room_device SET emr_no = ? WHERE room_id = ?',
       [emrInt, room_id.trim()]
     );
     

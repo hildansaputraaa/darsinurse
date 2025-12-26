@@ -27,7 +27,7 @@
 
     .top-header {
       background: rgba(255, 255, 255, 0.95);
-      padding: 1rem 0;
+      padding: 1rem;
       box-shadow: 0 2px 15px rgba(0,0,0,0.08);
       position: sticky;
       top: 0;
@@ -37,24 +37,25 @@
     .logo-info {
       display: flex;
       align-items: center;
-      gap: 14px;
+      gap: 12px;
     }
 
     .logo-info i {
-      font-size: 36px;
+      font-size: 32px;
       color: var(--primary-green);
     }
 
     .logo-info h1 {
-      font-size: 26px;
+      font-size: 20px;
       font-weight: 800;
       color: #1a3a3a;
       margin: 0;
+      line-height: 1.2;
     }
 
     .logo-info small {
       display: block;
-      font-size: 12px;
+      font-size: 11px;
       color: #6c757d;
       margin-top: 2px;
     }
@@ -62,16 +63,18 @@
     .user-info {
       display: flex;
       align-items: center;
-      gap: 18px;
-      font-size: 14px;
+      gap: 12px;
+      font-size: 13px;
+      flex-wrap: wrap;
     }
 
     .user-info a {
       color: var(--primary-blue);
       text-decoration: none;
       font-weight: 600;
-      padding: 6px 12px;
+      padding: 6px 10px;
       border-radius: 8px;
+      white-space: nowrap;
     }
 
     .user-info a:hover {
@@ -80,46 +83,45 @@
     }
 
     .main-container {
-      padding: 20px 0;
+      padding: 15px;
     }
 
     .page-title {
       background: rgba(255, 255, 255, 0.95);
-      padding: 18px 20px;
+      padding: 15px;
       border-radius: 12px;
       box-shadow: 0 2px 15px rgba(0,0,0,0.08);
-      margin-bottom: 20px;
+      margin-bottom: 15px;
     }
 
     .page-title h2 {
-      margin: 0;
+      margin: 0 0 12px 0;
       color: #1a3a3a;
       display: flex;
       align-items: center;
       gap: 10px;
       font-weight: 700;
-      font-size: 20px;
+      font-size: 18px;
     }
 
     .page-title h2 i {
       color: var(--primary-green);
-      font-size: 24px;
+      font-size: 22px;
     }
 
     .search-container {
       display: flex;
-      align-items: center;
       gap: 8px;
-      margin-top: 10px;
+      margin-bottom: 10px;
       position: relative;
     }
 
     .search-input {
       flex: 1;
-      padding: 8px 12px 8px 35px;
+      padding: 10px 12px 10px 38px;
       border: 1px solid #e0e0e0;
       border-radius: 20px;
-      font-size: 13px;
+      font-size: 14px;
       transition: all 0.2s;
       background: rgba(255,255,255,0.8);
     }
@@ -133,45 +135,35 @@
 
     .search-icon {
       position: absolute;
-      left: 12px;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
       color: #6c757d;
       font-size: 14px;
-      z-index: 1;
-    }
-
-    .btn-search {
-      background: var(--primary-green);
-      border: none;
-      padding: 8px 12px;
-      border-radius: 20px;
-      color: white;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s;
-      font-size: 12px;
-    }
-
-    .btn-search:hover {
-      background: #00a143;
-      transform: scale(1.05);
+      pointer-events: none;
     }
 
     .btn-add-room {
       background: var(--primary-green);
       border: none;
-      padding: 11px 24px;
-      border-radius: 11px;
+      padding: 10px 20px;
+      border-radius: 10px;
       color: white;
       font-weight: 700;
       font-size: 14px;
       cursor: pointer;
       transition: all 0.3s;
       box-shadow: 0 4px 16px rgba(0,177,79,0.25);
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
     }
 
     .btn-add-room:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 8px 24px rgba(0,177,79,0.35);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0,177,79,0.35);
       background: #00a143;
     }
 
@@ -181,13 +173,12 @@
       border-radius: 12px;
       box-shadow: 0 4px 20px rgba(0,0,0,0.1);
       overflow: hidden;
-      margin-bottom: 16px;
+      margin-bottom: 15px;
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       animation: fadeInUp 0.5s ease-out forwards;
       opacity: 0;
       transform: translateY(15px);
       border: 1px solid rgba(0, 177, 79, 0.1);
-      min-height: 200px;
       display: flex;
       flex-direction: column;
     }
@@ -229,14 +220,15 @@
 
     .room-status-badge {
       position: absolute;
-      top: 10px;
-      right: 10px;
-      background: rgba(255,255,255,0.9);
+      top: 12px;
+      right: 12px;
+      background: rgba(255,255,255,0.95);
       color: #495057;
-      padding: 3px 8px;
+      padding: 4px 10px;
       border-radius: 12px;
-      font-size: 9px;
-      font-weight: 600;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
     }
 
     .room-id {
@@ -246,6 +238,7 @@
       display: flex;
       align-items: center;
       gap: 8px;
+      padding-right: 70px;
     }
 
     .room-body {
@@ -257,13 +250,13 @@
 
     .info-row {
       display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 6px;
-      padding: 8px 10px;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 8px;
+      padding: 10px 12px;
       background: #f8f9fa;
-      border-radius: 6px;
-      border-left: 2px solid var(--primary-green);
+      border-radius: 8px;
+      border-left: 3px solid var(--primary-green);
       transition: all 0.2s;
     }
 
@@ -274,56 +267,64 @@
 
     .info-row i {
       color: var(--primary-green);
-      width: 14px;
+      width: 16px;
       text-align: center;
-      font-size: 12px;
+      font-size: 13px;
+      margin-top: 2px;
+      flex-shrink: 0;
     }
 
     .info-label {
       font-weight: 600;
       color: #6c757d;
-      min-width: 50px;
-      font-size: 11px;
+      min-width: 60px;
+      font-size: 12px;
+      flex-shrink: 0;
     }
 
     .info-value {
       color: #212529;
       font-weight: 600;
-      font-size: 12px;
+      font-size: 13px;
       flex: 1;
+      word-break: break-word;
     }
 
     .room-actions {
-      display: flex;
-      gap: 4px;
-      padding-top: 10px;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      padding-top: 12px;
       margin-top: auto;
       border-top: 1px solid #e9ecef;
     }
 
     .btn-room-action {
-      flex: 1;
-      padding: 6px 4px;
+      padding: 10px 8px;
       border: none;
-      border-radius: 6px;
+      border-radius: 8px;
       font-weight: 600;
       cursor: pointer;
-      font-size: 11px;
+      font-size: 12px;
       color: white;
       transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
     }
 
     .btn-assign { background: var(--primary-blue); }
-    .btn-assign:hover { background: #003d7a; }
+    .btn-assign:hover { background: #003d7a; transform: scale(1.02); }
 
     .btn-remove { background: #fd7e14; }
-    .btn-remove:hover { background: #e56910; }
+    .btn-remove:hover { background: #e56910; transform: scale(1.02); }
 
     .btn-edit { background: #17a2b8; }
-    .btn-edit:hover { background: #117a8b; }
+    .btn-edit:hover { background: #117a8b; transform: scale(1.02); }
 
     .btn-delete { background: var(--danger-red); }
-    .btn-delete:hover { background: #c82333; }
+    .btn-delete:hover { background: #c82333; transform: scale(1.02); }
 
     .modal-content {
       border-radius: 15px;
@@ -334,18 +335,26 @@
       background: linear-gradient(135deg, var(--primary-green) 0%, var(--secondary-teal) 100%);
       color: white;
       border-radius: 15px 15px 0 0;
+      padding: 15px 20px;
+    }
+
+    .modal-title {
+      font-size: 18px;
+      font-weight: 700;
     }
 
     .form-label {
       font-weight: 600;
       color: #1a3a3a;
       margin-bottom: 8px;
+      font-size: 14px;
     }
 
     .form-control, .form-select {
       border: 2px solid #e0e0e0;
       border-radius: 8px;
       padding: 10px 15px;
+      font-size: 14px;
     }
 
     .form-control:focus, .form-select:focus {
@@ -356,9 +365,10 @@
     .alert {
       border-radius: 10px;
       border: none;
-      padding: 15px 20px;
-      margin-bottom: 20px;
+      padding: 12px 16px;
+      margin-bottom: 15px;
       animation: slideDown 0.3s ease;
+      font-size: 14px;
     }
 
     @keyframes slideDown {
@@ -368,7 +378,7 @@
 
     .empty-state {
       text-align: center;
-      padding: 60px 20px;
+      padding: 40px 20px;
       background: white;
       border-radius: 15px;
       box-shadow: 0 4px 15px rgba(0,0,0,0.1);
@@ -377,24 +387,191 @@
     .empty-state i {
       font-size: 48px;
       color: #adb5bd;
+      margin-bottom: 15px;
+    }
+
+    .empty-state h3 {
+      font-size: 20px;
+      margin-bottom: 10px;
+    }
+
+    .empty-state p {
+      color: #6c757d;
       margin-bottom: 20px;
     }
 
+    /* Mobile Optimizations */
     @media (max-width: 768px) {
-      .page-title .d-flex { flex-direction: column; gap: 15px; }
-      .btn-add-room { width: 100%; }
-      .room-actions { flex-direction: column; }
-      .btn-room-action { width: 100%; }
-      .search-container { flex-direction: column; }
-      .search-input { width: 100%; }
-      .btn-search { width: 100%; }
+      .top-header {
+        padding: 12px 10px;
+      }
+
+      .logo-info {
+        gap: 10px;
+      }
+
+      .logo-info i {
+        font-size: 28px;
+      }
+
+      .logo-info h1 {
+        font-size: 16px;
+      }
+
+      .logo-info small {
+        font-size: 10px;
+      }
+
+      .user-info {
+        font-size: 11px;
+        gap: 8px;
+        margin-top: 8px;
+        width: 100%;
+      }
+
+      .user-info span:not(:has(i)) {
+        display: none;
+      }
+
+      .user-info a {
+        padding: 5px 8px;
+        font-size: 11px;
+      }
+
+      .main-container {
+        padding: 10px;
+      }
+
+      .page-title {
+        padding: 12px;
+      }
+
+      .page-title h2 {
+        font-size: 16px;
+        margin-bottom: 10px;
+      }
+
+      .page-title h2 i {
+        font-size: 18px;
+      }
+
+      .search-container {
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .search-input {
+        width: 100%;
+        font-size: 14px;
+        padding: 10px 12px 10px 38px;
+      }
+
+      .btn-add-room {
+        padding: 12px 16px;
+        font-size: 14px;
+      }
+
+      .room-card {
+        margin-bottom: 12px;
+      }
+
+      .room-header {
+        padding: 12px 14px;
+      }
+
+      .room-id {
+        font-size: 16px;
+        padding-right: 60px;
+      }
+
+      .room-status-badge {
+        font-size: 9px;
+        padding: 3px 8px;
+        top: 10px;
+        right: 10px;
+      }
+
+      .room-body {
+        padding: 12px 14px;
+      }
+
+      .info-row {
+        padding: 8px 10px;
+        margin-bottom: 6px;
+        flex-wrap: wrap;
+      }
+
+      .info-label {
+        min-width: 50px;
+        font-size: 11px;
+      }
+
+      .info-value {
+        font-size: 12px;
+      }
+
+      .room-actions {
+        grid-template-columns: 1fr 1fr;
+        gap: 6px;
+        padding-top: 10px;
+      }
+
+      .btn-room-action {
+        padding: 9px 6px;
+        font-size: 11px;
+        gap: 4px;
+      }
+
+      .btn-room-action i {
+        font-size: 12px;
+      }
+
+      .modal-dialog {
+        margin: 10px;
+      }
+
+      .modal-body {
+        padding: 15px;
+      }
+
+      .empty-state {
+        padding: 30px 15px;
+      }
+
+      .empty-state i {
+        font-size: 40px;
+      }
+
+      .empty-state h3 {
+        font-size: 18px;
+      }
+    }
+
+    /* Extra small devices */
+    @media (max-width: 375px) {
+      .logo-info h1 {
+        font-size: 14px;
+      }
+
+      .page-title h2 {
+        font-size: 15px;
+      }
+
+      .room-id {
+        font-size: 15px;
+      }
+
+      .btn-room-action {
+        padding: 8px 4px;
+        font-size: 10px;
+      }
     }
   </style>
 </head>
 <body>
   <header class="top-header">
-    <div class="container">
-      <div class="d-flex justify-content-between align-items-center">
+    <div class="container-fluid">
+      <div class="d-flex justify-content-between align-items-start flex-wrap">
         <div class="logo-info">
           <i class="fas fa-hospital"></i>
           <div>
@@ -403,7 +580,7 @@
           </div>
         </div>
         <div class="user-info">
-          <span><i class="fas fa-user-nurse"></i> <%= nama_perawat %></span>
+          <span><i class="fas fa-user-nurse"></i> Admin</span>
           <span>|</span>
           <a href="/dashboard"><i class="fas fa-home"></i> Dashboard</a>
           <span>|</span>
@@ -413,21 +590,16 @@
     </div>
   </header>
 
-  <div class="container main-container">
+  <div class="container-fluid main-container">
     <div class="page-title">
-      <div class="d-flex justify-content-between align-items-center flex-wrap">
-        <h2><i class="fas fa-door-open"></i> Manajemen Ruangan</h2>
-        <button class="btn btn-add-room" onclick="showAddRoomModal()">
-          <i class="fas fa-plus"></i> Tambah Ruangan
-        </button>
-      </div>
+      <h2><i class="fas fa-door-open"></i> Manajemen Ruangan</h2>
       <div class="search-container">
         <i class="fas fa-search search-icon"></i>
-        <input type="text" class="search-input" id="search-rooms" placeholder="Cari ruangan...">
-        <button class="btn-search" onclick="filterRooms()">
-          <i class="fas fa-search"></i>
-        </button>
+        <input type="text" class="search-input" id="search-rooms" placeholder="Cari ruangan, device, atau pasien...">
       </div>
+      <button class="btn btn-add-room" onclick="showAddRoomModal()">
+        <i class="fas fa-plus"></i> Tambah Ruangan
+      </button>
     </div>
 
     <div id="alert-container"></div>
@@ -446,7 +618,7 @@
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title"><i class="fas fa-plus-circle"></i> Tambah Ruangan Baru</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
           <form id="form-add-room">
@@ -484,7 +656,7 @@
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title"><i class="fas fa-edit"></i> Edit Ruangan</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
           <form id="form-edit-room">
@@ -517,7 +689,7 @@
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title"><i class="fas fa-user-plus"></i> Masukkan Pasien</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
           <div class="alert alert-info">
@@ -548,11 +720,23 @@
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
+    function showAlert(type, message) {
+      const alertContainer = document.getElementById('alert-container');
+      const alert = document.createElement('div');
+      alert.className = `alert alert-${type} alert-dismissible fade show`;
+      alert.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      `;
+      alertContainer.appendChild(alert);
+      setTimeout(() => alert.remove(), 5000);
+    }
     let rooms = [];
     let availablePatients = [];
     const addRoomModal = new bootstrap.Modal(document.getElementById('addRoomModal'));
     const editRoomModal = new bootstrap.Modal(document.getElementById('editRoomModal'));
     const assignPatientModal = new bootstrap.Modal(document.getElementById('assignPatientModal'));
+
 
     async function loadRooms() {
       try {
@@ -564,17 +748,24 @@
         }
         
         const result = await response.json();
-        console.log('✓ Rooms:', result);
+        console.log('✓ Rooms loaded:', result);
         
         if (result.success) {
           rooms = result.rooms || [];
           renderRooms();
         } else {
           showAlert('danger', result.error || 'Gagal memuat data');
+          document.getElementById('rooms-container').innerHTML = `
+            <div class="col-12">
+              <div class="alert alert-warning">
+                <i class="fas fa-exclamation-triangle"></i> ${result.error}
+              </div>
+            </div>
+          `;
         }
       } catch (error) {
-        console.error('❌ Error:', error);
-        showAlert('danger', 'Error: ' + error.message);
+        console.error('❌ Load rooms error:', error);
+        showAlert('danger', 'Error koneksi: ' + error.message);
         document.getElementById('rooms-container').innerHTML = `
           <div class="col-12">
             <div class="alert alert-danger">
@@ -592,11 +783,13 @@
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         
         const result = await response.json();
+        console.log('✓ Available patients:', result);
         availablePatients = result.patients || [];
         populatePatientDropdowns();
       } catch (error) {
-        console.error('Error loading patients:', error);
+        console.error('❌ Load patients error:', error);
         availablePatients = [];
+        showAlert('warning', 'Gagal memuat daftar pasien');
       }
     }
 
@@ -622,7 +815,7 @@
               <i class="fas fa-door-open"></i>
               <h3>Belum Ada Ruangan</h3>
               <p>Tambahkan ruangan baru untuk memulai</p>
-              <button class="btn btn-add-room" onclick="showAddRoomModal()">
+              <button class="btn btn-add-room" onclick="showAddRoomModal()" style="max-width: 250px; margin: 0 auto;">
                 <i class="fas fa-plus"></i> Tambah Ruangan Pertama
               </button>
             </div>
@@ -638,7 +831,7 @@
         const icon = isOccupied ? 'fa-door-closed' : 'fa-door-open';
         
         return `
-          <div class="col-md-6 col-lg-4">
+          <div class="col-12 col-md-6 col-lg-4">
             <div class="room-card">
               <div class="room-header ${statusClass}">
                 <span class="room-status-badge">${statusText}</span>
@@ -667,7 +860,7 @@
                     <span class="info-value">${room.poli}</span>
                   </div>
                 ` : `
-                  <div class="alert alert-secondary mb-0">
+                  <div class="alert alert-secondary mb-0" style="font-size: 13px;">
                     <i class="fas fa-info-circle"></i> Ruangan kosong
                   </div>
                 `}
@@ -719,116 +912,170 @@
 
     document.getElementById('form-add-room').addEventListener('submit', async (e) => {
       e.preventDefault();
+      
+      const roomId = document.getElementById('add-room-id').value.trim();
+      const deviceId = document.getElementById('add-device-id').value.trim();
+      const emrNo = document.getElementById('add-emr-no').value || null;
+      
+      if (!roomId || !deviceId) {
+        showAlert('warning', 'Room ID dan Device ID harus diisi!');
+        return;
+      }
+      
       try {
         const response = await fetch('/api/rooms/add', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            room_id: document.getElementById('add-room-id').value.trim(),
-            device_id: document.getElementById('add-device-id').value.trim(),
-            emr_no: document.getElementById('add-emr-no').value || null
+            room_id: roomId,
+            device_id: deviceId,
+            emr_no: emrNo
           })
         });
+        
         const result = await response.json();
+        
         if (result.success) {
-          showAlert('success', 'Ruangan berhasil ditambahkan');
+          showAlert('success', 'Ruangan berhasil ditambahkan!');
           addRoomModal.hide();
+          document.getElementById('form-add-room').reset();
           loadRooms();
           loadAvailablePatients();
         } else {
-          showAlert('danger', result.error);
+          showAlert('danger', result.error || 'Gagal menambahkan ruangan');
         }
       } catch (error) {
+        console.error('❌ Add room error:', error);
         showAlert('danger', 'Error: ' + error.message);
       }
     });
 
     document.getElementById('form-edit-room').addEventListener('submit', async (e) => {
       e.preventDefault();
+      
+      const oldRoomId = document.getElementById('edit-old-room-id').value;
+      const newRoomId = document.getElementById('edit-room-id').value.trim();
+      const newDeviceId = document.getElementById('edit-device-id').value.trim();
+      
+      if (!newRoomId || !newDeviceId) {
+        showAlert('warning', 'Room ID dan Device ID harus diisi!');
+        return;
+      }
+      
       try {
-        const response = await fetch(`/api/rooms/${document.getElementById('edit-old-room-id').value}`, {
+        const response = await fetch(`/api/rooms/${oldRoomId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            new_room_id: document.getElementById('edit-room-id').value.trim(),
-            device_id: document.getElementById('edit-device-id').value.trim()
+            new_room_id: newRoomId,
+            device_id: newDeviceId
           })
         });
+        
         const result = await response.json();
+        
         if (result.success) {
-          showAlert('success', 'Ruangan berhasil diupdate');
+          showAlert('success', 'Ruangan berhasil diupdate!');
           editRoomModal.hide();
           loadRooms();
         } else {
-          showAlert('danger', result.error);
+          showAlert('danger', result.error || 'Gagal update ruangan');
         }
       } catch (error) {
+        console.error('❌ Edit room error:', error);
         showAlert('danger', 'Error: ' + error.message);
       }
     });
 
     document.getElementById('form-assign-patient').addEventListener('submit', async (e) => {
       e.preventDefault();
+      
+      const roomId = document.getElementById('assign-room-id').value;
+      const emrNo = document.getElementById('assign-emr-no').value;
+      
+      if (!emrNo) {
+        showAlert('warning', 'Pilih pasien terlebih dahulu!');
+        return;
+      }
+      
       try {
         const response = await fetch('/api/rooms/assign', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            room_id: document.getElementById('assign-room-id').value,
-            emr_no: parseInt(document.getElementById('assign-emr-no').value)
+            room_id: roomId,
+            emr_no: parseInt(emrNo)
           })
         });
+        
         const result = await response.json();
+        
         if (result.success) {
-          showAlert('success', 'Pasien berhasil dimasukkan');
+          showAlert('success', 'Pasien berhasil dimasukkan ke ruangan!');
           assignPatientModal.hide();
           loadRooms();
           loadAvailablePatients();
         } else {
-          showAlert('danger', result.error);
+          showAlert('danger', result.error || 'Gagal memasukkan pasien');
         }
       } catch (error) {
+        console.error('❌ Assign patient error:', error);
         showAlert('danger', 'Error: ' + error.message);
       }
     });
 
     async function removePatient(roomId) {
       if (!confirm(`Yakin keluarkan pasien dari ${roomId}?`)) return;
+      
       try {
         const response = await fetch('/api/rooms/remove-patient', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ room_id: roomId })
         });
+        
         const result = await response.json();
+        
         if (result.success) {
-          showAlert('success', 'Pasien berhasil dikeluarkan');
+          showAlert('success', 'Pasien berhasil dikeluarkan dari ruangan!');
           loadRooms();
           loadAvailablePatients();
         } else {
-          showAlert('danger', result.error);
+          showAlert('danger', result.error || 'Gagal mengeluarkan pasien');
         }
       } catch (error) {
+        console.error('❌ Remove patient error:', error);
         showAlert('danger', 'Error: ' + error.message);
       }
     }
 
     async function deleteRoom(roomId) {
+      const room = rooms.find(r => r.room_id === roomId);
+      
+      if (room && room.emr_no) {
+        showAlert('warning', 'Ruangan masih terisi! Keluarkan pasien terlebih dahulu.');
+        return;
+      }
+      
       if (!confirm(`Yakin hapus ruangan ${roomId}?\n\nRuangan harus kosong.`)) return;
+      
       try {
         const response = await fetch('/api/rooms/delete', {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ room_id: roomId })
         });
+        
         const result = await response.json();
+        
         if (result.success) {
-          showAlert('success', 'Ruangan berhasil dihapus');
+          showAlert('success', 'Ruangan berhasil dihapus!');
           loadRooms();
         } else {
-          showAlert('danger', result.error);
+          showAlert('danger', result.error || 'Gagal menghapus ruangan');
         }
       } catch (error) {
+        console.error('❌ Delete room error:', error);
         showAlert('danger', 'Error: ' + error.message);
       }
     }
@@ -838,17 +1085,9 @@
       const roomCards = document.querySelectorAll('.room-card');
       
       roomCards.forEach(card => {
-        const roomId = card.querySelector('.room-id').textContent.toLowerCase();
-        const deviceId = card.querySelector('.info-value').textContent.toLowerCase();
-        const patientName = card.querySelector('.info-value:nth-child(2)')?.textContent.toLowerCase() || '';
-        const emrNo = card.querySelector('.info-value:nth-child(3)')?.textContent.toLowerCase() || '';
-        
-        const matches = roomId.includes(searchTerm) || 
-                       deviceId.includes(searchTerm) || 
-                       patientName.includes(searchTerm) || 
-                       emrNo.includes(searchTerm);
-        
-        card.style.display = matches ? 'block' : 'none';
+        const text = card.textContent.toLowerCase();
+        const matches = text.includes(searchTerm);
+        card.closest('.col-12').style.display = matches ? 'block' : 'none';
       });
     }
 
