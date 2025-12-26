@@ -403,6 +403,216 @@ app.get('/dashboard', requireLogin, (req, res) => {
     emr_perawat: req.session.emr_perawat
   });
 });
+/* ============================================================
+   ROOM MANAGEMENT ROUTES
+   ============================================================ */
+app.get('/rooms', requireLogin, async (req, res) => {
+  res.render('rooms', {
+    nama_perawat: req.session.nama_perawat,
+    emr_perawat: req.session.emr_perawat
+  });
+});
+
+app.get('/api/rooms', requireAdminOrPerawat, async (req, res) => {
+  try {
+    const conn = await pool.getConnection();
+    
+    const [rooms] = await conn.query(`
+      SELECT 
+        rd.room_id,
+        rd.device_id,
+        p.emr_no,
+        p.nama as nama_pasien,
+        p.poli,
+        rd.created_at as assigned_at
+      FROM room_device rd
+      LEFT JOIN pasien p ON rd.emr_no = p.emr_no
+      ORDER BY rd.room_id ASC
+    `);
+    
+    conn.release();
+    res.json({ success: true, rooms });
+  } catch (err) {
+    res.status(500).json({ error: 'Database error: ' + err.message });
+  }
+});
+
+app.get('/api/rooms/available-patients', requireAdminOrPerawat, async (req, res) => {
+  try {
+    const conn = await pool.getConnection();
+    
+    // Ambil pasien yang belum ada di ruangan
+    const [patients] = await conn.query(`
+      SELECT DISTINCT 
+        p.emr_no,
+        p.nama,
+        p.poli,
+        p.jenis_kelamin
+      FROM pasien p
+      WHERE p.emr_no NOT IN (SELECT emr_no FROM room_device WHERE emr_no IS NOT NULL)
+      ORDER BY p.nama ASC
+    `);
+    
+    conn.release();
+    res.json({ success: true, patients });
+  } catch (err) {
+    res.status(500).json({ error: 'Database error: ' + err.message });
+  }
+});
+
+app.post('/api/rooms/add', requireAdminOrPerawat, async (req, res) => {
+  const { room_id, device_id, emr_no } = req.body;
+  
+  if (!room_id || !device_id) {
+    return res.status(400).json({ error: 'Room ID dan Device ID harus diisi' });
+  }
+
+  try {
+    const conn = await pool.getConnection();
+    
+    // Cek apakah room sudah ada
+    const [existing] = await conn.query(
+      'SELECT * FROM room_device WHERE room_id = ?',
+      [room_id]
+    );
+    
+    if (existing.length > 0) {
+      conn.release();
+      return res.status(400).json({ error: 'Room ID sudah terdaftar' });
+    }
+    
+    // Insert room
+    const emrValue = emr_no ? parseInt(emr_no) : null;
+    
+    await conn.query(
+      'INSERT INTO room_device (room_id, device_id, emr_no) VALUES (?, ?, ?)',
+      [room_id, device_id, emrValue]
+    );
+    
+    conn.release();
+    res.json({ success: true, message: 'Ruangan berhasil ditambahkan' });
+  } catch (err) {
+    res.status(500).json({ error: 'Database error: ' + err.message });
+  }
+});
+
+app.put('/api/rooms/:room_id', requireAdminOrPerawat, async (req, res) => {
+  const { room_id } = req.params;
+  const { new_room_id, device_id } = req.body;
+  
+  if (!new_room_id || !device_id) {
+    return res.status(400).json({ error: 'Room ID dan Device ID harus diisi' });
+  }
+
+  try {
+    const conn = await pool.getConnection();
+    
+    await conn.query(
+      'UPDATE room_device SET room_id = ?, device_id = ? WHERE room_id = ?',
+      [new_room_id, device_id, room_id]
+    );
+    
+    conn.release();
+    res.json({ success: true, message: 'Ruangan berhasil diupdate' });
+  } catch (err) {
+    res.status(500).json({ error: 'Database error: ' + err.message });
+  }
+});
+
+app.post('/api/rooms/assign', requireAdminOrPerawat, async (req, res) => {
+  const { room_id, emr_no } = req.body;
+  
+  if (!room_id || !emr_no) {
+    return res.status(400).json({ error: 'Room ID dan EMR Pasien harus diisi' });
+  }
+
+  try {
+    const conn = await pool.getConnection();
+    
+    // Cek apakah pasien ada
+    const [patient] = await conn.query(
+      'SELECT * FROM pasien WHERE emr_no = ?',
+      [emr_no]
+    );
+    
+    if (patient.length === 0) {
+      conn.release();
+      return res.status(400).json({ error: 'Pasien tidak ditemukan' });
+    }
+    
+    // Update room
+    await conn.query(
+      'UPDATE room_device SET emr_no = ? WHERE room_id = ?',
+      [emr_no, room_id]
+    );
+    
+    conn.release();
+    res.json({ success: true, message: 'Pasien berhasil dimasukkan ke ruangan' });
+  } catch (err) {
+    res.status(500).json({ error: 'Database error: ' + err.message });
+  }
+});
+
+app.post('/api/rooms/remove-patient', requireAdminOrPerawat, async (req, res) => {
+  const { room_id } = req.body;
+  
+  if (!room_id) {
+    return res.status(400).json({ error: 'Room ID harus diisi' });
+  }
+
+  try {
+    const conn = await pool.getConnection();
+    
+    await conn.query(
+      'UPDATE room_device SET emr_no = NULL WHERE room_id = ?',
+      [room_id]
+    );
+    
+    conn.release();
+    res.json({ success: true, message: 'Pasien berhasil dikeluarkan dari ruangan' });
+  } catch (err) {
+    res.status(500).json({ error: 'Database error: ' + err.message });
+  }
+});
+
+app.delete('/api/rooms/delete', requireAdminOrPerawat, async (req, res) => {
+  const { room_id } = req.body;
+  
+  if (!room_id) {
+    return res.status(400).json({ error: 'Room ID harus diisi' });
+  }
+
+  try {
+    const conn = await pool.getConnection();
+    
+    // Cek apakah ruangan kosong
+    const [room] = await conn.query(
+      'SELECT * FROM room_device WHERE room_id = ?',
+      [room_id]
+    );
+    
+    if (room.length === 0) {
+      conn.release();
+      return res.status(400).json({ error: 'Ruangan tidak ditemukan' });
+    }
+    
+    if (room[0].emr_no !== null) {
+      conn.release();
+      return res.status(400).json({ error: 'Ruangan harus kosong sebelum dihapus' });
+    }
+    
+    // Delete room
+    await conn.query(
+      'DELETE FROM room_device WHERE room_id = ?',
+      [room_id]
+    );
+    
+    conn.release();
+    res.json({ success: true, message: 'Ruangan berhasil dihapus' });
+  } catch (err) {
+    res.status(500).json({ error: 'Database error: ' + err.message });
+  }
+});
 
 /* ============================================================
    ADMIN ROUTES - USER MANAGEMENT
