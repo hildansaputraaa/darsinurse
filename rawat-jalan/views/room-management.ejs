@@ -26,8 +26,8 @@
 
     .top-header {
       background: rgba(255, 255, 255, 0.95);
-      padding: 1.2rem 0;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+      padding: 1rem 0;
+      box-shadow: 0 2px 15px rgba(0,0,0,0.08);
       position: sticky;
       top: 0;
       z-index: 1000;
@@ -79,15 +79,15 @@
     }
 
     .main-container {
-      padding: 28px 0;
+      padding: 20px 0;
     }
 
     .page-title {
       background: rgba(255, 255, 255, 0.95);
-      padding: 22px 26px;
-      border-radius: 16px;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.12);
-      margin-bottom: 28px;
+      padding: 18px 20px;
+      border-radius: 12px;
+      box-shadow: 0 2px 15px rgba(0,0,0,0.08);
+      margin-bottom: 20px;
     }
 
     .page-title h2 {
@@ -95,47 +95,59 @@
       color: #1a3a3a;
       display: flex;
       align-items: center;
-      gap: 14px;
-      font-weight: 800;
-      font-size: 24px;
+      gap: 10px;
+      font-weight: 700;
+      font-size: 20px;
     }
 
     .page-title h2 i {
       color: var(--primary-green);
-      font-size: 32px;
+      font-size: 24px;
     }
 
     .search-container {
       display: flex;
       align-items: center;
-      gap: 12px;
-      margin-top: 15px;
+      gap: 8px;
+      margin-top: 10px;
+      position: relative;
     }
 
     .search-input {
       flex: 1;
-      padding: 10px 15px;
-      border: 2px solid #e0e0e0;
-      border-radius: 25px;
-      font-size: 14px;
-      transition: all 0.3s;
+      padding: 8px 12px 8px 35px;
+      border: 1px solid #e0e0e0;
+      border-radius: 20px;
+      font-size: 13px;
+      transition: all 0.2s;
+      background: rgba(255,255,255,0.8);
     }
 
     .search-input:focus {
       border-color: var(--primary-green);
-      box-shadow: 0 0 0 0.2rem rgba(0,177,79,0.15);
+      box-shadow: 0 0 0 2px rgba(0,177,79,0.1);
       outline: none;
+      background: white;
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 12px;
+      color: #6c757d;
+      font-size: 14px;
+      z-index: 1;
     }
 
     .btn-search {
       background: var(--primary-green);
       border: none;
-      padding: 10px 20px;
-      border-radius: 25px;
+      padding: 8px 12px;
+      border-radius: 20px;
       color: white;
       font-weight: 600;
       cursor: pointer;
-      transition: all 0.3s;
+      transition: all 0.2s;
+      font-size: 12px;
     }
 
     .btn-search:hover {
@@ -163,23 +175,25 @@
     }
 
     .room-card {
-      background: white;
-      border-radius: 16px;
-      box-shadow: 0 2px 15px rgba(0,0,0,0.08);
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
       overflow: hidden;
-      margin-bottom: 20px;
-      transition: all 0.3s;
-      animation: fadeInUp 0.6s ease-out forwards;
+      margin-bottom: 16px;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      animation: fadeInUp 0.5s ease-out forwards;
       opacity: 0;
-      transform: translateY(20px);
+      transform: translateY(15px);
+      border: 1px solid rgba(0, 177, 79, 0.1);
     }
 
-    .room-card:nth-child(1) { animation-delay: 0.1s; }
-    .room-card:nth-child(2) { animation-delay: 0.2s; }
-    .room-card:nth-child(3) { animation-delay: 0.3s; }
-    .room-card:nth-child(4) { animation-delay: 0.4s; }
-    .room-card:nth-child(5) { animation-delay: 0.5s; }
-    .room-card:nth-child(6) { animation-delay: 0.6s; }
+    .room-card:nth-child(1) { animation-delay: 0.05s; }
+    .room-card:nth-child(2) { animation-delay: 0.1s; }
+    .room-card:nth-child(3) { animation-delay: 0.15s; }
+    .room-card:nth-child(4) { animation-delay: 0.2s; }
+    .room-card:nth-child(5) { animation-delay: 0.25s; }
+    .room-card:nth-child(6) { animation-delay: 0.3s; }
 
     @keyframes fadeInUp {
       to {
@@ -189,12 +203,13 @@
     }
 
     .room-card:hover {
-      transform: translateY(-8px);
-      box-shadow: 0 12px 35px rgba(0,0,0,0.12);
+      transform: translateY(-4px);
+      box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+      border-color: var(--primary-green);
     }
 
     .room-header {
-      padding: 18px 20px;
+      padding: 14px 16px;
       color: white;
       position: relative;
     }
@@ -210,85 +225,85 @@
 
     .room-status-badge {
       position: absolute;
-      top: 15px;
-      right: 15px;
+      top: 10px;
+      right: 10px;
       background: rgba(255,255,255,0.9);
       color: #495057;
-      padding: 4px 12px;
-      border-radius: 20px;
-      font-size: 10px;
-      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-size: 9px;
+      font-weight: 600;
     }
 
     .room-id {
-      font-size: 22px;
-      font-weight: 800;
+      font-size: 18px;
+      font-weight: 700;
       margin: 0;
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 8px;
     }
 
     .room-body {
-      padding: 18px 20px;
+      padding: 14px 16px;
     }
 
     .info-row {
       display: flex;
       align-items: center;
-      gap: 10px;
-      margin-bottom: 8px;
-      padding: 10px 12px;
+      gap: 8px;
+      margin-bottom: 6px;
+      padding: 8px 10px;
       background: #f8f9fa;
-      border-radius: 8px;
-      border-left: 3px solid var(--primary-green);
-      transition: all 0.3s;
+      border-radius: 6px;
+      border-left: 2px solid var(--primary-green);
+      transition: all 0.2s;
     }
 
     .info-row:hover {
       background: #e9ecef;
-      transform: translateX(5px);
+      transform: translateX(2px);
     }
 
     .info-row i {
       color: var(--primary-green);
-      width: 18px;
+      width: 14px;
       text-align: center;
-      font-size: 14px;
+      font-size: 12px;
     }
 
     .info-label {
       font-weight: 600;
       color: #6c757d;
-      min-width: 70px;
-      font-size: 12px;
+      min-width: 50px;
+      font-size: 11px;
     }
 
     .info-value {
       color: #212529;
       font-weight: 600;
-      font-size: 13px;
+      font-size: 12px;
       flex: 1;
     }
 
     .room-actions {
       display: flex;
-      gap: 6px;
-      padding-top: 15px;
-      margin-top: 12px;
-      border-top: 2px solid #e9ecef;
+      gap: 4px;
+      padding-top: 10px;
+      margin-top: 8px;
+      border-top: 1px solid #e9ecef;
     }
 
     .btn-room-action {
       flex: 1;
-      padding: 8px 6px;
+      padding: 6px 4px;
       border: none;
-      border-radius: 8px;
+      border-radius: 6px;
       font-weight: 600;
       cursor: pointer;
-      font-size: 12px;
+      font-size: 11px;
       color: white;
-      transition: all 0.3s;
+      transition: all 0.2s;
     }
 
     .btn-assign { background: var(--primary-blue); }
@@ -400,9 +415,10 @@
         </button>
       </div>
       <div class="search-container">
-        <input type="text" class="search-input" id="search-rooms" placeholder="Cari ruangan berdasarkan ID, device, atau pasien...">
+        <i class="fas fa-search search-icon"></i>
+        <input type="text" class="search-input" id="search-rooms" placeholder="Cari ruangan...">
         <button class="btn-search" onclick="filterRooms()">
-          <i class="fas fa-search"></i> Cari
+          <i class="fas fa-search"></i>
         </button>
       </div>
     </div>
