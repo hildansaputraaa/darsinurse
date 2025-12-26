@@ -14,82 +14,34 @@
       --secondary-teal: #20c997;
       --primary-blue: #0056b3;
       --danger-red: #dc3545;
-      --gradient-primary: linear-gradient(135deg, #00B14F 0%, #20c997 100%);
-      --gradient-blue: linear-gradient(135deg, #0d6efd 0%, #0056b3 100%);
-      --gradient-bg: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-      --shadow-sm: 0 2px 8px rgba(0,0,0,0.08);
-      --shadow-md: 0 4px 16px rgba(0,0,0,0.12);
-      --shadow-lg: 0 8px 32px rgba(0,0,0,0.15);
-      --shadow-xl: 0 12px 48px rgba(0,0,0,0.2);
     }
 
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
       font-family: 'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
-      background: var(--gradient-bg);
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
       min-height: 100vh;
-      position: relative;
-      overflow-x: hidden;
-    }
-
-    body::before {
-      content: '';
-      position: fixed;
-      top: -50%;
-      right: -50%;
-      width: 200%;
-      height: 200%;
-      background: radial-gradient(circle, rgba(0,177,79,0.05) 0%, transparent 70%);
-      animation: rotate 60s linear infinite;
-      z-index: 0;
-      pointer-events: none;
-    }
-
-    @keyframes rotate {
-      from { transform: rotate(0deg); }
-      to { transform: rotate(360deg); }
     }
 
     .top-header {
       background: rgba(255, 255, 255, 0.95);
-      backdrop-filter: blur(20px);
       padding: 1.2rem 0;
       box-shadow: 0 4px 20px rgba(0,0,0,0.08);
       position: sticky;
       top: 0;
       z-index: 1000;
-      border-bottom: 1px solid rgba(0,177,79,0.1);
     }
 
     .logo-info {
       display: flex;
       align-items: center;
       gap: 14px;
-      transition: transform 0.3s ease;
-    }
-
-    .logo-info:hover {
-      transform: translateX(5px);
     }
 
     .logo-info i {
       font-size: 36px;
-      background: var(--gradient-primary);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      filter: drop-shadow(0 2px 4px rgba(0,177,79,0.3));
-      animation: pulse 2s ease-in-out infinite;
-    }
-
-    @keyframes pulse {
-      0%, 100% { transform: scale(1); }
-      50% { transform: scale(1.05); }
+      color: var(--primary-green);
     }
 
     .logo-info h1 {
@@ -97,14 +49,12 @@
       font-weight: 800;
       color: #1a3a3a;
       margin: 0;
-      letter-spacing: -0.5px;
     }
 
     .logo-info small {
       display: block;
       font-size: 12px;
       color: #6c757d;
-      font-weight: 500;
       margin-top: 2px;
     }
 
@@ -113,18 +63,12 @@
       align-items: center;
       gap: 18px;
       font-size: 14px;
-      font-weight: 500;
-    }
-
-    .user-info span:not(.text-muted) {
-      color: #495057;
     }
 
     .user-info a {
       color: var(--primary-blue);
       text-decoration: none;
       font-weight: 600;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       padding: 6px 12px;
       border-radius: 8px;
     }
@@ -132,35 +76,18 @@
     .user-info a:hover {
       color: var(--primary-green);
       background: rgba(0,177,79,0.1);
-      transform: translateY(-2px);
     }
 
     .main-container {
       padding: 28px 0;
-      position: relative;
-      z-index: 1;
     }
 
     .page-title {
       background: rgba(255, 255, 255, 0.95);
-      backdrop-filter: blur(20px);
       padding: 22px 26px;
       border-radius: 16px;
-      box-shadow: var(--shadow-md);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.12);
       margin-bottom: 28px;
-      border: 1px solid rgba(255,255,255,0.8);
-      position: relative;
-      overflow: hidden;
-    }
-
-    .page-title::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 4px;
-      background: var(--gradient-primary);
     }
 
     .page-title h2 {
@@ -171,84 +98,50 @@
       gap: 14px;
       font-weight: 800;
       font-size: 24px;
-      letter-spacing: -0.5px;
     }
 
     .page-title h2 i {
-      background: var(--gradient-primary);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
+      color: var(--primary-green);
       font-size: 32px;
-      filter: drop-shadow(0 2px 6px rgba(0,177,79,0.3));
     }
 
     .btn-add-room {
-      background: var(--gradient-primary);
+      background: var(--primary-green);
       border: none;
       padding: 11px 24px;
       border-radius: 11px;
       color: white;
       font-weight: 700;
       font-size: 14px;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      cursor: pointer;
+      transition: all 0.3s;
       box-shadow: 0 4px 16px rgba(0,177,79,0.25);
-      position: relative;
-      overflow: hidden;
-    }
-
-    .btn-add-room::before {
-      content: '';
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      width: 0;
-      height: 0;
-      border-radius: 50%;
-      background: rgba(255,255,255,0.3);
-      transform: translate(-50%, -50%);
-      transition: width 0.6s, height 0.6s;
-    }
-
-    .btn-add-room:hover::before {
-      width: 300px;
-      height: 300px;
     }
 
     .btn-add-room:hover {
       transform: translateY(-3px);
       box-shadow: 0 8px 24px rgba(0,177,79,0.35);
-    }
-
-    .btn-add-room:active {
-      transform: translateY(-1px);
-    }
-
-    .btn-add-room i {
-      margin-right: 8px;
+      background: #00a143;
     }
 
     .room-card {
       background: white;
       border-radius: 20px;
       box-shadow: 0 2px 20px rgba(0,0,0,0.08);
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       overflow: hidden;
       margin-bottom: 24px;
-      border: 1px solid rgba(0,0,0,0.05);
+      transition: all 0.3s;
     }
 
     .room-card:hover {
       transform: translateY(-8px);
       box-shadow: 0 12px 35px rgba(0,0,0,0.12);
-      border-color: var(--primary-green);
     }
 
     .room-header {
       padding: 24px;
       color: white;
       position: relative;
-      background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
     }
 
     .room-header.occupied {
@@ -264,13 +157,10 @@
       top: 20px;
       right: 20px;
       background: rgba(255,255,255,0.25);
-      backdrop-filter: blur(10px);
       padding: 6px 16px;
       border-radius: 25px;
       font-size: 11px;
       font-weight: 700;
-      letter-spacing: 0.5px;
-      border: 1px solid rgba(255,255,255,0.3);
     }
 
     .room-id {
@@ -280,7 +170,6 @@
       display: flex;
       align-items: center;
       gap: 12px;
-      letter-spacing: -0.5px;
     }
 
     .room-body {
@@ -296,18 +185,11 @@
       background: #f8f9fa;
       border-radius: 10px;
       border-left: 3px solid var(--primary-green);
-      transition: all 0.2s;
-    }
-
-    .info-row:hover {
-      background: #e9ecef;
-      transform: translateX(2px);
     }
 
     .info-row i {
       color: var(--primary-green);
       width: 22px;
-      font-size: 16px;
       text-align: center;
     }
 
@@ -339,81 +221,33 @@
       border: none;
       border-radius: 10px;
       font-weight: 600;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       cursor: pointer;
       font-size: 13px;
-      letter-spacing: 0.3px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    }
-
-    .btn-room-action:active {
-      transform: scale(0.95);
-    }
-
-    .btn-assign {
-      background: var(--primary-blue);
       color: white;
+      transition: all 0.3s;
     }
 
-    .btn-assign:hover {
-      background: #003d7a;
-      transform: translateY(-2px);
-    }
+    .btn-assign { background: var(--primary-blue); }
+    .btn-assign:hover { background: #003d7a; }
 
-    .btn-remove {
-      background: #fd7e14;
-      color: white;
-    }
+    .btn-remove { background: #fd7e14; }
+    .btn-remove:hover { background: #e56910; }
 
-    .btn-remove:hover {
-      background: #e56910;
-      transform: translateY(-2px);
-    }
+    .btn-edit { background: #17a2b8; }
+    .btn-edit:hover { background: #117a8b; }
 
-    .btn-edit {
-      background: #17a2b8;
-      color: white;
-    }
-
-    .btn-edit:hover {
-      background: #117a8b;
-    }
-
-    .btn-delete {
-      background: var(--danger-red);
-      color: white;
-    }
-
-    .btn-delete:hover {
-      background: #c82333;
-    }
-
-    .modal {
-      backdrop-filter: blur(5px);
-    }
+    .btn-delete { background: var(--danger-red); }
+    .btn-delete:hover { background: #c82333; }
 
     .modal-content {
       border-radius: 15px;
       border: none;
-      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
     }
 
     .modal-header {
       background: linear-gradient(135deg, var(--primary-green) 0%, var(--secondary-teal) 100%);
       color: white;
       border-radius: 15px 15px 0 0;
-      padding: 20px;
-    }
-
-    .modal-title {
-      font-weight: 700;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .btn-close {
-      filter: brightness(0) invert(1);
     }
 
     .form-label {
@@ -426,7 +260,6 @@
       border: 2px solid #e0e0e0;
       border-radius: 8px;
       padding: 10px 15px;
-      transition: all 0.3s;
     }
 
     .form-control:focus, .form-select:focus {
@@ -443,14 +276,8 @@
     }
 
     @keyframes slideDown {
-      from {
-        opacity: 0;
-        transform: translateY(-20px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
+      from { opacity: 0; transform: translateY(-20px); }
+      to { opacity: 1; transform: translateY(0); }
     }
 
     .empty-state {
@@ -467,324 +294,15 @@
       margin-bottom: 20px;
     }
 
-    .empty-state h3 {
-      color: #666;
-      margin-bottom: 10px;
-    }
-
-    .empty-state p {
-      color: #999;
-      margin-bottom: 25px;
-    }
-
-    /* ============================================ */
-    /* RESPONSIVE STYLES */
-    /* ============================================ */
-    
-    @media (max-width: 992px) {
-      .logo-info i {
-        font-size: 32px;
-      }
-
-      .logo-info h1 {
-        font-size: 22px;
-      }
-
-      .page-title h2 {
-        font-size: 22px;
-      }
-
-      .page-title h2 i {
-        font-size: 28px;
-      }
-
-      .room-id {
-        font-size: 22px;
-      }
-    }
-
     @media (max-width: 768px) {
-      body::before {
-        display: none; /* Remove animated background on mobile for performance */
-      }
-
-      .top-header {
-        padding: 1rem 0;
-      }
-
-      .top-header .container-fluid {
-        padding: 0 15px;
-      }
-
-      .top-header .d-flex {
-        flex-direction: column;
-        gap: 15px;
-        align-items: flex-start !important;
-      }
-
-      .logo-info {
-        gap: 10px;
-      }
-
-      .logo-info i {
-        font-size: 28px;
-      }
-
-      .logo-info h1 {
-        font-size: 20px;
-      }
-
-      .logo-info small {
-        font-size: 11px;
-      }
-
-      .user-info {
-        flex-wrap: wrap;
-        gap: 10px;
-        font-size: 13px;
-        width: 100%;
-      }
-
-      .user-info span {
-        font-size: 13px;
-      }
-
-      .user-info a {
-        padding: 5px 10px;
-        font-size: 13px;
-      }
-
-      .main-container {
-        padding: 20px 0;
-      }
-
-      .page-title {
-        padding: 18px 20px;
-        margin-bottom: 20px;
-        border-radius: 12px;
-      }
-
-      .page-title .d-flex {
-        flex-direction: column;
-        gap: 15px;
-        align-items: flex-start !important;
-      }
-
-      .page-title h2 {
-        font-size: 20px;
-        gap: 10px;
-      }
-
-      .page-title h2 i {
-        font-size: 24px;
-      }
-
-      .btn-add-room {
-        width: 100%;
-        padding: 12px 20px;
-        font-size: 14px;
-      }
-
-      .room-card {
-        margin-bottom: 20px;
-        border-radius: 15px;
-      }
-
-      .room-card:hover {
-        transform: translateY(-4px);
-      }
-
-      .room-header {
-        padding: 20px;
-      }
-
-      .room-status-badge {
-        top: 15px;
-        right: 15px;
-        font-size: 10px;
-        padding: 5px 12px;
-      }
-
-      .room-id {
-        font-size: 20px;
-        gap: 8px;
-      }
-
-      .room-body {
-        padding: 20px;
-      }
-
-      .info-row {
-        padding: 10px 12px;
-        margin-bottom: 8px;
-        gap: 8px;
-      }
-
-      .info-row i {
-        font-size: 14px;
-        width: 20px;
-      }
-
-      .info-label {
-        font-size: 12px;
-        min-width: 70px;
-      }
-
-      .info-value {
-        font-size: 13px;
-      }
-
-      .room-actions {
-        flex-direction: column;
-        gap: 8px;
-        padding-top: 15px;
-        margin-top: 15px;
-      }
-
-      .btn-room-action {
-        width: 100%;
-        padding: 12px;
-        font-size: 14px;
-      }
-
-      .modal-dialog {
-        margin: 10px;
-      }
-
-      .modal-header {
-        padding: 15px;
-      }
-
-      .modal-title {
-        font-size: 18px;
-      }
-
-      .modal-body {
-        padding: 20px 15px;
-      }
-
-      .form-label {
-        font-size: 14px;
-      }
-
-      .form-control, .form-select {
-        font-size: 14px;
-        padding: 10px 12px;
-      }
-
-      .empty-state {
-        padding: 40px 15px;
-      }
-
-      .empty-state i {
-        font-size: 48px;
-      }
-
-      .empty-state h3 {
-        font-size: 20px;
-      }
-
-      .empty-state p {
-        font-size: 14px;
-      }
-
-      .alert {
-        padding: 12px 15px;
-        font-size: 14px;
-      }
-    }
-
-    @media (max-width: 480px) {
-      .logo-info i {
-        font-size: 24px;
-      }
-
-      .logo-info h1 {
-        font-size: 18px;
-      }
-
-      .logo-info small {
-        font-size: 10px;
-      }
-
-      .user-info {
-        font-size: 12px;
-        gap: 8px;
-      }
-
-      .user-info a {
-        font-size: 12px;
-        padding: 4px 8px;
-      }
-
-      .page-title h2 {
-        font-size: 18px;
-      }
-
-      .page-title h2 i {
-        font-size: 22px;
-      }
-
-      .btn-add-room {
-        padding: 10px 16px;
-        font-size: 13px;
-      }
-
-      .room-id {
-        font-size: 18px;
-        flex-wrap: wrap;
-      }
-
-      .room-status-badge {
-        position: static;
-        display: inline-block;
-        margin-top: 10px;
-      }
-
-      .info-label {
-        min-width: 60px;
-        font-size: 11px;
-      }
-
-      .info-value {
-        font-size: 12px;
-      }
-
-      .btn-room-action {
-        padding: 10px;
-        font-size: 13px;
-      }
-
-      .modal-title {
-        font-size: 16px;
-        gap: 8px;
-      }
-
-      .empty-state i {
-        font-size: 40px;
-      }
-
-      .empty-state h3 {
-        font-size: 18px;
-      }
-    }
-
-    /* Landscape mobile fix */
-    @media (max-height: 600px) and (orientation: landscape) {
-      .modal-dialog {
-        max-height: 90vh;
-        overflow-y: auto;
-      }
-
-      .modal-body {
-        max-height: 60vh;
-        overflow-y: auto;
-      }
+      .page-title .d-flex { flex-direction: column; gap: 15px; }
+      .btn-add-room { width: 100%; }
+      .room-actions { flex-direction: column; }
+      .btn-room-action { width: 100%; }
     }
   </style>
 </head>
 <body>
-  <!-- Header -->
   <header class="top-header">
     <div class="container-fluid">
       <div class="d-flex justify-content-between align-items-center">
@@ -792,7 +310,7 @@
           <i class="fas fa-hospital"></i>
           <div>
             <h1>Darsinurse Gateway</h1>
-            <small class="text-muted">Manajemen Ruangan</small>
+            <small>Manajemen Ruangan</small>
           </div>
         </div>
         <div class="user-info">
@@ -800,40 +318,28 @@
           <span>|</span>
           <a href="/dashboard"><i class="fas fa-home"></i> Dashboard</a>
           <span>|</span>
-          <a href="/logout" onclick="return confirm('Yakin logout?')">
-            <i class="fas fa-sign-out-alt"></i> Logout
-          </a>
+          <a href="/logout" onclick="return confirm('Yakin logout?')"><i class="fas fa-sign-out-alt"></i> Logout</a>
         </div>
       </div>
     </div>
   </header>
 
-  <!-- Main Content -->
   <div class="container-fluid main-container">
     <div class="page-title">
       <div class="d-flex justify-content-between align-items-center">
-        <h2>
-          <i class="fas fa-door-open"></i>
-          Manajemen Ruangan
-        </h2>
+        <h2><i class="fas fa-door-open"></i> Manajemen Ruangan</h2>
         <button class="btn btn-add-room" onclick="showAddRoomModal()">
           <i class="fas fa-plus"></i> Tambah Ruangan
         </button>
       </div>
     </div>
 
-    <!-- Alert Messages -->
     <div id="alert-container"></div>
 
-    <!-- Room Cards Container -->
     <div class="row" id="rooms-container">
-      <div class="col-12">
-        <div class="text-center">
-          <div class="spinner-border text-primary" role="status">
-            <span class="visually-hidden">Loading...</span>
-          </div>
-          <p class="mt-2">Memuat data ruangan...</p>
-        </div>
+      <div class="col-12 text-center">
+        <div class="spinner-border text-primary" role="status"></div>
+        <p class="mt-2">Memuat data ruangan...</p>
       </div>
     </div>
   </div>
@@ -843,30 +349,24 @@
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title">
-            <i class="fas fa-plus-circle"></i>
-            Tambah Ruangan Baru
-          </h5>
+          <h5 class="modal-title"><i class="fas fa-plus-circle"></i> Tambah Ruangan Baru</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
           <form id="form-add-room">
             <div class="mb-3">
               <label class="form-label">Room ID <span class="text-danger">*</span></label>
-              <input type="text" class="form-control" id="add-room-id" placeholder="Contoh: EXECUTIVE_4" required>
-              <small class="text-muted">ID unik untuk ruangan</small>
+              <input type="text" class="form-control" id="add-room-id" placeholder="Contoh: RUANG_001" required>
             </div>
             <div class="mb-3">
               <label class="form-label">Device ID <span class="text-danger">*</span></label>
-              <input type="text" class="form-control" id="add-device-id" placeholder="Contoh: DEVICE_004" required>
-              <small class="text-muted">ID perangkat monitoring</small>
+              <input type="text" class="form-control" id="add-device-id" placeholder="Contoh: DEV_001" required>
             </div>
             <div class="mb-3">
               <label class="form-label">Pasien (Opsional)</label>
               <select class="form-select" id="add-emr-no">
                 <option value="">-- Ruangan Kosong --</option>
               </select>
-              <small class="text-muted">Bisa diisi kemudian</small>
             </div>
             <div class="d-grid gap-2">
               <button type="submit" class="btn btn-success">
@@ -887,10 +387,7 @@
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title">
-            <i class="fas fa-edit"></i>
-            Edit Ruangan
-          </h5>
+          <h5 class="modal-title"><i class="fas fa-edit"></i> Edit Ruangan</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
@@ -923,10 +420,7 @@
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title">
-            <i class="fas fa-user-plus"></i>
-            Masukkan Pasien ke Ruangan
-          </h5>
+          <h5 class="modal-title"><i class="fas fa-user-plus"></i> Masukkan Pasien</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
@@ -941,7 +435,6 @@
               <select class="form-select" id="assign-emr-no" required>
                 <option value="">-- Pilih Pasien --</option>
               </select>
-              <small class="text-muted">Hanya menampilkan pasien yang belum ada di ruangan</small>
             </div>
             <div class="d-grid gap-2">
               <button type="submit" class="btn btn-success">
@@ -959,45 +452,55 @@
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
-    // ============================================
-    // GLOBAL VARIABLES
-    // ============================================
     let rooms = [];
     let availablePatients = [];
     const addRoomModal = new bootstrap.Modal(document.getElementById('addRoomModal'));
     const editRoomModal = new bootstrap.Modal(document.getElementById('editRoomModal'));
     const assignPatientModal = new bootstrap.Modal(document.getElementById('assignPatientModal'));
 
-    // ============================================
-    // LOAD DATA
-    // ============================================
     async function loadRooms() {
       try {
+        console.log('📡 Loading rooms...');
         const response = await fetch('/api/rooms');
+        
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
         const result = await response.json();
+        console.log('✓ Rooms:', result);
         
         if (result.success) {
-          rooms = result.rooms;
+          rooms = result.rooms || [];
           renderRooms();
         } else {
-          showAlert('danger', 'Gagal memuat data ruangan');
+          showAlert('danger', result.error || 'Gagal memuat data');
         }
       } catch (error) {
+        console.error('❌ Error:', error);
         showAlert('danger', 'Error: ' + error.message);
+        document.getElementById('rooms-container').innerHTML = `
+          <div class="col-12">
+            <div class="alert alert-danger">
+              <i class="fas fa-exclamation-triangle"></i>
+              <strong>Error:</strong> ${error.message}
+            </div>
+          </div>
+        `;
       }
     }
 
     async function loadAvailablePatients() {
       try {
         const response = await fetch('/api/rooms/available-patients');
-        const result = await response.json();
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
         
-        if (result.success) {
-          availablePatients = result.patients;
-          populatePatientDropdowns();
-        }
+        const result = await response.json();
+        availablePatients = result.patients || [];
+        populatePatientDropdowns();
       } catch (error) {
         console.error('Error loading patients:', error);
+        availablePatients = [];
       }
     }
 
@@ -1006,26 +509,23 @@
       const assignSelect = document.getElementById('assign-emr-no');
       
       const options = availablePatients.map(p => 
-        `<option value="${p.emr_no}">${p.nama} (EMR: ${p.emr_no}) - ${p.poli}</option>`
+        `<option value="${p.emr_no}">${p.nama} (EMR: ${p.emr_no})</option>`
       ).join('');
       
       addSelect.innerHTML = '<option value="">-- Ruangan Kosong --</option>' + options;
       assignSelect.innerHTML = '<option value="">-- Pilih Pasien --</option>' + options;
     }
 
-    // ============================================
-    // RENDER ROOMS
-    // ============================================
     function renderRooms() {
       const container = document.getElementById('rooms-container');
       
-      if (rooms.length === 0) {
+      if (!rooms || rooms.length === 0) {
         container.innerHTML = `
           <div class="col-12">
             <div class="empty-state">
               <i class="fas fa-door-open"></i>
               <h3>Belum Ada Ruangan</h3>
-              <p>Mulai dengan menambahkan ruangan baru</p>
+              <p>Tambahkan ruangan baru untuk memulai</p>
               <button class="btn btn-add-room" onclick="showAddRoomModal()">
                 <i class="fas fa-plus"></i> Tambah Ruangan Pertama
               </button>
@@ -1046,18 +546,14 @@
             <div class="room-card">
               <div class="room-header ${statusClass}">
                 <span class="room-status-badge">${statusText}</span>
-                <h3 class="room-id">
-                  <i class="fas ${icon}"></i>
-                  ${room.room_id}
-                </h3>
+                <h3 class="room-id"><i class="fas ${icon}"></i> ${room.room_id}</h3>
               </div>
               <div class="room-body">
                 <div class="info-row">
                   <i class="fas fa-microchip"></i>
-                  <span class="info-label">Device ID:</span>
-                  <code class="info-value">${room.device_id}</code>
+                  <span class="info-label">Device:</span>
+                  <span class="info-value">${room.device_id}</span>
                 </div>
-                
                 ${isOccupied ? `
                   <div class="info-row">
                     <i class="fas fa-user"></i>
@@ -1074,17 +570,11 @@
                     <span class="info-label">Poli:</span>
                     <span class="info-value">${room.poli}</span>
                   </div>
-                  <div class="info-row">
-                    <i class="fas fa-clock"></i>
-                    <span class="info-label">Masuk:</span>
-                    <span class="info-value">${formatDate(room.assigned_at)}</span>
-                  </div>
                 ` : `
                   <div class="alert alert-secondary mb-0">
-                    <i class="fas fa-info-circle"></i> Ruangan masih kosong
+                    <i class="fas fa-info-circle"></i> Ruangan kosong
                   </div>
                 `}
-                
                 <div class="room-actions">
                   ${isOccupied ? `
                     <button class="btn-room-action btn-remove" onclick="removePatient('${room.room_id}')">
@@ -1092,14 +582,14 @@
                     </button>
                   ` : `
                     <button class="btn-room-action btn-assign" onclick="showAssignModal('${room.room_id}')">
-                      <i class="fas fa-user-plus"></i> Masukkan Pasien
+                      <i class="fas fa-user-plus"></i> Masukkan
                     </button>
                   `}
                   <button class="btn-room-action btn-edit" onclick="showEditModal('${room.room_id}', '${room.device_id}')">
-                    <i class="fas fa-edit"></i>
+                    <i class="fas fa-edit"></i> Edit
                   </button>
                   <button class="btn-room-action btn-delete" onclick="deleteRoom('${room.room_id}')">
-                    <i class="fas fa-trash"></i>
+                    <i class="fas fa-trash"></i> Hapus
                   </button>
                 </div>
               </div>
@@ -1111,9 +601,6 @@
       container.innerHTML = html;
     }
 
-    // ============================================
-    // MODAL FUNCTIONS
-    // ============================================
     function showAddRoomModal() {
       document.getElementById('form-add-room').reset();
       loadAvailablePatients();
@@ -1134,31 +621,21 @@
       assignPatientModal.show();
     }
 
-    // ============================================
-    // FORM HANDLERS
-    // ============================================
     document.getElementById('form-add-room').addEventListener('submit', async (e) => {
       e.preventDefault();
-      
-      const roomId = document.getElementById('add-room-id').value.trim();
-      const deviceId = document.getElementById('add-device-id').value.trim();
-      const emrNo = document.getElementById('add-emr-no').value;
-      
       try {
         const response = await fetch('/api/rooms/add', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            room_id: roomId,
-            device_id: deviceId,
-            emr_no: emrNo || null
+            room_id: document.getElementById('add-room-id').value.trim(),
+            device_id: document.getElementById('add-device-id').value.trim(),
+            emr_no: document.getElementById('add-emr-no').value || null
           })
         });
-        
         const result = await response.json();
-        
         if (result.success) {
-          showAlert('success', result.message);
+          showAlert('success', 'Ruangan berhasil ditambahkan');
           addRoomModal.hide();
           loadRooms();
           loadAvailablePatients();
@@ -1172,25 +649,18 @@
 
     document.getElementById('form-edit-room').addEventListener('submit', async (e) => {
       e.preventDefault();
-      
-      const oldRoomId = document.getElementById('edit-old-room-id').value;
-      const newRoomId = document.getElementById('edit-room-id').value.trim();
-      const deviceId = document.getElementById('edit-device-id').value.trim();
-      
       try {
-        const response = await fetch(`/api/rooms/${oldRoomId}`, {
+        const response = await fetch(`/api/rooms/${document.getElementById('edit-old-room-id').value}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            new_room_id: newRoomId,
-            device_id: deviceId
+            new_room_id: document.getElementById('edit-room-id').value.trim(),
+            device_id: document.getElementById('edit-device-id').value.trim()
           })
         });
-        
         const result = await response.json();
-        
         if (result.success) {
-          showAlert('success', result.message);
+          showAlert('success', 'Ruangan berhasil diupdate');
           editRoomModal.hide();
           loadRooms();
         } else {
@@ -1203,29 +673,18 @@
 
     document.getElementById('form-assign-patient').addEventListener('submit', async (e) => {
       e.preventDefault();
-      
-      const roomId = document.getElementById('assign-room-id').value;
-      const emrNo = document.getElementById('assign-emr-no').value;
-      
-      if (!emrNo) {
-        showAlert('warning', 'Silakan pilih pasien');
-        return;
-      }
-      
       try {
         const response = await fetch('/api/rooms/assign', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            room_id: roomId,
-            emr_no: parseInt(emrNo)
+            room_id: document.getElementById('assign-room-id').value,
+            emr_no: parseInt(document.getElementById('assign-emr-no').value)
           })
         });
-        
         const result = await response.json();
-        
         if (result.success) {
-          showAlert('success', result.message);
+          showAlert('success', 'Pasien berhasil dimasukkan');
           assignPatientModal.hide();
           loadRooms();
           loadAvailablePatients();
@@ -1237,25 +696,17 @@
       }
     });
 
-    // ============================================
-    // ACTION FUNCTIONS
-    // ============================================
     async function removePatient(roomId) {
-      if (!confirm(`Apakah Anda yakin ingin mengeluarkan pasien dari ruangan ${roomId}?`)) {
-        return;
-      }
-      
+      if (!confirm(`Yakin keluarkan pasien dari ${roomId}?`)) return;
       try {
         const response = await fetch('/api/rooms/remove-patient', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ room_id: roomId })
         });
-        
         const result = await response.json();
-        
         if (result.success) {
-          showAlert('success', result.message);
+          showAlert('success', 'Pasien berhasil dikeluarkan');
           loadRooms();
           loadAvailablePatients();
         } else {
@@ -1267,21 +718,16 @@
     }
 
     async function deleteRoom(roomId) {
-      if (!confirm(`Apakah Anda yakin ingin menghapus ruangan ${roomId}?\n\nRuangan harus kosong untuk dihapus.`)) {
-        return;
-      }
-      
+      if (!confirm(`Yakin hapus ruangan ${roomId}?\n\nRuangan harus kosong.`)) return;
       try {
         const response = await fetch('/api/rooms/delete', {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ room_id: roomId })
         });
-        
         const result = await response.json();
-        
         if (result.success) {
-          showAlert('success', result.message);
+          showAlert('success', 'Ruangan berhasil dihapus');
           loadRooms();
         } else {
           showAlert('danger', result.error);
@@ -1291,43 +737,21 @@
       }
     }
 
-    // ============================================
-    // UTILITY FUNCTIONS
-    // ============================================
     function showAlert(type, message) {
       const container = document.getElementById('alert-container');
       const alertDiv = document.createElement('div');
       alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
       alertDiv.innerHTML = `
-        <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'danger' ? 'exclamation-circle' : 'info-circle'}"></i>
+        <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
         ${message}
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
       `;
-      
       container.appendChild(alertDiv);
-      
-      setTimeout(() => {
-        alertDiv.remove();
-      }, 5000);
+      setTimeout(() => alertDiv.remove(), 5000);
     }
 
-    function formatDate(dateString) {
-      if (!dateString) return '-';
-      const date = new Date(dateString);
-      return date.toLocaleString('id-ID', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-    }
-
-    // ============================================
-    // INITIALIZE ON PAGE LOAD
-    // ============================================
-    document.addEventListener('DOMContentLoaded', function() {
-      console.log('✓ Room Management Page Loaded');
+    document.addEventListener('DOMContentLoaded', () => {
+      console.log('✓ Page loaded');
       loadRooms();
       loadAvailablePatients();
     });
