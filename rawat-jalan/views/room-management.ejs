@@ -164,10 +164,10 @@
 
     .room-card {
       background: white;
-      border-radius: 20px;
-      box-shadow: 0 2px 20px rgba(0,0,0,0.08);
+      border-radius: 16px;
+      box-shadow: 0 2px 15px rgba(0,0,0,0.08);
       overflow: hidden;
-      margin-bottom: 24px;
+      margin-bottom: 20px;
       transition: all 0.3s;
       animation: fadeInUp 0.6s ease-out forwards;
       opacity: 0;
@@ -194,32 +194,34 @@
     }
 
     .room-header {
-      padding: 24px;
+      padding: 18px 20px;
       color: white;
       position: relative;
     }
 
     .room-header.occupied {
-      background: linear-gradient(135deg, #0d6efd 0%, #0056b3 100%);
+      background: linear-gradient(135deg, var(--primary-green) 0%, var(--secondary-teal) 100%);
     }
 
     .room-header.empty {
-      background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+      color: #6c757d;
     }
 
     .room-status-badge {
       position: absolute;
-      top: 20px;
-      right: 20px;
-      background: rgba(255,255,255,0.25);
-      padding: 6px 16px;
-      border-radius: 25px;
-      font-size: 11px;
+      top: 15px;
+      right: 15px;
+      background: rgba(255,255,255,0.9);
+      color: #495057;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 10px;
       font-weight: 700;
     }
 
     .room-id {
-      font-size: 26px;
+      font-size: 22px;
       font-weight: 800;
       margin: 0;
       display: flex;
@@ -228,17 +230,17 @@
     }
 
     .room-body {
-      padding: 24px;
+      padding: 18px 20px;
     }
 
     .info-row {
       display: flex;
       align-items: center;
-      gap: 12px;
-      margin-bottom: 10px;
-      padding: 12px 14px;
+      gap: 10px;
+      margin-bottom: 8px;
+      padding: 10px 12px;
       background: #f8f9fa;
-      border-radius: 10px;
+      border-radius: 8px;
       border-left: 3px solid var(--primary-green);
       transition: all 0.3s;
     }
@@ -250,40 +252,41 @@
 
     .info-row i {
       color: var(--primary-green);
-      width: 22px;
+      width: 18px;
       text-align: center;
+      font-size: 14px;
     }
 
     .info-label {
       font-weight: 600;
       color: #6c757d;
-      min-width: 90px;
-      font-size: 13px;
+      min-width: 70px;
+      font-size: 12px;
     }
 
     .info-value {
       color: #212529;
       font-weight: 600;
-      font-size: 14px;
+      font-size: 13px;
       flex: 1;
     }
 
     .room-actions {
       display: flex;
-      gap: 8px;
-      padding-top: 20px;
-      margin-top: 16px;
+      gap: 6px;
+      padding-top: 15px;
+      margin-top: 12px;
       border-top: 2px solid #e9ecef;
     }
 
     .btn-room-action {
       flex: 1;
-      padding: 11px 8px;
+      padding: 8px 6px;
       border: none;
-      border-radius: 10px;
+      border-radius: 8px;
       font-weight: 600;
       cursor: pointer;
-      font-size: 13px;
+      font-size: 12px;
       color: white;
       transition: all 0.3s;
     }
@@ -350,8 +353,8 @@
     }
 
     .empty-state i {
-      font-size: 64px;
-      color: #ddd;
+      font-size: 48px;
+      color: #adb5bd;
       margin-bottom: 20px;
     }
 
