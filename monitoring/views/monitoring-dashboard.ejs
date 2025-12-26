@@ -3,24 +3,24 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Manajemen Ruangan - Darsinurse</title>
-  <link rel="icon" type="image/png" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>🏥</text></svg>">
+  <title>Darsinurse - Dashboard Monitoring</title>
+  <link rel="icon" type="image/png" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>📊</text></svg>">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   
+  <!-- Socket.IO Client -->
+  <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+
   <style>
     :root {
       --primary-green: #00B14F;
-      --secondary-teal: #20c997;
+      --secondary-green: #008a3d;
       --primary-blue: #0056b3;
-      --danger-red: #dc3545;
-      --gradient-primary: linear-gradient(135deg, #00B14F 0%, #20c997 100%);
-      --gradient-blue: linear-gradient(135deg, #0d6efd 0%, #0056b3 100%);
-      --gradient-bg: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-      --shadow-sm: 0 2px 8px rgba(0,0,0,0.08);
-      --shadow-md: 0 4px 16px rgba(0,0,0,0.12);
-      --shadow-lg: 0 8px 32px rgba(0,0,0,0.15);
-      --shadow-xl: 0 12px 48px rgba(0,0,0,0.2);
+      --primary-dark: #003d7a;
+      --secondary-teal: #20c997;
+      --light-bg: #f0f8f7;
+      --dark-text: #1a3a3a;
+      --gray-border: #e0e0e0;
     }
 
     * {
@@ -29,814 +29,900 @@
       box-sizing: border-box;
     }
 
-    body {
-      font-family: 'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
-      background: var(--gradient-bg);
+    html, body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      color: var(--dark-text);
+      background: #f5f5f5;
       min-height: 100vh;
-      position: relative;
-      overflow-x: hidden;
+      display: flex;
+      flex-direction: column;
     }
 
-    body::before {
-      content: '';
-      position: fixed;
-      top: -50%;
-      right: -50%;
-      width: 200%;
-      height: 200%;
-      background: radial-gradient(circle, rgba(0,177,79,0.05) 0%, transparent 70%);
-      animation: rotate 60s linear infinite;
-      z-index: 0;
-      pointer-events: none;
-    }
-
-    @keyframes rotate {
-      from { transform: rotate(0deg); }
-      to { transform: rotate(360deg); }
-    }
-
+    /* Header */
     .top-header {
-      background: rgba(255, 255, 255, 0.95);
-      backdrop-filter: blur(20px);
-      padding: 1.2rem 0;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-      position: sticky;
-      top: 0;
-      z-index: 1000;
-      border-bottom: 1px solid rgba(0,177,79,0.1);
-    }
-
-    .logo-info {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      transition: transform 0.3s ease;
-    }
-
-    .logo-info:hover {
-      transform: translateX(5px);
-    }
-
-    .logo-info i {
-      font-size: 36px;
-      background: var(--gradient-primary);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      filter: drop-shadow(0 2px 4px rgba(0,177,79,0.3));
-      animation: pulse 2s ease-in-out infinite;
-    }
-
-    @keyframes pulse {
-      0%, 100% { transform: scale(1); }
-      50% { transform: scale(1.05); }
-    }
-
-    .logo-info h1 {
-      font-size: 26px;
-      font-weight: 800;
-      color: #1a3a3a;
-      margin: 0;
-      letter-spacing: -0.5px;
-    }
-
-    .logo-info small {
-      display: block;
-      font-size: 12px;
-      color: #6c757d;
-      font-weight: 500;
-      margin-top: 2px;
-    }
-
-    .user-info {
-      display: flex;
-      align-items: center;
-      gap: 18px;
-      font-size: 14px;
-      font-weight: 500;
-    }
-
-    .user-info span:not(.text-muted) {
-      color: #495057;
-    }
-
-    .user-info a {
-      color: var(--primary-blue);
-      text-decoration: none;
-      font-weight: 600;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      padding: 6px 12px;
-      border-radius: 8px;
-    }
-
-    .user-info a:hover {
-      color: var(--primary-green);
-      background: rgba(0,177,79,0.1);
-      transform: translateY(-2px);
-    }
-
-    .main-container {
-      padding: 28px 0;
-      position: relative;
-      z-index: 1;
-    }
-
-    .page-title {
-      background: rgba(255, 255, 255, 0.95);
-      backdrop-filter: blur(20px);
-      padding: 22px 26px;
-      border-radius: 16px;
-      box-shadow: var(--shadow-md);
-      margin-bottom: 28px;
-      border: 1px solid rgba(255,255,255,0.8);
-      position: relative;
-      overflow: hidden;
-    }
-
-    .page-title::before {
-      content: '';
-      position: absolute;
+      background: white;
+      padding: 1rem 0;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      position: fixed;
       top: 0;
       left: 0;
       right: 0;
-      height: 4px;
-      background: var(--gradient-primary);
+      z-index: 1000;
     }
 
-    .page-title h2 {
-      margin: 0;
-      color: #1a3a3a;
+    .header-content {
       display: flex;
       align-items: center;
-      gap: 14px;
-      font-weight: 800;
-      font-size: 24px;
-      letter-spacing: -0.5px;
+      justify-content: space-between;
     }
 
-    .page-title h2 i {
-      background: var(--gradient-primary);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      font-size: 32px;
-      filter: drop-shadow(0 2px 6px rgba(0,177,79,0.3));
-    }
-
-    .btn-add-room {
-      background: var(--gradient-primary);
-      border: none;
-      padding: 11px 24px;
-      border-radius: 11px;
-      color: white;
-      font-weight: 700;
-      font-size: 14px;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      box-shadow: 0 4px 16px rgba(0,177,79,0.25);
-      position: relative;
-      overflow: hidden;
-    }
-
-    .btn-add-room::before {
-      content: '';
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      width: 0;
-      height: 0;
-      border-radius: 50%;
-      background: rgba(255,255,255,0.3);
-      transform: translate(-50%, -50%);
-      transition: width 0.6s, height 0.6s;
-    }
-
-    .btn-add-room:hover::before {
-      width: 300px;
-      height: 300px;
-    }
-
-    .btn-add-room:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 8px 24px rgba(0,177,79,0.35);
-    }
-
-    .btn-add-room:active {
-      transform: translateY(-1px);
-    }
-
-    .btn-add-room i {
-      margin-right: 8px;
-    }
-
-    .room-card {
-      background: white;
-      border-radius: 20px;
-      box-shadow: 0 2px 20px rgba(0,0,0,0.08);
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      overflow: hidden;
-      margin-bottom: 24px;
-      border: 1px solid rgba(0,0,0,0.05);
-    }
-
-    .room-card:hover {
-      transform: translateY(-8px);
-      box-shadow: 0 12px 35px rgba(0,0,0,0.12);
-      border-color: var(--primary-green);
-    }
-
-    .room-header {
-      padding: 24px;
-      color: white;
-      position: relative;
-      background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
-    }
-
-    .room-header.occupied {
-      background: linear-gradient(135deg, #0d6efd 0%, #0056b3 100%);
-    }
-
-    .room-header.empty {
-      background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
-    }
-
-    .room-status-badge {
-      position: absolute;
-      top: 20px;
-      right: 20px;
-      background: rgba(255,255,255,0.25);
-      backdrop-filter: blur(10px);
-      padding: 6px 16px;
-      border-radius: 25px;
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 0.5px;
-      border: 1px solid rgba(255,255,255,0.3);
-    }
-
-    .room-id {
-      font-size: 26px;
-      font-weight: 800;
-      margin: 0;
+    .logo-section {
       display: flex;
       align-items: center;
       gap: 12px;
-      letter-spacing: -0.5px;
     }
 
-    .room-body {
-      padding: 24px;
-    }
-
-    .info-row {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 10px;
-      padding: 12px 14px;
-      background: #f8f9fa;
-      border-radius: 10px;
-      border-left: 3px solid var(--primary-green);
-      transition: all 0.2s;
-    }
-
-    .info-row:hover {
-      background: #e9ecef;
-      transform: translateX(2px);
-    }
-
-    .info-row i {
+    .logo-section i {
+      font-size: 28px;
       color: var(--primary-green);
-      width: 22px;
-      font-size: 16px;
-      text-align: center;
     }
 
-    .info-label {
-      font-weight: 600;
-      color: #6c757d;
-      min-width: 90px;
-      font-size: 13px;
-    }
-
-    .info-value {
-      color: #212529;
-      font-weight: 600;
-      font-size: 14px;
-      flex: 1;
-    }
-
-    .room-actions {
-      display: flex;
-      gap: 8px;
-      padding-top: 20px;
-      margin-top: 16px;
-      border-top: 2px solid #e9ecef;
-    }
-
-    .btn-room-action {
-      flex: 1;
-      padding: 11px 8px;
-      border: none;
-      border-radius: 10px;
-      font-weight: 600;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      cursor: pointer;
-      font-size: 13px;
-      letter-spacing: 0.3px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    }
-
-    .btn-room-action:active {
-      transform: scale(0.95);
-    }
-
-    .btn-assign {
-      background: var(--primary-blue);
-      color: white;
-    }
-
-    .btn-assign:hover {
-      background: #003d7a;
-      transform: translateY(-2px);
-    }
-
-    .btn-remove {
-      background: #fd7e14;
-      color: white;
-    }
-
-    .btn-remove:hover {
-      background: #e56910;
-      transform: translateY(-2px);
-    }
-
-    .btn-edit {
-      background: #17a2b8;
-      color: white;
-    }
-
-    .btn-edit:hover {
-      background: #117a8b;
-    }
-
-    .btn-delete {
-      background: var(--danger-red);
-      color: white;
-    }
-
-    .btn-delete:hover {
-      background: #c82333;
-    }
-
-    .modal {
-      backdrop-filter: blur(5px);
-    }
-
-    .modal-content {
-      border-radius: 15px;
-      border: none;
-      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-    }
-
-    .modal-header {
-      background: linear-gradient(135deg, var(--primary-green) 0%, var(--secondary-teal) 100%);
-      color: white;
-      border-radius: 15px 15px 0 0;
-      padding: 20px;
-    }
-
-    .modal-title {
+    .logo-section h1 {
+      font-size: 22px;
       font-weight: 700;
+      color: var(--dark-text);
+      margin: 0;
+    }
+
+    .nav-section {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 20px;
+      font-size: 14px;
     }
 
-    .btn-close {
-      filter: brightness(0) invert(1);
-    }
-
-    .form-label {
+    .nav-section a {
+      color: var(--primary-blue);
+      text-decoration: none;
       font-weight: 600;
-      color: #1a3a3a;
-      margin-bottom: 8px;
-    }
-
-    .form-control, .form-select {
-      border: 2px solid #e0e0e0;
-      border-radius: 8px;
-      padding: 10px 15px;
       transition: all 0.3s;
     }
 
-    .form-control:focus, .form-select:focus {
-      border-color: var(--primary-green);
-      box-shadow: 0 0 0 0.2rem rgba(0,177,79,0.15);
+    .nav-section a:hover {
+      color: var(--primary-dark);
     }
 
-    .alert {
-      border-radius: 10px;
+    .logout-btn {
+      color: #dc3545 !important;
+    }
+
+    .logout-btn:hover {
+      color: #c82333 !important;
+    }
+
+    .main-container {
+      padding-top: 80px !important;
+      flex: 1;
+      min-height: calc(100vh - 80px);
+    }
+    .page-header {
+      margin-bottom: 30px;
+    }
+
+    .page-title {
+      font-size: 32px;
+      font-weight: 700;
+      color: var(--dark-text);
+      margin-bottom: 8px;
+    }
+
+    .page-subtitle {
+      font-size: 16px;
+      color: #666;
+    }
+
+    /* Tab Navigation */
+    .tab-navigation {
+      display: flex;
+      gap: 20px;
+      border-bottom: 2px solid var(--gray-border);
+      margin-bottom: 30px;
+    }
+
+    .tab-button {
+      background: none;
       border: none;
-      padding: 15px 20px;
-      margin-bottom: 20px;
-      animation: slideDown 0.3s ease;
+      padding: 12px 0;
+      font-size: 16px;
+      font-weight: 600;
+      color: #666;
+      cursor: pointer;
+      transition: all 0.3s;
+      border-bottom: 3px solid transparent;
+      margin-bottom: -2px;
     }
 
-    @keyframes slideDown {
-      from {
-        opacity: 0;
-        transform: translateY(-20px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
+    .tab-button:hover {
+      color: var(--primary-green);
+    }
+
+    .tab-button.active {
+      color: var(--primary-green);
+      border-bottom-color: var(--primary-green);
+    }
+
+    /* Tab Content */
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    /* Stats Cards */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+
+    .stat-card {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+      transition: all 0.3s;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+    }
+
+    .stat-label {
+      font-size: 12px;
+      color: #999;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+
+    .stat-number {
+      font-size: 36px;
+      font-weight: 700;
+      color: var(--primary-green);
+      margin-bottom: 4px;
+    }
+
+    .stat-change {
+      font-size: 12px;
+      color: #666;
+    }
+
+    .stat-icon {
+      float: right;
+      font-size: 32px;
+      color: rgba(0, 177, 79, 0.2);
+    }
+
+    /* Data Table */
+    .data-container {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+      overflow: hidden;
+    }
+
+    .data-header {
+      background: linear-gradient(135deg, var(--primary-green), var(--secondary-green));
+      color: white;
+      padding: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .data-header h3 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .data-body {
+      padding: 20px;
+      max-height: 600px;
+      overflow-y: auto;
+    }
+
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    .data-table thead {
+      background: #f9f9f9;
+      border-bottom: 2px solid var(--gray-border);
+    }
+
+    .data-table th {
+      padding: 12px;
+      text-align: left;
+      font-weight: 600;
+      color: var(--dark-text);
+    }
+
+    .data-table td {
+      padding: 12px;
+      border-bottom: 1px solid var(--gray-border);
+    }
+
+    .data-table tbody tr:hover {
+      background: #f9f9f9;
+    }
+
+    .badge-status {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .badge-aktif {
+      background: #e6f9e6;
+      color: #28a745;
+    }
+
+    .badge-selesai {
+      background: #e7f3ff;
+      color: var(--primary-blue);
+    }
+
+    .metabase-container {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+      overflow: hidden;
+      position: relative;
+      min-height: 850px; /* ← SUDAH ADA ✓ */
+    }
+
+    .loading-progress-bar {
+      width: 200px;
+      height: 4px;
+      background: #e0e0e0;
+      border-radius: 2px;
+      overflow: hidden;
+      margin-top: 10px;
+    }
+
+    .loading-progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--primary-green), var(--secondary-teal));
+      width: 0%;
+      animation: progress 3s ease-in-out infinite;
+    }
+
+    .loading-spinner {
+      position: absolute;
+      top: 60px; /* ← SUDAH BENAR ✓ */
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 10;
+      background: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 15px;
+      color: var(--primary-green);
+    }
+
+    .loading-spinner i {
+      font-size: 48px;
+      animation: spin 2s linear infinite;
+    }
+
+    .loading-spinner span {
+      font-size: 16px;
+      font-weight: 600;
+      color: #666;
+    }
+    @keyframes progress {
+      0% { width: 0%; }
+      50% { width: 70%; }
+      100% { width: 100%; }
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .refresh-btn {
+      background: rgba(255,255,255,0.2);
+      border: 1px solid rgba(255,255,255,0.5);
+      color: white;
+      padding: 8px 15px;
+      border-radius: 6px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.3s;
+      border: none;
+      font-weight: 600;
+    }
+
+    .refresh-btn:hover {
+      background: rgba(255,255,255,0.3);
+      color: white;
+    }
+
+    .info-box {
+      background: #f0f8f7;
+      border-left: 4px solid var(--secondary-teal);
+      padding: 15px 20px;
+      margin-top: 20px;
+      border-radius: 6px;
+      font-size: 14px;
+      color: #333;
+    }
+
+    .info-box i {
+      color: var(--secondary-teal);
+      margin-right: 8px;
     }
 
     .empty-state {
       text-align: center;
-      padding: 60px 20px;
-      background: white;
-      border-radius: 15px;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      padding: 40px 20px;
+      color: #999;
     }
 
     .empty-state i {
-      font-size: 64px;
+      font-size: 48px;
+      margin-bottom: 15px;
       color: #ddd;
-      margin-bottom: 20px;
     }
 
-    .empty-state h3 {
-      color: #666;
-      margin-bottom: 10px;
+    /* ============================================ */
+    /* FALL DETECTION ALERT STYLES */
+    /* ============================================ */
+    
+    .fall-alert-container {
+      position: fixed;
+      top: 80px;
+      right: 20px;
+      z-index: 9999;
+      max-width: 400px;
+      width: 100%;
     }
 
-    .empty-state p {
-      color: #999;
-      margin-bottom: 25px;
+    .fall-alert {
+      background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+      border: 3px solid #ff0000;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 15px;
+      box-shadow: 0 10px 40px rgba(255, 0, 0, 0.4);
+      animation: slideInShake 0.6s ease-out;
+      position: relative;
+      color: white;
     }
-        @media (max-width: 768px) {
-                .top-header {
-                  padding: 0.8rem 0;
-                }
 
-                .header-content {
-                  flex-direction: column;
-                  gap: 12px;
-                  text-align: center;
-                }
+    @keyframes slideInShake {
+      0% {
+        transform: translateX(400px);
+        opacity: 0;
+      }
+      50% {
+        transform: translateX(-20px);
+      }
+      75% {
+        transform: translateX(10px);
+      }
+      100% {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
 
-                .logo-section {
-                  gap: 10px;
-                }
+    @keyframes slideOut {
+      from {
+        transform: translateX(0);
+        opacity: 1;
+      }
+      to {
+        transform: translateX(400px);
+        opacity: 0;
+      }
+    }
 
-                .logo-section i {
-                  font-size: 24px;
-                }
+    .fall-alert-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 15px;
+      padding-bottom: 15px;
+      border-bottom: 2px solid rgba(255, 255, 255, 0.3);
+    }
 
-                .logo-section h1 {
-                  font-size: 18px;
-                }
+    .fall-alert-icon {
+      font-size: 36px;
+      animation: pulse 1s ease-in-out infinite;
+    }
 
-                .nav-section {
-                  flex-wrap: wrap;
-                  justify-content: center;
-                  font-size: 13px;
-                  gap: 12px;
-                }
+    @keyframes pulse {
+      0%, 100% {
+        transform: scale(1);
+        opacity: 1;
+      }
+      50% {
+        transform: scale(1.2);
+        opacity: 0.8;
+      }
+    }
 
-                /* Fixed spacing for mobile */
-                .main-container {
-                  padding-top: 140px !important;
-                  padding-left: 15px;
-                  padding-right: 15px;
-                }
+    .fall-alert-title {
+      font-size: 20px;
+      font-weight: 700;
+      margin: 0;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+    }
 
-                .page-header {
-                  margin-bottom: 20px;
-                }
+    .fall-alert-body {
+      margin-bottom: 15px;
+    }
 
-                .page-title {
-                  font-size: 24px;
-                }
+    .fall-alert-info {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
 
-                .page-subtitle {
-                  font-size: 14px;
-                }
+    .fall-alert-label {
+      font-weight: 600;
+      opacity: 0.9;
+    }
 
-                .stats-grid {
-                  grid-template-columns: 1fr;
-                  gap: 15px;
-                }
+    .fall-alert-value {
+      font-weight: 700;
+      background: rgba(255, 255, 255, 0.2);
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
 
-                .stat-card {
-                  padding: 15px;
-                }
+    .fall-alert-footer {
+      display: flex;
+      gap: 10px;
+    }
 
-                .stat-number {
-                  font-size: 28px;
-                }
+    .fall-alert-btn {
+      flex: 1;
+      padding: 10px;
+      border: none;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-size: 14px;
+    }
 
-                .stat-icon {
-                  font-size: 24px;
-                }
+    .btn-acknowledge {
+      background: white;
+      color: #ff6b6b;
+    }
 
-                .metabase-iframe {
-                  min-height: 500px;
-                }
+    .btn-acknowledge:hover {
+      background: #f0f0f0;
+      transform: translateY(-2px);
+    }
 
-                .metabase-container {
-                  min-height: 600px;
-                }
+    .btn-close {
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+      border: 1px solid rgba(255, 255, 255, 0.4);
+    }
 
-                .data-body {
-                  max-height: 400px;
-                  padding: 10px;
-                }
+    .btn-close:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
 
-                .data-header {
-                  padding: 15px;
-                  flex-direction: column;
-                  gap: 10px;
-                  align-items: flex-start;
-                }
+    .fall-alert-timestamp {
+      font-size: 11px;
+      opacity: 0.8;
+      text-align: center;
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid rgba(255, 255, 255, 0.2);
+    }
 
-                .data-header h3 {
-                  font-size: 15px;
-                }
+    /* Footer */
+    .footer {
+      background: #2c3e50;
+      color: white;
+      padding: 20px 0;
+      text-align: center;
+      margin-top: auto;
+    }
 
-                .data-table {
-                  font-size: 12px;
-                  display: block;
-                  overflow-x: auto;
-                  white-space: nowrap;
-                }
-
-                .data-table th,
-                .data-table td {
-                  padding: 8px 6px;
-                }
-
-                .tab-navigation {
-                  flex-wrap: wrap;
-                  gap: 10px;
-                  margin-bottom: 20px;
-                }
-
-                .tab-button {
-                  font-size: 14px;
-                  padding: 10px 15px;
-                  flex: 1;
-                  min-width: 140px;
-                }
-
-                /* Fall Alert Mobile Styles */
-                .fall-alert-container {
-                  top: 145px;
-                  left: 10px;
-                  right: 10px;
-                  max-width: none;
-                  width: calc(100% - 20px);
-                }
-
-                .fall-alert {
-                  padding: 15px;
-                  border-width: 2px;
-                  border-radius: 10px;
-                  box-shadow: 0 8px 30px rgba(255, 0, 0, 0.35);
-                }
-
-                .fall-alert-header {
-                  gap: 8px;
-                  margin-bottom: 10px;
-                  padding-bottom: 10px;
-                }
-
-                .fall-alert-icon {
-                  font-size: 28px;
-                  flex-shrink: 0;
-                }
-
-                .fall-alert-title {
-                  font-size: 16px;
-                  line-height: 1.2;
-                }
-
-                .fall-alert-body {
-                  margin-bottom: 12px;
-                }
-
-                .fall-alert-info {
-                  flex-direction: row;
-                  justify-content: space-between;
-                  gap: 8px;
-                  align-items: center;
-                  margin-bottom: 8px;
-                  flex-wrap: wrap;
-                }
-
-                .fall-alert-label {
-                  font-size: 12px;
-                  flex-shrink: 0;
-                }
-
-                .fall-alert-value {
-                  font-size: 13px;
-                  text-align: right;
-                  padding: 2px 6px;
-                  word-break: break-word;
-                }
-
-                .fall-alert-footer {
-                  display: grid;
-                  grid-template-columns: 1fr 1fr;
-                  gap: 8px;
-                }
-
-                .fall-alert-btn {
-                  padding: 10px 8px;
-                  font-size: 13px;
-                  white-space: nowrap;
-                }
-
-                .fall-alert-timestamp {
-                  font-size: 10px;
-                  margin-top: 8px;
-                  padding-top: 8px;
-                }
-
-                .info-box {
-                  padding: 12px 15px;
-                  font-size: 13px;
-                }
-
-                .empty-state {
-                  padding: 30px 15px;
-                }
-
-                .empty-state i {
-                  font-size: 36px;
-                }
-
-                /* Make tables scrollable on mobile */
-                .data-container {
-                  overflow-x: auto;
-                }
-
-                .badge-status {
-                  font-size: 11px;
-                  padding: 3px 8px;
-                }
-
-                .footer {
-                  padding: 15px 10px;
-                }
-
-                .footer p {
-                  font-size: 12px;
-                }
-              }
-
-        /* Extra small devices */
-        @media (max-width: 480px) {
-          .top-header {
-            padding: 0.6rem 0;
-          }
-
-          .logo-section i {
-            font-size: 22px;
-          }
-
-          .logo-section h1 {
-            font-size: 16px;
-          }
-
-          .nav-section {
-            font-size: 12px;
-            gap: 8px;
-          }
-
-          /* Extra padding for very small screens */
-          .main-container {
-            padding-top: 160px !important;
-          }
-
-          .page-title {
-            font-size: 20px;
-          }
-
-          .stat-number {
-            font-size: 24px;
-          }
-
-          .data-table {
-            font-size: 11px;
-          }
-
-          .data-header h3 {
-            font-size: 14px;
-          }
-
-          .tab-button {
-            font-size: 13px;
-            padding: 8px 10px;
-            min-width: 100px;
-          }
-
-          /* Fall Alert for Extra Small Screens */
-          .fall-alert-container {
-            top: 165px;
-            left: 8px;
-            right: 8px;
-            width: calc(100% - 16px);
-          }
-
-          .fall-alert {
-            padding: 12px;
-            border-radius: 8px;
-          }
-
-          .fall-alert-header {
-            gap: 6px;
-            margin-bottom: 8px;
-            padding-bottom: 8px;
-          }
-
-          .fall-alert-icon {
-            font-size: 24px;
-          }
-
-          .fall-alert-title {
-            font-size: 14px;
-          }
-
-          .fall-alert-info {
-            margin-bottom: 6px;
-          }
-
-          .fall-alert-label {
-            font-size: 11px;
-          }
-
-          .fall-alert-value {
-            font-size: 12px;
-            padding: 2px 4px;
-          }
-
-          .fall-alert-footer {
-            gap: 6px;
-          }
-
-          .fall-alert-btn {
-            padding: 9px 6px;
-            font-size: 12px;
-          }
-
-          .fall-alert-timestamp {
-            font-size: 9px;
-            margin-top: 6px;
-            padding-top: 6px;
-          }
+    .footer p {
+      margin: 0;
+      font-size: 14px;
+      opacity: 0.9;
+    }      @media (max-width: 768px) {
+        .top-header {
+          padding: 0.8rem 0;
         }
 
-        /* Landscape mode adjustments */
-        @media (max-height: 600px) and (orientation: landscape) {
-          .fall-alert-container {
-            top: 80px;
-            max-height: 70vh;
-            overflow-y: auto;
-          }
-
-          .fall-alert {
-            margin-bottom: 10px;
-          }
-
-          .fall-alert-body {
-            max-height: 150px;
-            overflow-y: auto;
-          }
+        .header-content {
+          flex-direction: column;
+          gap: 12px;
+          text-align: center;
         }
+
+        .logo-section {
+          gap: 10px;
+        }
+
+        .logo-section i {
+          font-size: 24px;
+        }
+
+        .logo-section h1 {
+          font-size: 18px;
+        }
+
+        .nav-section {
+          flex-wrap: wrap;
+          justify-content: center;
+          font-size: 13px;
+          gap: 12px;
+        }
+
+        /* Fixed spacing for mobile */
+        .main-container {
+          padding-top: 140px !important;
+          padding-left: 15px;
+          padding-right: 15px;
+        }
+
+        .page-header {
+          margin-bottom: 20px;
+        }
+
+        .page-title {
+          font-size: 24px;
+        }
+
+        .page-subtitle {
+          font-size: 14px;
+        }
+
+        .stats-grid {
+          grid-template-columns: 1fr;
+          gap: 15px;
+        }
+
+        .stat-card {
+          padding: 15px;
+        }
+
+        .stat-number {
+          font-size: 28px;
+        }
+
+        .stat-icon {
+          font-size: 24px;
+        }
+
+        .metabase-iframe {
+          min-height: 500px;
+        }
+
+        .metabase-container {
+          min-height: 600px;
+        }
+
+        .data-body {
+          max-height: 400px;
+          padding: 10px;
+        }
+
+        .data-header {
+          padding: 15px;
+          flex-direction: column;
+          gap: 10px;
+          align-items: flex-start;
+        }
+
+        .data-header h3 {
+          font-size: 15px;
+        }
+
+        .data-table {
+          font-size: 12px;
+          display: block;
+          overflow-x: auto;
+          white-space: nowrap;
+        }
+
+        .data-table th,
+        .data-table td {
+          padding: 8px 6px;
+        }
+
+        .tab-navigation {
+          flex-wrap: wrap;
+          gap: 10px;
+          margin-bottom: 20px;
+        }
+
+        .tab-button {
+          font-size: 14px;
+          padding: 10px 15px;
+          flex: 1;
+          min-width: 140px;
+        }
+
+        /* Fall Alert Mobile Styles */
+        .fall-alert-container {
+          top: 145px;
+          left: 10px;
+          right: 10px;
+          max-width: none;
+          width: calc(100% - 20px);
+        }
+
+        .fall-alert {
+          padding: 15px;
+          border-width: 2px;
+          border-radius: 10px;
+          box-shadow: 0 8px 30px rgba(255, 0, 0, 0.35);
+        }
+
+        .fall-alert-header {
+          gap: 8px;
+          margin-bottom: 10px;
+          padding-bottom: 10px;
+        }
+
+        .fall-alert-icon {
+          font-size: 28px;
+          flex-shrink: 0;
+        }
+
+        .fall-alert-title {
+          font-size: 16px;
+          line-height: 1.2;
+        }
+
+        .fall-alert-body {
+          margin-bottom: 12px;
+        }
+
+        .fall-alert-info {
+          flex-direction: row;
+          justify-content: space-between;
+          gap: 8px;
+          align-items: center;
+          margin-bottom: 8px;
+          flex-wrap: wrap;
+        }
+
+        .fall-alert-label {
+          font-size: 12px;
+          flex-shrink: 0;
+        }
+
+        .fall-alert-value {
+          font-size: 13px;
+          text-align: right;
+          padding: 2px 6px;
+          word-break: break-word;
+        }
+
+        .fall-alert-footer {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 8px;
+        }
+
+        .fall-alert-btn {
+          padding: 10px 8px;
+          font-size: 13px;
+          white-space: nowrap;
+        }
+
+        .fall-alert-timestamp {
+          font-size: 10px;
+          margin-top: 8px;
+          padding-top: 8px;
+        }
+
+        .info-box {
+          padding: 12px 15px;
+          font-size: 13px;
+        }
+
+        .empty-state {
+          padding: 30px 15px;
+        }
+
+        .empty-state i {
+          font-size: 36px;
+        }
+
+        /* Make tables scrollable on mobile */
+        .data-container {
+          overflow-x: auto;
+        }
+
+        .badge-status {
+          font-size: 11px;
+          padding: 3px 8px;
+        }
+
+        .footer {
+          padding: 15px 10px;
+        }
+
+        .footer p {
+          font-size: 12px;
+        }
+      }
+
+      /* Extra small devices */
+      @media (max-width: 480px) {
+        .top-header {
+          padding: 0.6rem 0;
+        }
+
+        .logo-section i {
+          font-size: 22px;
+        }
+
+        .logo-section h1 {
+          font-size: 16px;
+        }
+
+        .nav-section {
+          font-size: 12px;
+          gap: 8px;
+        }
+
+        /* Extra padding for very small screens */
+        .main-container {
+          padding-top: 160px !important;
+        }
+
+        .page-title {
+          font-size: 20px;
+        }
+
+        .stat-number {
+          font-size: 24px;
+        }
+
+        .data-table {
+          font-size: 11px;
+        }
+
+        .data-header h3 {
+          font-size: 14px;
+        }
+
+        .tab-button {
+          font-size: 13px;
+          padding: 8px 10px;
+          min-width: 100px;
+        }
+
+        /* Fall Alert for Extra Small Screens */
+        .fall-alert-container {
+          top: 165px;
+          left: 8px;
+          right: 8px;
+          width: calc(100% - 16px);
+        }
+
+        .fall-alert {
+          padding: 12px;
+          border-radius: 8px;
+        }
+
+        .fall-alert-header {
+          gap: 6px;
+          margin-bottom: 8px;
+          padding-bottom: 8px;
+        }
+
+        .fall-alert-icon {
+          font-size: 24px;
+        }
+
+        .fall-alert-title {
+          font-size: 14px;
+        }
+
+        .fall-alert-info {
+          margin-bottom: 6px;
+        }
+
+        .fall-alert-label {
+          font-size: 11px;
+        }
+
+        .fall-alert-value {
+          font-size: 12px;
+          padding: 2px 4px;
+        }
+
+        .fall-alert-footer {
+          gap: 6px;
+        }
+
+        .fall-alert-btn {
+          padding: 9px 6px;
+          font-size: 12px;
+        }
+
+        .fall-alert-timestamp {
+          font-size: 9px;
+          margin-top: 6px;
+          padding-top: 6px;
+        }
+      }
+
+      /* Landscape mode adjustments */
+      @media (max-height: 600px) and (orientation: landscape) {
+        .fall-alert-container {
+          top: 80px;
+          max-height: 70vh;
+          overflow-y: auto;
+        }
+
+        .fall-alert {
+          margin-bottom: 10px;
+        }
+
+        .fall-alert-body {
+          max-height: 150px;
+          overflow-y: auto;
+        }
+      }
   </style>
 </head>
 <body>
+  <!-- Fall Alert Sound -->
+  <audio id="fall-alert-sound" preload="auto">   
+      <source src="data:audio/wav;base64,//vQxAAAKyX1FlWsAA5EQeeXObAAAACUJBbAswmojOYkmZUmND">
+    </audio>
+  
+
+  <!-- Fall Alert Container -->
+  <div class="fall-alert-container" id="fall-alert-container"></div>
+
   <!-- Header -->
   <header class="top-header">
     <div class="container-fluid">
-      <div class="d-flex justify-content-between align-items-center">
-        <div class="logo-info">
-          <i class="fas fa-hospital"></i>
-          <div>
-            <h1>Darsinurse Gateway</h1>
-            <small class="text-muted">Manajemen Ruangan</small>
-          </div>
+      <div class="header-content">
+        <div class="logo-section">
+          <i class="fas fa-chart-line"></i>
+          <h1>Darsinurse</h1>
         </div>
-        <div class="user-info">
-          <span><i class="fas fa-user-nurse"></i> <%= nama_perawat %></span>
+
+        <div class="nav-section">
+          <span>
+            <i class="fas fa-user-circle"></i> <%= nama_perawat %>
+          </span>
           <span>|</span>
-          <a href="/dashboard"><i class="fas fa-home"></i> Dashboard</a>
-          <span>|</span>
-          <a href="/logout" onclick="return confirm('Yakin logout?')">
+          <a href="/logout" class="logout-btn" onclick="return confirm('Yakin logout?')">
             <i class="fas fa-sign-out-alt"></i> Logout
           </a>
         </div>
@@ -845,527 +931,1047 @@
   </header>
 
   <!-- Main Content -->
-  <div class="container-fluid main-container">
-    <div class="page-title">
-      <div class="d-flex justify-content-between align-items-center">
-        <h2>
-          <i class="fas fa-door-open"></i>
-          Manajemen Ruangan
-        </h2>
-        <button class="btn btn-add-room" onclick="showAddRoomModal()">
-          <i class="fas fa-plus"></i> Tambah Ruangan
-        </button>
+  <div class="container-fluid py-4 main-container">
+    <!-- Tab Navigation -->
+    <div class="tab-navigation">
+      <button class="tab-button active" data-tab="rawat-jalan">
+        <i class="fas fa-hospital-user"></i> Rawat Jalan
+      </button>
+      <button class="tab-button" data-tab="rawat-inap">
+        <i class="fas fa-bed"></i> Rawat Inap
+      </button>
+    </div>
+
+    <!-- TAB 1: RAWAT JALAN (Custom Dashboard) -->
+    <div id="rawat-jalan" class="tab-content active">
+      <!-- Statistics Cards -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon"><i class="fas fa-users"></i></div>
+          <div class="stat-label">Total Kunjungan Hari Ini</div>
+          <div class="stat-number" id="total-visits">-</div>
+          <div class="stat-change">Pasien</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon"><i class="fas fa-heartbeat"></i></div>
+          <div class="stat-label">Total Pengukuran</div>
+          <div class="stat-number" id="total-measurements">-</div>
+          <div class="stat-change">Data</div>
+        </div>
+      </div>
+
+      <!-- Visits Table -->
+      <div class="data-container" style="margin-bottom: 30px;">
+        <div class="data-header">
+          <h3><i class="fas fa-list"></i> Daftar Kunjungan Hari Ini</h3>
+          <button class="refresh-btn" onclick="loadRawatJalanData()">
+            <i class="fas fa-sync"></i> Refresh
+          </button>
+        </div>
+        <div class="data-body">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>ID Kunjungan</th>
+                <th>Nama Pasien</th>
+                <th>EMR</th>
+                <th>Keluhan</th>
+                <th>Perawat</th>
+                <th>Status</th>
+                <th>Pengukuran</th>
+              </tr>
+            </thead>
+            <tbody id="visits-table-body">
+              <tr>
+                <td colspan="7" class="text-center text-muted py-4">
+                  <i class="fas fa-spinner fa-spin"></i> Memuat data...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Measurements Table -->
+      <div class="data-container">
+        <div class="data-header">
+          <h3><i class="fas fa-heartbeat"></i> Data Pengukuran Hari Ini <% if (role !== 'admin') { %><small style="font-size: 14px; opacity: 0.9;">(Data pasien Anda)</small><% } %></h3>
+          <button class="refresh-btn" onclick="loadMeasurementsData()">
+            <i class="fas fa-sync"></i> Refresh
+          </button>
+        </div>
+        <div class="data-body">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Waktu</th>
+                <th>Pasien</th>
+                <th>Jenis Pengukuran</th>
+                <th>Nilai</th>
+                <% if (role === 'admin') { %>
+                <th>Perawat</th>
+                <% } %>
+              </tr>
+            </thead>
+            <tbody id="measurements-table-body">
+              <tr>
+                <td colspan="<%= role === 'admin' ? '5' : '4' %>" class="text-center text-muted py-4">
+                  <i class="fas fa-spinner fa-spin"></i> Memuat data...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="info-box">
+        <i class="fas fa-info-circle"></i>
+        <strong>Informasi:</strong> Dashboard ini menampilkan data real-time kunjungan rawat jalan dan pengukuran vital sign dari <% if (role === 'admin') { %>semua pasien<% } else { %>pasien yang Anda tangani<% } %> yang berkunjung hari ini.
       </div>
     </div>
 
-    <!-- Alert Messages -->
-    <div id="alert-container"></div>
-
-    <!-- Room Cards Container -->
-    <div class="row" id="rooms-container">
-      <div class="col-12">
-        <div class="text-center">
-          <div class="spinner-border text-primary" role="status">
-            <span class="visually-hidden">Loading...</span>
+    <!-- TAB 2: RAWAT INAP (Metabase Embed) -->
+    <div id="rawat-inap" class="tab-content">
+      <div class="metabase-container">
+        <div class="data-header">
+          <h3><i class="fas fa-bed"></i> Dashboard Rawat Inap - Metabase</h3>
+          <button class="refresh-btn" onclick="loadMetabaseDashboard()">
+            <i class="fas fa-sync"></i> Refresh
+          </button>
+        </div>
+        <div id="metabase-loading" class="loading-spinner" style="display:flex;">
+          <i class="fas fa-spinner"></i>
+          <span>Memuat dashboard Metabase...</span>
+          
+          <!-- Progress Bar -->
+          <div class="loading-progress-bar">
+            <div class="loading-progress-fill"></div>
           </div>
-          <p class="mt-2">Memuat data ruangan...</p>
+          
+          <small style="color: #999; font-size: 12px; margin-top: 10px;">
+            Harap tunggu beberapa saat
+          </small>
         </div>
+        <iframe id="metabase-iframe" 
+          class="metabase-iframe"
+          style="display:none; width: 100%; height: 800px; border: none;"
+          title="Darsinurse - Dashboard Rawat Inap">
+        </iframe>
+      </div>
+      <div class="info-box">
+        <i class="fas fa-info-circle"></i>
+        <strong>Informasi:</strong> Dashboard ini menampilkan data real-time pasien rawat inap termasuk monitoring vital sign kontinyu, bed management, dan status medical alerts.
       </div>
     </div>
   </div>
 
-  <!-- Modal: Add Room -->
-  <div class="modal fade" id="addRoomModal" tabindex="-1">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">
-            <i class="fas fa-plus-circle"></i>
-            Tambah Ruangan Baru
-          </h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body">
-          <form id="form-add-room">
-            <div class="mb-3">
-              <label class="form-label">Room ID <span class="text-danger">*</span></label>
-              <input type="text" class="form-control" id="add-room-id" placeholder="Contoh: EXECUTIVE_4" required>
-              <small class="text-muted">ID unik untuk ruangan</small>
-            </div>
-            <div class="mb-3">
-              <label class="form-label">Device ID <span class="text-danger">*</span></label>
-              <input type="text" class="form-control" id="add-device-id" placeholder="Contoh: DEVICE_004" required>
-              <small class="text-muted">ID perangkat monitoring</small>
-            </div>
-            <div class="mb-3">
-              <label class="form-label">Pasien (Opsional)</label>
-              <select class="form-select" id="add-emr-no">
-                <option value="">-- Ruangan Kosong --</option>
-              </select>
-              <small class="text-muted">Bisa diisi kemudian</small>
-            </div>
-            <div class="d-grid gap-2">
-              <button type="submit" class="btn btn-success">
-                <i class="fas fa-save"></i> Simpan Ruangan
-              </button>
-              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                <i class="fas fa-times"></i> Batal
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Modal: Edit Room -->
-  <div class="modal fade" id="editRoomModal" tabindex="-1">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">
-            <i class="fas fa-edit"></i>
-            Edit Ruangan
-          </h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body">
-          <form id="form-edit-room">
-            <input type="hidden" id="edit-old-room-id">
-            <div class="mb-3">
-              <label class="form-label">Room ID <span class="text-danger">*</span></label>
-              <input type="text" class="form-control" id="edit-room-id" required>
-            </div>
-            <div class="mb-3">
-              <label class="form-label">Device ID <span class="text-danger">*</span></label>
-              <input type="text" class="form-control" id="edit-device-id" required>
-            </div>
-            <div class="d-grid gap-2">
-              <button type="submit" class="btn btn-primary">
-                <i class="fas fa-save"></i> Update Ruangan
-              </button>
-              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                <i class="fas fa-times"></i> Batal
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Modal: Assign Patient -->
-  <div class="modal fade" id="assignPatientModal" tabindex="-1">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">
-            <i class="fas fa-user-plus"></i>
-            Masukkan Pasien ke Ruangan
-          </h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body">
-          <div class="alert alert-info">
-            <i class="fas fa-info-circle"></i>
-            Ruangan: <strong id="assign-room-display"></strong>
-          </div>
-          <form id="form-assign-patient">
-            <input type="hidden" id="assign-room-id">
-            <div class="mb-3">
-              <label class="form-label">Pilih Pasien <span class="text-danger">*</span></label>
-              <select class="form-select" id="assign-emr-no" required>
-                <option value="">-- Pilih Pasien --</option>
-              </select>
-              <small class="text-muted">Hanya menampilkan pasien yang belum ada di ruangan</small>
-            </div>
-            <div class="d-grid gap-2">
-              <button type="submit" class="btn btn-success">
-                <i class="fas fa-check"></i> Masukkan Pasien
-              </button>
-              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                <i class="fas fa-times"></i> Batal
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
-  </div>
+  <!-- Footer -->
+  <footer class="footer">
+    <p>&copy; 2025 Darsinurse Monitoring - Medical IoT Platform. All rights reserved.</p>
+  </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  
   <script>
-    // ============================================
-    // GLOBAL VARIABLES
-    // ============================================
-    let rooms = [];
-    let availablePatients = [];
-    const addRoomModal = new bootstrap.Modal(document.getElementById('addRoomModal'));
-    const editRoomModal = new bootstrap.Modal(document.getElementById('editRoomModal'));
-    const assignPatientModal = new bootstrap.Modal(document.getElementById('assignPatientModal'));
+    /* ============================================================
+      CORRECTED CLIENT-SIDE SCRIPT FOR MONITORING.EJS
+      Ganti semua kode JavaScript di dalam <script> tag
+      ============================================================ */
 
     // ============================================
-    // LOAD DATA
+    // GLOBAL STATE
     // ============================================
-    async function loadRooms() {
+    let audioUnlocked = false;
+    let currentAlertAudio = null;
+    const displayedAlerts = new Map(); // Track with timestamp
+    let fallCheckInterval = null;
+    let activeAlertsCount = 0;
+    let lastPollTime = Date.now();
+    let audioContext = null;
+    let alertAudioBuffer = null;
+    let audioSource = null;
+    let isAudioPlaying = false; // ✅ NEW
+
+
+
+    // ============================================
+    // AUDIO INITIALIZATION
+    // ============================================
+    const generateAlertSound = () => {
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const duration = 0.5;
+      const sampleRate = audioCtx.sampleRate;
+      const buffer = audioCtx.createBuffer(1, duration * sampleRate, sampleRate);
+      const data = buffer.getChannelData(0);
+      
+      // Generate siren sound (alternating frequencies)
+      for (let i = 0; i < buffer.length; i++) {
+        const t = i / sampleRate;
+        const freq = Math.sin(t * 8) * 200 + 800; // Oscillate between 600-1000 Hz
+        data[i] = Math.sin(2 * Math.PI * freq * t) * 0.3;
+      }
+      
+      return buffer;
+    };
+
+    const initializeAudio = () => {
       try {
-        const response = await fetch('/api/rooms');
-        const result = await response.json();
-        
-        if (result.success) {
-          rooms = result.rooms;
-          renderRooms();
-        } else {
-          showAlert('danger', 'Gagal memuat data ruangan');
-        }
-      } catch (error) {
-        showAlert('danger', 'Error: ' + error.message);
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        alertAudioBuffer = generateAlertSound();
+        console.log('✓ Alert audio initialized');
+      } catch (err) {
+        console.error('❌ Audio init failed:', err);
       }
-    }
-
-    async function loadAvailablePatients() {
-      try {
-        const response = await fetch('/api/rooms/available-patients');
-        const result = await response.json();
-        
-        if (result.success) {
-          availablePatients = result.patients;
-          populatePatientDropdowns();
-        }
-      } catch (error) {
-        console.error('Error loading patients:', error);
-      }
-    }
-
-    function populatePatientDropdowns() {
-      const addSelect = document.getElementById('add-emr-no');
-      const assignSelect = document.getElementById('assign-emr-no');
-      
-      const options = availablePatients.map(p => 
-        `<option value="${p.emr_no}">${p.nama} (EMR: ${p.emr_no}) - ${p.poli}</option>`
-      ).join('');
-      
-      addSelect.innerHTML = '<option value="">-- Ruangan Kosong --</option>' + options;
-      assignSelect.innerHTML = '<option value="">-- Pilih Pasien --</option>' + options;
-    }
+    };
 
     // ============================================
-    // RENDER ROOMS
+    // SOCKET.IO CONNECTION
     // ============================================
-    function renderRooms() {
-      const container = document.getElementById('rooms-container');
-      
-      if (rooms.length === 0) {
-        container.innerHTML = `
-          <div class="col-12">
-            <div class="empty-state">
-              <i class="fas fa-door-open"></i>
-              <h3>Belum Ada Ruangan</h3>
-              <p>Mulai dengan menambahkan ruangan baru</p>
-              <button class="btn btn-add-room" onclick="showAddRoomModal()">
-                <i class="fas fa-plus"></i> Tambah Ruangan Pertama
-              </button>
-            </div>
-          </div>
-        `;
-        return;
-      }
-
-      const html = rooms.map(room => {
-        const isOccupied = room.emr_no !== null;
-        const statusClass = isOccupied ? 'occupied' : 'empty';
-        const statusText = isOccupied ? 'TERISI' : 'KOSONG';
-        const icon = isOccupied ? 'fa-door-closed' : 'fa-door-open';
-        
-        return `
-          <div class="col-md-6 col-lg-4">
-            <div class="room-card">
-              <div class="room-header ${statusClass}">
-                <span class="room-status-badge">${statusText}</span>
-                <h3 class="room-id">
-                  <i class="fas ${icon}"></i>
-                  ${room.room_id}
-                </h3>
-              </div>
-              <div class="room-body">
-                <div class="info-row">
-                  <i class="fas fa-microchip"></i>
-                  <span class="info-label">Device ID:</span>
-                  <code class="info-value">${room.device_id}</code>
-                </div>
-                
-                ${isOccupied ? `
-                  <div class="info-row">
-                    <i class="fas fa-user"></i>
-                    <span class="info-label">Pasien:</span>
-                    <span class="info-value">${room.nama_pasien}</span>
-                  </div>
-                  <div class="info-row">
-                    <i class="fas fa-id-card"></i>
-                    <span class="info-label">EMR:</span>
-                    <span class="info-value">${room.emr_no}</span>
-                  </div>
-                  <div class="info-row">
-                    <i class="fas fa-hospital"></i>
-                    <span class="info-label">Poli:</span>
-                    <span class="info-value">${room.poli}</span>
-                  </div>
-                  <div class="info-row">
-                    <i class="fas fa-clock"></i>
-                    <span class="info-label">Masuk:</span>
-                    <span class="info-value">${formatDate(room.assigned_at)}</span>
-                  </div>
-                ` : `
-                  <div class="alert alert-secondary mb-0">
-                    <i class="fas fa-info-circle"></i> Ruangan masih kosong
-                  </div>
-                `}
-                
-                <div class="room-actions">
-                  ${isOccupied ? `
-                    <button class="btn-room-action btn-remove" onclick="removePatient('${room.room_id}')">
-                      <i class="fas fa-door-open"></i> Keluarkan
-                    </button>
-                  ` : `
-                    <button class="btn-room-action btn-assign" onclick="showAssignModal('${room.room_id}')">
-                      <i class="fas fa-user-plus"></i> Masukkan Pasien
-                    </button>
-                  `}
-                  <button class="btn-room-action btn-edit" onclick="showEditModal('${room.room_id}', '${room.device_id}')">
-                    <i class="fas fa-edit"></i>
-                  </button>
-                  <button class="btn-room-action btn-delete" onclick="deleteRoom('${room.room_id}')">
-                    <i class="fas fa-trash"></i>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        `;
-      }).join('');
-      
-      container.innerHTML = html;
-    }
-
-    // ============================================
-    // MODAL FUNCTIONS
-    // ============================================
-    function showAddRoomModal() {
-      document.getElementById('form-add-room').reset();
-      loadAvailablePatients();
-      addRoomModal.show();
-    }
-
-    function showEditModal(roomId, deviceId) {
-      document.getElementById('edit-old-room-id').value = roomId;
-      document.getElementById('edit-room-id').value = roomId;
-      document.getElementById('edit-device-id').value = deviceId;
-      editRoomModal.show();
-    }
-
-    function showAssignModal(roomId) {
-      document.getElementById('assign-room-id').value = roomId;
-      document.getElementById('assign-room-display').textContent = roomId;
-      loadAvailablePatients();
-      assignPatientModal.show();
-    }
-
-    // ============================================
-    // FORM HANDLERS
-    // ============================================
-    document.getElementById('form-add-room').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      
-      const roomId = document.getElementById('add-room-id').value.trim();
-      const deviceId = document.getElementById('add-device-id').value.trim();
-      const emrNo = document.getElementById('add-emr-no').value;
-      
-      try {
-        const response = await fetch('/api/rooms/add', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            room_id: roomId,
-            device_id: deviceId,
-            emr_no: emrNo || null
-          })
-        });
-        
-        const result = await response.json();
-        
-        if (result.success) {
-          showAlert('success', result.message);
-          addRoomModal.hide();
-          loadRooms();
-          loadAvailablePatients();
-        } else {
-          showAlert('danger', result.error);
-        }
-      } catch (error) {
-        showAlert('danger', 'Error: ' + error.message);
-      }
+    const socket = io({
+      reconnection: true,
+      reconnectionDelay: 2000,
+      reconnectionAttempts: 10,
+      timeout: 10000
     });
 
-    document.getElementById('form-edit-room').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      
-      const oldRoomId = document.getElementById('edit-old-room-id').value;
-      const newRoomId = document.getElementById('edit-room-id').value.trim();
-      const deviceId = document.getElementById('edit-device-id').value.trim();
-      
-      try {
-        const response = await fetch(`/api/rooms/${oldRoomId}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            new_room_id: newRoomId,
-            device_id: deviceId
-          })
-        });
-        
-        const result = await response.json();
-        
-        if (result.success) {
-          showAlert('success', result.message);
-          editRoomModal.hide();
-          loadRooms();
-        } else {
-          showAlert('danger', result.error);
-        }
-      } catch (error) {
-        showAlert('danger', 'Error: ' + error.message);
-      }
+    socket.on('connect', () => {
+      console.log('✓ Socket.IO connected:', socket.id);
+      const perawat = document.body.dataset.perawat || 'Unknown';
+      socket.emit('join-monitoring', { 
+        perawat: perawat,
+        timestamp: new Date().toISOString() 
+      });
     });
 
-    document.getElementById('form-assign-patient').addEventListener('submit', async (e) => {
-      e.preventDefault();
+    socket.on('disconnect', () => {
+      console.warn('⚠️ Socket.IO disconnected');
+    });
+
+    socket.on('connect_error', (error) => {
+      console.error('❌ Socket connection error:', error.message);
+    });
+
+    // ✅ Handle real-time fall alerts from Socket.IO
+    socket.on('fall-alert', (alert) => {
+      console.log('🚨 FALL ALERT RECEIVED (Socket.IO):', {
+        id: alert.id,
+        nama: alert.nama_pasien,
+        room: alert.room_id,
+        time: alert.waktu
+      });
       
-      const roomId = document.getElementById('assign-room-id').value;
-      const emrNo = document.getElementById('assign-emr-no').value;
-      
-      if (!emrNo) {
-        showAlert('warning', 'Silakan pilih pasien');
-        return;
-      }
-      
-      try {
-        const response = await fetch('/api/rooms/assign', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            room_id: roomId,
-            emr_no: parseInt(emrNo)
-          })
-        });
-        
-        const result = await response.json();
-        
-        if (result.success) {
-          showAlert('success', result.message);
-          assignPatientModal.hide();
-          loadRooms();
-          loadAvailablePatients();
-        } else {
-          showAlert('danger', result.error);
-        }
-      } catch (error) {
-        showAlert('danger', 'Error: ' + error.message);
+      handleFallAlert(alert);
+    });
+
+    // ✅ Handle acknowledgment broadcasts
+    socket.on('fall-acknowledged-broadcast', (data) => {
+      console.log('✅ Fall acknowledged by another user:', data);
+      const alertKey = `fall-${data.alertId}`;
+      if (displayedAlerts.has(alertKey)) {
+        closeFallAlert(data.alertId, false); // Close without sending acknowledge again
       }
     });
 
     // ============================================
-    // ACTION FUNCTIONS
+    // CENTRALIZED FALL ALERT HANDLER
     // ============================================
-    async function removePatient(roomId) {
-      if (!confirm(`Apakah Anda yakin ingin mengeluarkan pasien dari ruangan ${roomId}?`)) {
+    function handleFallAlert(alert) {
+      if (!alert || !alert.nama_pasien) {
+        console.error('❌ Invalid alert data');
         return;
       }
       
-      try {
-        const response = await fetch('/api/rooms/remove-patient', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ room_id: roomId })
-        });
-        
-        const result = await response.json();
-        
-        if (result.success) {
-          showAlert('success', result.message);
-          loadRooms();
-          loadAvailablePatients();
-        } else {
-          showAlert('danger', result.error);
-        }
-      } catch (error) {
-        showAlert('danger', 'Error: ' + error.message);
-      }
-    }
-
-    async function deleteRoom(roomId) {
-      if (!confirm(`Apakah Anda yakin ingin menghapus ruangan ${roomId}?\n\nRuangan harus kosong untuk dihapus.`)) {
+      const alertKey = `fall-${alert.id}`;
+      const now = Date.now();
+      
+      // Check alert age first
+      const alertTime = new Date(alert.waktu).getTime();
+      const alertAge = now - alertTime;
+      const fiveMinutes = 5 * 60 * 1000;
+      
+      if (alertAge > fiveMinutes) {
+        console.log(`⏭️ Alert ${alert.id} too old (${Math.round(alertAge/60000)} mins), ignoring`);
+        displayedAlerts.set(alertKey, { alert: alert, timestamp: now });
+        markAlertAsDisplayed(alert.id);
         return;
       }
       
-      try {
-        const response = await fetch('/api/rooms/delete', {
-          method: 'DELETE',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ room_id: roomId })
-        });
+      // Duplicate check
+      if (displayedAlerts.has(alertKey)) {
+        const existing = displayedAlerts.get(alertKey);
+        const timeSinceDisplay = now - existing.timestamp;
         
-        const result = await response.json();
-        
-        if (result.success) {
-          showAlert('success', result.message);
-          loadRooms();
+        if (timeSinceDisplay < 2000) {
+          console.log(`⏭️ Duplicate alert ignored: ${alertKey}`);
+          return;
         } else {
-          showAlert('danger', result.error);
+          displayedAlerts.delete(alertKey);
         }
-      } catch (error) {
-        showAlert('danger', 'Error: ' + error.message);
       }
-    }
-
-    // ============================================
-    // UTILITY FUNCTIONS
-    // ============================================
-    function showAlert(type, message) {
-      const container = document.getElementById('alert-container');
-      const alertDiv = document.createElement('div');
-      alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
-      alertDiv.innerHTML = `
-        <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'danger' ? 'exclamation-circle' : 'info-circle'}"></i>
-        ${message}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-      `;
       
-      container.appendChild(alertDiv);
+      // DOM check
+      if (document.getElementById(`fall-alert-${alert.id}`)) {
+        console.log(`⏭️ Alert ${alert.id} already in DOM`);
+        return;
+      }
       
+      // Store with timestamp
+      displayedAlerts.set(alertKey, { alert: alert, timestamp: now });
+      
+      // ✅ FIXED: Only play if not already playing
+      if (!isAudioPlaying) {
+        playAlertSound();
+      } else {
+        console.log('🔊 Audio already playing for other alerts');
+      }
+      
+      showFallAlert(alert);
+      
+      // Browser notification
+      if (Notification.permission === 'granted') {
+        try {
+          const notification = new Notification('🚨 FALL ALERT!', {
+            body: `${alert.nama_pasien} - Room ${alert.room_id}\nEMR: ${alert.emr_no}`,
+            tag: alertKey,
+            requireInteraction: true,
+            vibrate: [200, 100, 200],
+            renotify: false
+          });
+          
+          notification.onclick = () => {
+            window.focus();
+            notification.close();
+          };
+        } catch (err) {
+          console.error('❌ Notification error:', err);
+        }
+      }
+      
+      updateBadgeCount();
+      markAlertAsDisplayed(alert.id);
+      
+      console.log(`✓ Alert displayed: ${alertKey}, age: ${Math.round(alertAge/1000)}s`);
+      
+      // Auto-close after 2 minutes
       setTimeout(() => {
-        alertDiv.remove();
-      }, 5000);
+        const element = document.getElementById(`fall-alert-${alert.id}`);
+        if (element && element.parentNode) {
+          console.log('⏱️ Auto-closing alert:', alert.id);
+          closeFallAlert(alert.id, false);
+        }
+      }, 120000);
     }
 
-    function formatDate(dateString) {
-      if (!dateString) return '-';
-      const date = new Date(dateString);
-      return date.toLocaleString('id-ID', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
+    // ============================================
+    // MARK ALERT AS DISPLAYED ON SERVER
+    // ============================================
+    function markAlertAsDisplayed(fallId) {
+      fetch('/api/fall-detection/mark-displayed', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fallIds: [fallId] })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          console.log(`✓ Alert ${fallId} marked as displayed on server`);
+        } else {
+          console.warn('⚠️ Failed to mark as displayed:', data.error);
+        }
+      })
+      .catch(err => {
+        console.error('❌ Mark displayed error:', err);
       });
     }
 
     // ============================================
-    // INITIALIZE ON PAGE LOAD
+    // DATABASE POLLING (BACKUP MECHANISM)
+    // ============================================
+      if (fallCheckInterval) {
+        clearInterval(fallCheckInterval);
+      }
+      
+      fallCheckInterval = setInterval(async () => {
+        const now = Date.now();
+        const timeSinceLastPoll = now - lastPollTime;
+        
+        // Skip if too soon
+        if (timeSinceLastPoll < 9000) {
+          return;
+        }
+        
+        lastPollTime = now;
+        
+        try {
+          const res = await fetch('/api/fall-detection/latest');
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          
+          const data = await res.json();
+          
+          if (data.success && data.falls && data.falls.length > 0) {
+            console.log(`📊 [POLL] Found ${data.falls.length} NEW fall(s)`);
+            console.log(`   Total today: ${data.totalToday}`);
+            console.log(`   Already displayed: ${data.displayedCount}`);
+            
+            data.falls.forEach(fall => {
+              const alertData = {
+                id: fall.id,
+                emr_no: fall.emr_no,
+                nama_pasien: fall.nama_pasien,
+                room_id: fall.room_id || `Room-${fall.emr_no}`,
+                heart_rate: fall.heart_rate,
+                blood_pressure: fall.sistolik && fall.diastolik 
+                  ? `${fall.sistolik}/${fall.diastolik}` 
+                  : 'N/A',
+                waktu: fall.waktu
+              };
+              
+              handleFallAlert(alertData);
+            });
+          } else {
+            console.log('📊 [POLL] No new falls');
+          }
+        } catch (err) {
+          console.error('⚠️ [POLL] Error:', err.message);
+        }
+      }, 10000); // Poll every 10 seconds
+      
+      console.log('✓ Fall detection polling started (10s interval)');
+    
+    function startFallDetectionPolling() {
+      if (fallCheckInterval) {
+        clearInterval(fallCheckInterval);
+      }
+      
+      fallCheckInterval = setInterval(async () => {
+        const now = Date.now();
+        const timeSinceLastPoll = now - lastPollTime;
+        
+        // ✅ Ensure minimum 9 seconds between polls
+        if (timeSinceLastPoll < 9000) {
+          return;
+        }
+        
+        lastPollTime = now;
+        
+        try {
+          const res = await fetch('/api/fall-detection/latest');
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          
+          const data = await res.json();
+          
+          if (data.success && data.falls && data.falls.length > 0) {
+            console.log(`📊 [POLL] Found ${data.falls.length} NEW fall(s) from last 30 mins`);
+            console.log(`   Total recent: ${data.totalRecent}`);
+            console.log(`   Already displayed: ${data.displayedCount}`);
+            
+            // ✅ FIX: Sort by time descending to show newest first
+            const sortedFalls = data.falls.sort((a, b) => 
+              new Date(b.waktu).getTime() - new Date(a.waktu).getTime()
+            );
+            
+            sortedFalls.forEach(fall => {
+              const alertData = {
+                id: fall.id,
+                emr_no: fall.emr_no,
+                nama_pasien: fall.nama_pasien,
+                room_id: fall.room_id || `Room-${fall.emr_no}`,
+                heart_rate: fall.heart_rate,
+                blood_pressure: fall.sistolik && fall.diastolik 
+                  ? `${fall.sistolik}/${fall.diastolik}` 
+                  : 'N/A',
+                waktu: fall.waktu
+              };
+              
+              handleFallAlert(alertData);
+            });
+          } else {
+            console.log('📊 [POLL] No new falls');
+          }
+        } catch (err) {
+          console.error('⚠️ [POLL] Error:', err.message);
+        }
+      }, 10000); // Poll every 10 seconds
+      
+      console.log('✓ Fall detection polling started (10s interval, 30min window)');
+    }
+
+    // ============================================
+    // RESET DISPLAYED ALERTS (TESTING/ADMIN)
+    // ============================================
+    function resetDisplayedAlerts() {
+      if (confirm('Reset all displayed alerts? This will show old alerts again.')) {
+        fetch('/api/fall-detection/reset-displayed', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        })
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            console.log('✓ Server-side displayed alerts reset');
+            displayedAlerts.clear();
+            console.log('✓ Client-side displayed alerts cleared');
+            alert(`Reset complete! Cleared ${data.clearedCount} alerts.`);
+            
+            // Force reload
+            location.reload();
+          }
+        })
+        .catch(err => {
+          console.error('❌ Reset error:', err);
+          alert('Failed to reset: ' + err.message);
+        });
+      }
+    }
+
+    // ============================================
+    // SHOW FALL ALERT IN UI
+    // ============================================
+    function showFallAlert(alert) {
+      const container = document.getElementById('fall-alert-container');
+      if (!container) {
+        console.error('❌ Alert container not found');
+        return;
+      }
+      
+      const alertId = `fall-alert-${alert.id}`;
+      
+      // Check if already in DOM
+      if (document.getElementById(alertId)) {
+        console.log(`⏭️ Alert DOM already exists: ${alertId}`);
+        return;
+      }
+      
+      const alertDiv = document.createElement('div');
+      alertDiv.className = 'fall-alert';
+      alertDiv.id = alertId;
+      
+      const waktu = new Date(alert.waktu);
+      const waktuStr = waktu.toLocaleTimeString('id-ID', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      });
+      
+      alertDiv.innerHTML = `
+        <div class="fall-alert-header">
+          <div class="fall-alert-icon">⚠️</div>
+          <h3 class="fall-alert-title">FALL DETECTED!</h3>
+        </div>
+        
+        <div class="fall-alert-body">
+          <div class="fall-alert-info">
+            <span class="fall-alert-label">👤 Pasien:</span>
+            <span class="fall-alert-value">${alert.nama_pasien}</span>
+          </div>
+          
+          <div class="fall-alert-info">
+            <span class="fall-alert-label">🏥 Ruangan:</span>
+            <span class="fall-alert-value">${alert.room_id}</span>
+          </div>
+          
+          <div class="fall-alert-info">
+            <span class="fall-alert-label">📋 EMR:</span>
+            <span class="fall-alert-value">${alert.emr_no}</span>
+          </div>
+          
+          <div class="fall-alert-info">
+            <span class="fall-alert-label">💓 Heart Rate:</span>
+            <span class="fall-alert-value">${alert.heart_rate || 'N/A'} bpm</span>
+          </div>
+          
+          <div class="fall-alert-info">
+            <span class="fall-alert-label">🩺 Blood Pressure:</span>
+            <span class="fall-alert-value">${alert.blood_pressure || 'N/A'} mmHg</span>
+          </div>
+          
+          <div class="fall-alert-info">
+            <span class="fall-alert-label">🕐 Waktu:</span>
+            <span class="fall-alert-value">${waktuStr}</span>
+          </div>
+        </div>
+        
+        <div class="fall-alert-footer">
+          <button class="fall-alert-btn btn-acknowledge" onclick="acknowledgeFallAlert(${alert.id})">
+            ✓ Acknowledge
+          </button>
+          <button class="fall-alert-btn btn-close" onclick="closeFallAlert(${alert.id}, false)">
+            ✕ Close
+          </button>
+        </div>
+        
+        <div class="fall-alert-timestamp">
+          Alert received at ${new Date().toLocaleTimeString('id-ID')}
+        </div>
+      `;
+      
+      container.insertBefore(alertDiv, container.firstChild);
+      activeAlertsCount++;
+      updateBadgeCount();
+    }
+
+    // ============================================
+    // ACKNOWLEDGE & CLOSE ALERTS
+    // ============================================
+    function acknowledgeFallAlert(alertId) {
+      console.log('✓ Acknowledging alert:', alertId);
+      
+      const perawat = document.body.dataset.perawat || 'Unknown';
+      
+      fetch(`/api/fall-detection/${alertId}/acknowledge`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          acknowledged_by: perawat,
+          timestamp: new Date().toISOString()
+        })
+      })
+      .then(res => res.json())
+      .then(data => {
+        console.log('✓ Acknowledged:', data);
+        // Emit to socket so other clients know
+        socket.emit('acknowledge-fall', {
+          alertId: alertId,
+          acknowledgedBy: perawat
+        });
+      })
+      .catch(err => console.error('❌ Acknowledge error:', err));
+      
+      closeFallAlert(alertId, true);
+    }
+
+    function closeFallAlert(alertId, sendAcknowledge = false) {
+      const alertDiv = document.getElementById(`fall-alert-${alertId}`);
+      if (!alertDiv) {
+        console.log(`ℹ️ Alert ${alertId} already closed`);
+        return;
+      }
+      
+      alertDiv.style.animation = 'slideOut 0.3s ease-in';
+      
+      setTimeout(() => {
+        alertDiv.remove();
+        activeAlertsCount--;
+        
+        // Remove from tracking
+        displayedAlerts.delete(`fall-${alertId}`);
+        
+        // Stop audio only if no more alerts
+stopAlertSound();
+
+// Jika masih ada alert lain, restart audio
+if (activeAlertsCount > 0) {
+setTimeout(() => playAlertSound(), 500);
+}
+
+        
+        updateBadgeCount();
+      }, 300);
+    }
+
+    // ============================================
+    // AUDIO FUNCTIONS
+    // ============================================
+    function playAlertSound() {
+      if (!audioContext || !alertAudioBuffer) {
+        console.warn('⚠️ Audio not initialized');
+        initializeAudio();
+        return;
+      }
+      
+      // ✅ Don't play if already playing
+      if (isAudioPlaying) {
+        console.log('🔊 Audio already playing');
+        return;
+      }
+      
+      // Stop existing audio first (safety)
+      if (audioSource) {
+        stopAlertSound();
+      }
+      
+      try {
+        // Resume context if suspended
+        if (audioContext.state === 'suspended') {
+          audioContext.resume();
+        }
+        
+        // Create and start source
+        audioSource = audioContext.createBufferSource();
+        audioSource.buffer = alertAudioBuffer;
+        audioSource.loop = true; // Loop the sound
+        audioSource.connect(audioContext.destination);
+        audioSource.start(0);
+        
+        isAudioPlaying = true; // ✅ Mark as playing
+        
+        console.log('🔊 Alert sound started (looping)');
+      } catch (err) {
+        console.error('❌ Audio play error:', err);
+        isAudioPlaying = false;
+      }
+    }
+
+    function stopAlertSound() {
+      if (audioSource) {
+        try {
+          audioSource.stop();
+          audioSource.disconnect();
+          console.log('🔇 Alert sound stopped');
+        } catch (err) {
+          console.warn('⚠️ Audio stop error:', err);
+        }
+        audioSource = null;
+      }
+      
+      isAudioPlaying = false; // ✅ Mark as stopped
+    }
+
+
+    // ============================================
+    // BADGE COUNT & TITLE UPDATE
+    // ============================================
+    function updateBadgeCount() {
+      const count = activeAlertsCount;
+      
+      if ('setAppBadge' in navigator) {
+        if (count === 0) {
+          navigator.clearAppBadge();
+        } else {
+          navigator.setAppBadge(count);
+        }
+      }
+      
+      // Update document title
+      if (count > 0) {
+        document.title = `(${count}) 🚨 Fall Alert - Darsinurse`;
+      } else {
+        document.title = 'Darsinurse - Dashboard Monitoring';
+      }
+      
+      console.log(`📊 Active alerts: ${count}`);
+    }
+
+    // ============================================
+    // CLEANUP OLD ALERTS FROM MEMORY
+    // ============================================
+    setInterval(() => {
+      const now = Date.now();
+      const twoMinutesAgo = now - 120000; // 2 minutes instead of 5
+      
+      let cleanedCount = 0;
+      displayedAlerts.forEach((value, key) => {
+        if (value.timestamp < twoMinutesAgo) {
+          displayedAlerts.delete(key);
+          cleanedCount++;
+        }
+      });
+      
+      if (cleanedCount > 0) {
+        console.log(`🧹 Cleaned up ${cleanedCount} old alert(s) from memory`);
+      }
+      
+      // ✅ Also limit total size
+      if (displayedAlerts.size > 50) {
+        const entries = Array.from(displayedAlerts.entries());
+        entries.sort((a, b) => a[1].timestamp - b[1].timestamp);
+        const toRemove = entries.slice(0, entries.length - 50);
+        toRemove.forEach(([key]) => displayedAlerts.delete(key));
+        console.log(`🧹 Trimmed displayedAlerts to 50 (removed ${toRemove.length})`);
+      }
+    }, 30000); // Every 30 seconds
+    // ============================================
+    // AUDIO UNLOCK
+    // ============================================
+    function unlockAudio() {
+      if (audioUnlocked) return;
+      
+      initializeAudio();
+      
+      if (audioContext) {
+        audioContext.resume().then(() => {
+          audioUnlocked = true;
+          console.log('✓ Alert sounds enabled');
+          
+          // Remove banner if exists
+          const banner = document.getElementById('audio-unlock-banner');
+          if (banner) {
+            banner.style.animation = 'slideUp 0.3s ease-in';
+            setTimeout(() => banner.remove(), 300);
+          }
+        }).catch(err => {
+          console.warn('⚠️ Audio unlock failed:', err);
+        });
+      }
+    }
+
+    // Multiple event listeners for audio unlock
+    ['click', 'keydown', 'touchstart'].forEach(event => {
+      document.addEventListener(event, unlockAudio, { once: true });
+    });
+
+    function showAudioUnlockBanner() {
+      if (document.getElementById('audio-unlock-banner')) {
+        return; // Already showing
+      }
+      
+      const banner = document.createElement('div');
+      banner.id = 'audio-unlock-banner';
+      banner.style.cssText = `
+        position: fixed;
+        top: 70px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #ff9800;
+        color: white;
+        padding: 12px 24px;
+        border-radius: 8px;
+        z-index: 9998;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        animation: slideDown 0.3s ease-out;
+      `;
+      banner.innerHTML = '🔊 Klik di mana saja untuk mengaktifkan suara alert';
+      
+      banner.onclick = (e) => {
+        e.stopPropagation();
+        unlockAudio();
+      };
+      
+      document.body.appendChild(banner);
+      
+      // Auto-remove after 10 seconds
+      setTimeout(() => {
+        if (banner.parentNode && !audioUnlocked) {
+          banner.style.animation = 'slideUp 0.3s ease-in';
+          setTimeout(() => banner.remove(), 300);
+        }
+      }, 10000);
+    }
+
+    // ============================================
+    // TAB NAVIGATION
+    // ============================================
+    document.querySelectorAll('.tab-button').forEach(button => {
+      button.addEventListener('click', function() {
+        const tabName = this.dataset.tab;
+        
+        document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+        
+        this.classList.add('active');
+        document.getElementById(tabName).classList.add('active');
+        
+        if (tabName === 'rawat-jalan') {
+          loadRawatJalanData();
+        } else if (tabName === 'rawat-inap') {
+          loadMetabaseDashboard();
+        }
+      });
+    });
+
+    // ============================================
+    // RAWAT JALAN DATA LOADING
+    // ============================================
+    async function loadRawatJalanData() {
+      try {
+        console.log('🔄 Loading Rawat Jalan data...');
+        
+        const statsResponse = await fetch('/api/statistics/today');
+        const statsData = await statsResponse.json();
+        
+        if (statsData.success) {
+          const totalVisitsEl = document.getElementById('total-visits');
+          const totalMeasurementsEl = document.getElementById('total-measurements');
+          
+          if (totalVisitsEl) {
+            totalVisitsEl.textContent = statsData.stats.totalVisits || 0;
+          }
+          
+          if (totalMeasurementsEl) {
+            totalMeasurementsEl.textContent = statsData.stats.totalMeasurements || 0;
+          }
+        }
+
+        await loadVisitsData();
+        await loadMeasurementsData();
+
+        console.log('✓ Rawat Jalan data loaded');
+      } catch (err) {
+        console.error('❌ Error loading data:', err);
+      }
+    }
+
+    async function loadVisitsData() {
+      try {
+        const visitsResponse = await fetch('/api/visits/today');
+        const visitsData = await visitsResponse.json();
+        
+        if (visitsData.success) {
+          const tbody = document.getElementById('visits-table-body');
+          
+          if (!tbody) return;
+          
+          if (visitsData.visits.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">Tidak ada data kunjungan hari ini</td></tr>';
+          } else {
+            tbody.innerHTML = visitsData.visits.map(visit => `
+              <tr>
+                <td><strong>${visit.id_kunjungan}</strong></td>
+                <td>${visit.nama_pasien}</td>
+                <td>${visit.emr_pasien}</td>
+                <td>${visit.keluhan || '-'}</td>
+                <td>${visit.nama_perawat}</td>
+                <td><span class="badge-status badge-${visit.status}">${visit.status === 'aktif' ? 'Aktif' : 'Selesai'}</span></td>
+                <td><span class="badge bg-info">${visit.total_measurements} data</span></td>
+              </tr>
+            `).join('');
+          }
+        }
+      } catch (err) {
+        console.error('❌ Error loading visits:', err);
+      }
+    }
+
+    async function loadMeasurementsData() {
+      try {
+        const measurementsResponse = await fetch('/api/measurements/today');
+        const measurementsData = await measurementsResponse.json();
+        
+        if (measurementsData.success) {
+          const tbody = document.getElementById('measurements-table-body');
+          
+          if (!tbody) return;
+          
+          const isAdmin = document.body.dataset.role === 'admin';
+          const colspan = isAdmin ? '5' : '4';
+          
+          if (measurementsData.measurements.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="${colspan}" class="text-center text-muted py-4">Tidak ada pengukuran hari ini</td></tr>`;
+          } else {
+            tbody.innerHTML = measurementsData.measurements.map(m => {
+              const perawatColumn = isAdmin ? `<td>${m.nama_perawat}</td>` : '';
+              return `
+                <tr>
+                  <td>${new Date(m.timestamp).toLocaleTimeString('id-ID')}</td>
+                  <td>${m.nama_pasien}</td>
+                  <td><span class="badge bg-success">${m.tipe_device}</span></td>
+                  <td><strong>${m.data}</strong></td>
+                  ${perawatColumn}
+                </tr>
+              `;
+            }).join('');
+          }
+        }
+      } catch (err) {
+        console.error('❌ Error loading measurements:', err);
+      }
+    }
+
+    async function loadMetabaseDashboard() {
+      const loadingDiv = document.getElementById('metabase-loading');
+      const iframe = document.getElementById('metabase-iframe');
+      
+      if (!loadingDiv || !iframe) return;
+      
+      loadingDiv.style.display = 'flex';
+      iframe.style.display = 'none';
+      
+      try {
+        const response = await fetch('/api/metabase/rawat-inap-token');
+        const data = await response.json();
+        
+        if (data.success && data.embedUrl) {
+          iframe.src = data.embedUrl;
+          
+          iframe.onload = function() {
+            setTimeout(() => {
+              loadingDiv.style.display = 'none';
+              iframe.style.display = 'block';
+            }, 300);
+          };
+          
+          setTimeout(() => {
+            loadingDiv.style.display = 'none';
+            iframe.style.display = 'block';
+          }, 5000);
+        } else {
+          throw new Error(data.error || 'Invalid response');
+        }
+      } catch (err) {
+        console.error('❌ Metabase error:', err);
+        loadingDiv.innerHTML = `
+          <div style="text-align: center; color: #dc3545;">
+            <i class="fas fa-exclamation-circle" style="font-size: 48px;"></i>
+            <p style="margin-top: 15px;"><strong>Gagal memuat dashboard</strong></p>
+            <button onclick="loadMetabaseDashboard()" class="btn btn-sm btn-primary mt-3">
+              <i class="fas fa-sync"></i> Coba Lagi
+            </button>
+          </div>
+        `;
+      }
+    }
+
+    // ============================================
+    // PAGE INITIALIZATION
     // ============================================
     document.addEventListener('DOMContentLoaded', function() {
-      console.log('✓ Room Management Page Loaded');
-      loadRooms();
-      loadAvailablePatients();
+      console.log('✓ Page loaded, initializing...');
+      
+      // Store user info in body dataset
+      const navSection = document.querySelector('.nav-section span');
+      if (navSection && navSection.textContent) {
+        const perawatName = navSection.textContent.replace(/\s*<.*?>\s*/g, '').trim();
+        document.body.dataset.perawat = perawatName;
+      }
+      
+      // Get role from server-side template (you need to add this in your EJS)
+      // For now, default to 'perawat'
+      
+      document.body.dataset.role = '<%= role %>';        
+      console.log('👤 User:', document.body.dataset.perawat);
+      console.log('🔑 Role:', document.body.dataset.role);
+      
+      // Request notification permission
+      if ("Notification" in window && Notification.permission === "default") {
+        Notification.requestPermission().then(permission => {
+          console.log('📢 Notification permission:', permission);
+        });
+      }
+      
+      // Initialize audio context
+      initializeAudio();
+      
+      // Start fall detection polling
+      startFallDetectionPolling();
+      
+      // Show audio unlock banner after 3 seconds
+      setTimeout(() => {
+        if (!audioUnlocked) {
+          showAudioUnlockBanner();
+        }
+      }, 3000);
+      
+      // Load initial data
+      loadRawatJalanData();
+      
+      console.log('✓ Dashboard initialized');
+      console.log('✓ Fall detection system ready');
+    });
+
+    // ============================================
+    // CLEANUP ON PAGE UNLOAD
+    // ============================================
+    window.addEventListener('beforeunload', () => {
+      if (fallCheckInterval) {
+        clearInterval(fallCheckInterval);
+      }
+      stopAlertSound();
+      if (audioContext) {
+        audioContext.close();
+      }
     });
   </script>
 </body>
