@@ -409,21 +409,20 @@ app.get('/rooms', requireLogin, (req, res) => {
     emr_perawat: req.session.emr_perawat
   });
 });
-
 app.get('/api/rooms', requireAdminOrPerawat, async (req, res) => {
   let conn;
   try {
     conn = await pool.getConnection();
     
-    // ✅ FIX: Gunakan 'assigned_at' (sesuai database asli)
+    // ✅ FIX: Specify table alias untuk kolom yang ambiguous
     const [rooms] = await conn.query(`
       SELECT 
-        room_id,
-        device_id,
-        emr_no,
+        rd.room_id,
+        rd.device_id,
+        rd.emr_no,
         p.nama as nama_pasien,
         p.poli,
-        assigned_at
+        rd.assigned_at
       FROM room_device rd
       LEFT JOIN pasien p ON rd.emr_no = p.emr_no
       ORDER BY rd.room_id ASC
