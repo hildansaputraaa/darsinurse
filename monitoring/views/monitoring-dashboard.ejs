@@ -558,45 +558,218 @@
         opacity: 0.9;
       }
 
-      @media (max-width: 768px) {
+@media (max-width: 768px) {
         .header-content {
           flex-direction: column;
           gap: 15px;
           text-align: center;
         }
 
+        .logo-section h1 {
+          font-size: 18px;
+        }
+
         .nav-section {
           flex-wrap: wrap;
           justify-content: center;
+          font-size: 13px;
         }
 
         .page-title {
           font-size: 24px;
         }
 
+        .page-subtitle {
+          font-size: 14px;
+        }
+
         .stats-grid {
           grid-template-columns: 1fr;
+          gap: 15px;
+        }
+
+        .stat-card {
+          padding: 15px;
+        }
+
+        .stat-number {
+          font-size: 28px;
+        }
+
+        .stat-icon {
+          font-size: 24px;
         }
 
         .metabase-iframe {
           min-height: 500px;
         }
 
+        .metabase-container {
+          min-height: 600px;
+        }
+
         .data-body {
           max-height: 400px;
+          padding: 10px;
+        }
+
+        .data-header {
+          padding: 15px;
+          flex-direction: column;
+          gap: 10px;
+          align-items: flex-start;
+        }
+
+        .data-header h3 {
+          font-size: 16px;
+        }
+
+        .data-table {
+          font-size: 12px;
+          display: block;
+          overflow-x: auto;
+          white-space: nowrap;
+        }
+
+        .data-table th,
+        .data-table td {
+          padding: 8px 6px;
         }
 
         .tab-navigation {
           flex-wrap: wrap;
+          gap: 10px;
         }
 
+        .tab-button {
+          font-size: 14px;
+          padding: 10px 0;
+          flex: 1;
+          min-width: 120px;
+        }
+
+        /* Fall Alert Mobile Styles */
         .fall-alert-container {
+          top: 70px;
           left: 10px;
           right: 10px;
           max-width: none;
         }
+
+        .fall-alert {
+          padding: 15px;
+          border-width: 2px;
+        }
+
+        .fall-alert-header {
+          gap: 8px;
+          margin-bottom: 12px;
+          padding-bottom: 12px;
+        }
+
+        .fall-alert-icon {
+          font-size: 28px;
+        }
+
+        .fall-alert-title {
+          font-size: 18px;
+        }
+
+        .fall-alert-info {
+          flex-direction: column;
+          gap: 4px;
+          align-items: flex-start;
+          margin-bottom: 10px;
+        }
+
+        .fall-alert-label {
+          font-size: 12px;
+        }
+
+        .fall-alert-value {
+          font-size: 14px;
+          width: 100%;
+          text-align: left;
+        }
+
+        .fall-alert-footer {
+          flex-direction: column;
+          gap: 8px;
+        }
+
+        .fall-alert-btn {
+          padding: 12px;
+          font-size: 13px;
+        }
+
+        .info-box {
+          padding: 12px 15px;
+          font-size: 13px;
+        }
+
+        .empty-state {
+          padding: 30px 15px;
+        }
+
+        .empty-state i {
+          font-size: 36px;
+        }
+
+        /* Make tables scrollable on mobile */
+        .data-container {
+          overflow-x: auto;
+        }
+
+        .badge-status {
+          font-size: 11px;
+          padding: 3px 8px;
+        }
+
+        .footer {
+          padding: 15px 10px;
+        }
+
+        .footer p {
+          font-size: 12px;
+        }
       }
-      
+
+      /* Extra small devices */
+      @media (max-width: 480px) {
+        .logo-section i {
+          font-size: 24px;
+        }
+
+        .logo-section h1 {
+          font-size: 16px;
+        }
+
+        .nav-section {
+          font-size: 12px;
+          gap: 10px;
+        }
+
+        .page-title {
+          font-size: 20px;
+        }
+
+        .stat-number {
+          font-size: 24px;
+        }
+
+        .data-table {
+          font-size: 11px;
+        }
+
+        .fall-alert-title {
+          font-size: 16px;
+        }
+
+        .fall-alert-icon {
+          font-size: 24px;
+        }
+      }
+            
       @keyframes slideDown {
         from {
           transform: translate(-50%, -100%);
