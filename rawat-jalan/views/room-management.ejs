@@ -227,6 +227,7 @@
     .btn-add-room i {
       margin-right: 8px;
     }
+
     .room-card {
       background: white;
       border-radius: 20px;
@@ -476,13 +477,308 @@
       margin-bottom: 25px;
     }
 
+    /* ============================================ */
+    /* RESPONSIVE STYLES */
+    /* ============================================ */
+    
+    @media (max-width: 992px) {
+      .logo-info i {
+        font-size: 32px;
+      }
+
+      .logo-info h1 {
+        font-size: 22px;
+      }
+
+      .page-title h2 {
+        font-size: 22px;
+      }
+
+      .page-title h2 i {
+        font-size: 28px;
+      }
+
+      .room-id {
+        font-size: 22px;
+      }
+    }
+
     @media (max-width: 768px) {
+      body::before {
+        display: none; /* Remove animated background on mobile for performance */
+      }
+
+      .top-header {
+        padding: 1rem 0;
+      }
+
+      .top-header .container-fluid {
+        padding: 0 15px;
+      }
+
+      .top-header .d-flex {
+        flex-direction: column;
+        gap: 15px;
+        align-items: flex-start !important;
+      }
+
+      .logo-info {
+        gap: 10px;
+      }
+
+      .logo-info i {
+        font-size: 28px;
+      }
+
+      .logo-info h1 {
+        font-size: 20px;
+      }
+
+      .logo-info small {
+        font-size: 11px;
+      }
+
+      .user-info {
+        flex-wrap: wrap;
+        gap: 10px;
+        font-size: 13px;
+        width: 100%;
+      }
+
+      .user-info span {
+        font-size: 13px;
+      }
+
+      .user-info a {
+        padding: 5px 10px;
+        font-size: 13px;
+      }
+
+      .main-container {
+        padding: 20px 0;
+      }
+
+      .page-title {
+        padding: 18px 20px;
+        margin-bottom: 20px;
+        border-radius: 12px;
+      }
+
+      .page-title .d-flex {
+        flex-direction: column;
+        gap: 15px;
+        align-items: flex-start !important;
+      }
+
+      .page-title h2 {
+        font-size: 20px;
+        gap: 10px;
+      }
+
+      .page-title h2 i {
+        font-size: 24px;
+      }
+
+      .btn-add-room {
+        width: 100%;
+        padding: 12px 20px;
+        font-size: 14px;
+      }
+
+      .room-card {
+        margin-bottom: 20px;
+        border-radius: 15px;
+      }
+
+      .room-card:hover {
+        transform: translateY(-4px);
+      }
+
+      .room-header {
+        padding: 20px;
+      }
+
+      .room-status-badge {
+        top: 15px;
+        right: 15px;
+        font-size: 10px;
+        padding: 5px 12px;
+      }
+
+      .room-id {
+        font-size: 20px;
+        gap: 8px;
+      }
+
+      .room-body {
+        padding: 20px;
+      }
+
+      .info-row {
+        padding: 10px 12px;
+        margin-bottom: 8px;
+        gap: 8px;
+      }
+
+      .info-row i {
+        font-size: 14px;
+        width: 20px;
+      }
+
+      .info-label {
+        font-size: 12px;
+        min-width: 70px;
+      }
+
+      .info-value {
+        font-size: 13px;
+      }
+
       .room-actions {
         flex-direction: column;
+        gap: 8px;
+        padding-top: 15px;
+        margin-top: 15px;
       }
 
       .btn-room-action {
         width: 100%;
+        padding: 12px;
+        font-size: 14px;
+      }
+
+      .modal-dialog {
+        margin: 10px;
+      }
+
+      .modal-header {
+        padding: 15px;
+      }
+
+      .modal-title {
+        font-size: 18px;
+      }
+
+      .modal-body {
+        padding: 20px 15px;
+      }
+
+      .form-label {
+        font-size: 14px;
+      }
+
+      .form-control, .form-select {
+        font-size: 14px;
+        padding: 10px 12px;
+      }
+
+      .empty-state {
+        padding: 40px 15px;
+      }
+
+      .empty-state i {
+        font-size: 48px;
+      }
+
+      .empty-state h3 {
+        font-size: 20px;
+      }
+
+      .empty-state p {
+        font-size: 14px;
+      }
+
+      .alert {
+        padding: 12px 15px;
+        font-size: 14px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .logo-info i {
+        font-size: 24px;
+      }
+
+      .logo-info h1 {
+        font-size: 18px;
+      }
+
+      .logo-info small {
+        font-size: 10px;
+      }
+
+      .user-info {
+        font-size: 12px;
+        gap: 8px;
+      }
+
+      .user-info a {
+        font-size: 12px;
+        padding: 4px 8px;
+      }
+
+      .page-title h2 {
+        font-size: 18px;
+      }
+
+      .page-title h2 i {
+        font-size: 22px;
+      }
+
+      .btn-add-room {
+        padding: 10px 16px;
+        font-size: 13px;
+      }
+
+      .room-id {
+        font-size: 18px;
+        flex-wrap: wrap;
+      }
+
+      .room-status-badge {
+        position: static;
+        display: inline-block;
+        margin-top: 10px;
+      }
+
+      .info-label {
+        min-width: 60px;
+        font-size: 11px;
+      }
+
+      .info-value {
+        font-size: 12px;
+      }
+
+      .btn-room-action {
+        padding: 10px;
+        font-size: 13px;
+      }
+
+      .modal-title {
+        font-size: 16px;
+        gap: 8px;
+      }
+
+      .empty-state i {
+        font-size: 40px;
+      }
+
+      .empty-state h3 {
+        font-size: 18px;
+      }
+    }
+
+    /* Landscape mobile fix */
+    @media (max-height: 600px) and (orientation: landscape) {
+      .modal-dialog {
+        max-height: 90vh;
+        overflow-y: auto;
+      }
+
+      .modal-body {
+        max-height: 60vh;
+        overflow-y: auto;
       }
     }
   </style>
