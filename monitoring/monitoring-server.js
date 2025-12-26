@@ -28,20 +28,26 @@ const PROCESSED_IDS_LIMIT = 1000;
    SESSION-BASED FALL ALERT TRACKING
    ============================================================ */
 const userDisplayedAlerts = new Map();
-const SESSION_CLEANUP_INTERVAL = 3600000; // 1 hour
+const SESSION_CLEANUP_INTERVAL = 300000; // 1 hour
 
 setInterval(() => {
   let cleanedCount = 0;
+  let totalCleaned = 0;
   
   userDisplayedAlerts.forEach((alertSet, sessionId) => {
-    if (alertSet.size > 1000) {
-      userDisplayedAlerts.delete(sessionId);
+    // Clean sessions with too many tracked alerts
+    if (alertSet.size > 100) {
+      // Keep only last 50
+      const alertsArray = Array.from(alertSet);
+      const toKeep = alertsArray.slice(-50);
+      userDisplayedAlerts.set(sessionId, new Set(toKeep));
+      totalCleaned += (alertSet.size - 50);
       cleanedCount++;
     }
   });
   
   if (cleanedCount > 0) {
-    console.log(`🧹 Cleaned ${cleanedCount} old session alert tracking`);
+    console.log(`🧹 Cleaned ${totalCleaned} alerts from ${cleanedCount} session(s)`);
   }
 }, SESSION_CLEANUP_INTERVAL);
 
@@ -471,7 +477,9 @@ app.get('/api/measurements/today', requireAdminOrPerawat, async (req, res) => {
 app.get('/api/fall-detection/latest', requireAdminOrPerawat, async (req, res) => {
   try {
     const conn = await pool.getConnection();
-    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    
+    // ✅ FIX: Only get falls from last 30 minutes instead of 24 hours
+    const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
     
     const [falls] = await conn.query(`
       SELECT 
@@ -485,7 +493,7 @@ app.get('/api/fall-detection/latest', requireAdminOrPerawat, async (req, res) =>
       WHERE v.fall_detected = 1 AND v.waktu >= ?
       ORDER BY v.waktu DESC
       LIMIT 50
-    `, [oneDayAgo]);
+    `, [thirtyMinutesAgo]);
     
     conn.release();
     
@@ -496,13 +504,32 @@ app.get('/api/fall-detection/latest', requireAdminOrPerawat, async (req, res) =>
     }
     
     const displayedIds = userDisplayedAlerts.get(sessionId);
-    const newFalls = falls.filter(fall => !displayedIds.has(fall.id));
+    
+    // ✅ FIX: Filter out old alerts even if not displayed
+    const now = Date.now();
+    const newFalls = falls.filter(fall => {
+      if (displayedIds.has(fall.id)) return false;
+      
+      const fallAge = now - new Date(fall.waktu).getTime();
+      const fiveMinutes = 5 * 60 * 1000;
+      
+      if (fallAge > fiveMinutes) {
+        // Auto-mark as displayed if too old
+        displayedIds.add(fall.id);
+        return false;
+      }
+      
+      return true;
+    });
+    
+    console.log(`📊 API /latest: Total=${falls.length}, New=${newFalls.length}, Session=${sessionId.substring(0, 8)}`);
     
     res.json({ 
       success: true, 
       falls: newFalls,
       count: newFalls.length,
-      totalToday: falls.length
+      totalRecent: falls.length,
+      displayedCount: displayedIds.size
     });
   } catch (err) {
     console.error('❌ Fall detection API error:', err);
@@ -657,6 +684,9 @@ async function checkFallDetectionFromDatabase() {
   try {
     const conn = await pool.getConnection();
     
+    // ✅ FIX: Add time window - only check falls from last 30 minutes
+    const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
+    
     const [falls] = await conn.query(`
       SELECT 
         v.id, v.emr_no, v.waktu, v.fall_detected,
@@ -666,21 +696,46 @@ async function checkFallDetectionFromDatabase() {
       FROM vitals v
       LEFT JOIN pasien p ON v.emr_no = p.emr_no
       LEFT JOIN room_device rd ON v.emr_no = rd.emr_no
-      WHERE v.fall_detected = 1 AND v.id > ?
+      WHERE v.fall_detected = 1 
+        AND v.id > ?
+        AND v.waktu >= ?  -- ✅ NEW: Time filter
       ORDER BY v.id ASC
       LIMIT 20
-    `, [lastCheckedVitalId]);
+    `, [lastCheckedVitalId, thirtyMinutesAgo]);
     
     conn.release();
     
     if (falls.length === 0) return;
     
+    console.log(`🔍 Found ${falls.length} new fall(s) to process`);
+    
     falls.forEach(fall => {
       lastCheckedVitalId = Math.max(lastCheckedVitalId, fall.id);
       
-      if (processedFallIds.has(fall.id)) return;
+      // ✅ FIX: Check both global and age before broadcasting
+      const fallAge = Date.now() - new Date(fall.waktu).getTime();
+      const fiveMinutes = 5 * 60 * 1000;
+      
+      if (processedFallIds.has(fall.id)) {
+        console.log(`⏭️ Fall ${fall.id} already processed (global check)`);
+        return;
+      }
+      
+      if (fallAge > fiveMinutes) {
+        console.log(`⏭️ Fall ${fall.id} too old (${Math.round(fallAge/60000)} mins), skipping`);
+        processedFallIds.add(fall.id); // Mark as processed to prevent future checks
+        return;
+      }
       
       processedFallIds.add(fall.id);
+      
+      // ✅ Cleanup if too many IDs stored
+      if (processedFallIds.size > PROCESSED_IDS_LIMIT) {
+        const idsArray = Array.from(processedFallIds);
+        const idsToRemove = idsArray.slice(0, 100);
+        idsToRemove.forEach(id => processedFallIds.delete(id));
+        console.log(`🧹 Cleaned ${idsToRemove.length} old processed IDs`);
+      }
       
       const alertData = {
         id: fall.id,
@@ -696,6 +751,7 @@ async function checkFallDetectionFromDatabase() {
           ? `${fall.sistolik}/${fall.diastolik}` : 'N/A'
       };
       
+      console.log(`📤 Broadcasting fall ${fall.id}: ${fall.nama_pasien}`);
       io.to('monitoring-room').emit('fall-alert', alertData);
     });
     
