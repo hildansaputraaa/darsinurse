@@ -812,6 +812,9 @@
       let audioContext = null;
       let alertAudioBuffer = null;
       let audioSource = null;
+      let isAudioPlaying = false; // ✅ NEW
+
+
 
       // ============================================
       // AUDIO INITIALIZATION
@@ -903,12 +906,24 @@
         const alertKey = `fall-${alert.id}`;
         const now = Date.now();
         
-        // ✅ Check for duplicates with time window
+        // Check alert age first
+        const alertTime = new Date(alert.waktu).getTime();
+        const alertAge = now - alertTime;
+        const fiveMinutes = 5 * 60 * 1000;
+        
+        if (alertAge > fiveMinutes) {
+          console.log(`⏭️ Alert ${alert.id} too old (${Math.round(alertAge/60000)} mins), ignoring`);
+          displayedAlerts.set(alertKey, { alert: alert, timestamp: now });
+          markAlertAsDisplayed(alert.id);
+          return;
+        }
+        
+        // Duplicate check
         if (displayedAlerts.has(alertKey)) {
           const existing = displayedAlerts.get(alertKey);
           const timeSinceDisplay = now - existing.timestamp;
           
-          if (timeSinceDisplay < 5000) {
+          if (timeSinceDisplay < 2000) {
             console.log(`⏭️ Duplicate alert ignored: ${alertKey}`);
             return;
           } else {
@@ -916,24 +931,33 @@
           }
         }
         
-        // ✅ Store with timestamp
-        displayedAlerts.set(alertKey, {
-          alert: alert,
-          timestamp: now
-        });
+        // DOM check
+        if (document.getElementById(`fall-alert-${alert.id}`)) {
+          console.log(`⏭️ Alert ${alert.id} already in DOM`);
+          return;
+        }
         
-        // ✅ Play audio and show alert
-        playAlertSound();
+        // Store with timestamp
+        displayedAlerts.set(alertKey, { alert: alert, timestamp: now });
+        
+        // ✅ FIXED: Only play if not already playing
+        if (!isAudioPlaying) {
+          playAlertSound();
+        } else {
+          console.log('🔊 Audio already playing for other alerts');
+        }
+        
         showFallAlert(alert);
         
-        // ✅ Browser notification
+        // Browser notification
         if (Notification.permission === 'granted') {
           try {
             const notification = new Notification('🚨 FALL ALERT!', {
               body: `${alert.nama_pasien} - Room ${alert.room_id}\nEMR: ${alert.emr_no}`,
               tag: alertKey,
               requireInteraction: true,
-              vibrate: [200, 100, 200]
+              vibrate: [200, 100, 200],
+              renotify: false
             });
             
             notification.onclick = () => {
@@ -946,20 +970,18 @@
         }
         
         updateBadgeCount();
-        
-        // ✅ Mark as displayed on server
         markAlertAsDisplayed(alert.id);
         
-        console.log(`✓ Alert displayed: ${alertKey}`);
+        console.log(`✓ Alert displayed: ${alertKey}, age: ${Math.round(alertAge/1000)}s`);
         
-        // ✅ Auto-close after 5 minutes
+        // Auto-close after 2 minutes
         setTimeout(() => {
           const element = document.getElementById(`fall-alert-${alert.id}`);
           if (element && element.parentNode) {
             console.log('⏱️ Auto-closing alert:', alert.id);
             closeFallAlert(alert.id, false);
           }
-        }, 300000);
+        }, 120000);
       }
 
       // ============================================
@@ -987,7 +1009,6 @@
       // ============================================
       // DATABASE POLLING (BACKUP MECHANISM)
       // ============================================
-      function startFallDetectionPolling() {
         if (fallCheckInterval) {
           clearInterval(fallCheckInterval);
         }
@@ -1038,6 +1059,63 @@
         }, 10000); // Poll every 10 seconds
         
         console.log('✓ Fall detection polling started (10s interval)');
+      }
+      function startFallDetectionPolling() {
+        if (fallCheckInterval) {
+          clearInterval(fallCheckInterval);
+        }
+        
+        fallCheckInterval = setInterval(async () => {
+          const now = Date.now();
+          const timeSinceLastPoll = now - lastPollTime;
+          
+          // ✅ Ensure minimum 9 seconds between polls
+          if (timeSinceLastPoll < 9000) {
+            return;
+          }
+          
+          lastPollTime = now;
+          
+          try {
+            const res = await fetch('/api/fall-detection/latest');
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            
+            const data = await res.json();
+            
+            if (data.success && data.falls && data.falls.length > 0) {
+              console.log(`📊 [POLL] Found ${data.falls.length} NEW fall(s) from last 30 mins`);
+              console.log(`   Total recent: ${data.totalRecent}`);
+              console.log(`   Already displayed: ${data.displayedCount}`);
+              
+              // ✅ FIX: Sort by time descending to show newest first
+              const sortedFalls = data.falls.sort((a, b) => 
+                new Date(b.waktu).getTime() - new Date(a.waktu).getTime()
+              );
+              
+              sortedFalls.forEach(fall => {
+                const alertData = {
+                  id: fall.id,
+                  emr_no: fall.emr_no,
+                  nama_pasien: fall.nama_pasien,
+                  room_id: fall.room_id || `Room-${fall.emr_no}`,
+                  heart_rate: fall.heart_rate,
+                  blood_pressure: fall.sistolik && fall.diastolik 
+                    ? `${fall.sistolik}/${fall.diastolik}` 
+                    : 'N/A',
+                  waktu: fall.waktu
+                };
+                
+                handleFallAlert(alertData);
+              });
+            } else {
+              console.log('📊 [POLL] No new falls');
+            }
+          } catch (err) {
+            console.error('⚠️ [POLL] Error:', err.message);
+          }
+        }, 10000); // Poll every 10 seconds
+        
+        console.log('✓ Fall detection polling started (10s interval, 30min window)');
       }
 
       // ============================================
@@ -1201,11 +1279,13 @@
           displayedAlerts.delete(`fall-${alertId}`);
           
           // Stop audio only if no more alerts
-          if (activeAlertsCount <= 0) {
-            activeAlertsCount = 0;
-            stopAlertSound();
-            console.log('🔇 No more alerts - audio stopped');
-          }
+stopAlertSound();
+
+// Jika masih ada alert lain, restart audio
+if (activeAlertsCount > 0) {
+  setTimeout(() => playAlertSound(), 500);
+}
+
           
           updateBadgeCount();
         }, 300);
@@ -1221,9 +1301,14 @@
           return;
         }
         
-        // Stop existing audio first
+        // ✅ Don't play if already playing
+        if (isAudioPlaying) {
+          console.log('🔊 Audio already playing');
+          return;
+        }
+        
+        // Stop existing audio first (safety)
         if (audioSource) {
-          console.log('🔇 Stopping previous audio');
           stopAlertSound();
         }
         
@@ -1240,9 +1325,12 @@
           audioSource.connect(audioContext.destination);
           audioSource.start(0);
           
-          console.log('🔊 Alert sound playing (looping)');
+          isAudioPlaying = true; // ✅ Mark as playing
+          
+          console.log('🔊 Alert sound started (looping)');
         } catch (err) {
           console.error('❌ Audio play error:', err);
+          isAudioPlaying = false;
         }
       }
 
@@ -1251,13 +1339,16 @@
           try {
             audioSource.stop();
             audioSource.disconnect();
+            console.log('🔇 Alert sound stopped');
           } catch (err) {
             console.warn('⚠️ Audio stop error:', err);
           }
           audioSource = null;
-          console.log('🔇 Alert sound stopped');
         }
+        
+        isAudioPlaying = false; // ✅ Mark as stopped
       }
+
 
       // ============================================
       // BADGE COUNT & TITLE UPDATE
@@ -1288,11 +1379,11 @@
       // ============================================
       setInterval(() => {
         const now = Date.now();
-        const fiveMinutesAgo = now - 300000;
+        const twoMinutesAgo = now - 120000; // 2 minutes instead of 5
         
         let cleanedCount = 0;
         displayedAlerts.forEach((value, key) => {
-          if (value.timestamp < fiveMinutesAgo) {
+          if (value.timestamp < twoMinutesAgo) {
             displayedAlerts.delete(key);
             cleanedCount++;
           }
@@ -1301,8 +1392,16 @@
         if (cleanedCount > 0) {
           console.log(`🧹 Cleaned up ${cleanedCount} old alert(s) from memory`);
         }
-      }, 60000);
-
+        
+        // ✅ Also limit total size
+        if (displayedAlerts.size > 50) {
+          const entries = Array.from(displayedAlerts.entries());
+          entries.sort((a, b) => a[1].timestamp - b[1].timestamp);
+          const toRemove = entries.slice(0, entries.length - 50);
+          toRemove.forEach(([key]) => displayedAlerts.delete(key));
+          console.log(`🧹 Trimmed displayedAlerts to 50 (removed ${toRemove.length})`);
+        }
+      }, 30000); // Every 30 seconds
       // ============================================
       // AUDIO UNLOCK
       // ============================================
