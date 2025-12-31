@@ -297,6 +297,318 @@ app.get('/', requireLogin, (req, res) => {
     role: req.session.role
   });
 });
+app.get('/rooms', requireLogin, (req, res) => {
+  res.render('room-management', {
+    nama_perawat: req.session.nama_perawat,
+    emr_perawat: req.session.emr_perawat
+  });
+});
+app.get('/api/rooms', requireAdminOrPerawat, async (req, res) => {
+  let conn;
+  try {
+    conn = await pool.getConnection();
+    
+    // ✅ FIX: Specify table alias untuk kolom yang ambiguous
+    const [rooms] = await conn.query(`
+      SELECT 
+        rd.room_id,
+        rd.device_id,
+        rd.emr_no,
+        p.nama as nama_pasien,
+        p.poli,
+        rd.assigned_at
+      FROM room_device rd
+      LEFT JOIN pasien p ON rd.emr_no = p.emr_no
+      ORDER BY rd.room_id ASC
+    `);
+    
+    const roomsList = Array.isArray(rooms) ? rooms : [];
+    
+    res.json({ 
+      success: true, 
+      rooms: roomsList,
+      count: roomsList.length
+    });
+  } catch (err) {
+    console.error('❌ GET /api/rooms error:', err.message);
+    res.status(500).json({ 
+      success: false,
+      error: 'Database error: ' + err.message
+    });
+  } finally {
+    if (conn) conn.release();
+  }
+});
+
+// ✅ JUGA PERBAIKI endpoint lain yang pakai created_at:
+
+app.get('/api/rooms/available-patients', requireAdminOrPerawat, async (req, res) => {
+  let conn;
+  try {
+    conn = await pool.getConnection();
+    
+    const [patients] = await conn.query(`
+      SELECT 
+        p.emr_no,
+        p.nama,
+        p.poli,
+        p.jenis_kelamin
+      FROM pasien p
+      WHERE p.emr_no NOT IN (
+        SELECT DISTINCT emr_no FROM room_device WHERE emr_no IS NOT NULL
+      )
+      ORDER BY p.nama ASC
+    `);
+    
+    const patientsList = Array.isArray(patients) ? patients : [];
+    
+    res.json({ 
+      success: true, 
+      patients: patientsList,
+      count: patientsList.length
+    });
+  } catch (err) {
+    console.error('❌ GET /api/rooms/available-patients error:', err.message);
+    res.status(500).json({ 
+      success: false,
+      error: 'Database error: ' + err.message 
+    });
+  } finally {
+    if (conn) conn.release();
+  }
+});
+
+app.post('/api/rooms/add', requireAdminOrPerawat, async (req, res) => {
+  let conn;
+  try {
+    const { room_id, device_id, emr_no } = req.body;
+    
+    if (!room_id || !room_id.trim()) {
+      return res.status(400).json({ error: 'Room ID harus diisi' });
+    }
+    if (!device_id || !device_id.trim()) {
+      return res.status(400).json({ error: 'Device ID harus diisi' });
+    }
+    
+    conn = await pool.getConnection();
+    
+    const [existing] = await conn.query(
+      'SELECT 1 FROM room_device WHERE room_id = ?',
+      [room_id.trim()]
+    );
+    
+    if (existing.length > 0) {
+      conn.release();
+      return res.status(400).json({ error: 'Room ID sudah terdaftar' });
+    }
+    
+    const emrValue = emr_no && emr_no.trim() ? parseInt(emr_no) : null;
+    
+    if (emrValue !== null) {
+      const [patientCheck] = await conn.query(
+        'SELECT 1 FROM pasien WHERE emr_no = ?',
+        [emrValue]
+      );
+      
+      if (patientCheck.length === 0) {
+        conn.release();
+        return res.status(400).json({ error: 'Pasien tidak ditemukan' });
+      }
+    }
+    
+    // ✅ INSERT tanpa created_at, gunakan assigned_at jika diperlukan
+    await conn.query(
+      'INSERT INTO room_device (room_id, device_id, emr_no) VALUES (?, ?, ?)',
+      [room_id.trim(), device_id.trim(), emrValue]
+    );
+    
+    conn.release();
+    res.json({ success: true, message: 'Ruangan berhasil ditambahkan' });
+  } catch (err) {
+    console.error('❌ POST /api/rooms/add error:', err.message);
+    if (conn) conn.release();
+    res.status(500).json({ error: 'Database error: ' + err.message });
+  }
+});
+
+app.put('/api/rooms/:room_id', requireAdminOrPerawat, async (req, res) => {
+  let conn;
+  try {
+    const { room_id } = req.params;
+    const { new_room_id, device_id } = req.body;
+    
+    if (!new_room_id || !new_room_id.trim()) {
+      return res.status(400).json({ error: 'Room ID harus diisi' });
+    }
+    if (!device_id || !device_id.trim()) {
+      return res.status(400).json({ error: 'Device ID harus diisi' });
+    }
+    
+    conn = await pool.getConnection();
+    
+    const [roomCheck] = await conn.query(
+      'SELECT 1 FROM room_device WHERE room_id = ?',
+      [room_id]
+    );
+    
+    if (roomCheck.length === 0) {
+      conn.release();
+      return res.status(404).json({ error: 'Ruangan tidak ditemukan' });
+    }
+    
+    if (new_room_id.trim() !== room_id) {
+      const [duplicate] = await conn.query(
+        'SELECT 1 FROM room_device WHERE room_id = ?',
+        [new_room_id.trim()]
+      );
+      
+      if (duplicate.length > 0) {
+        conn.release();
+        return res.status(400).json({ error: 'Room ID baru sudah digunakan' });
+      }
+    }
+    
+    await conn.query(
+      'UPDATE room_device SET room_id = ?, device_id = ? WHERE room_id = ?',
+      [new_room_id.trim(), device_id.trim(), room_id]
+    );
+    
+    conn.release();
+    res.json({ success: true, message: 'Ruangan berhasil diupdate' });
+  } catch (err) {
+    console.error('❌ PUT /api/rooms/:room_id error:', err.message);
+    if (conn) conn.release();
+    res.status(500).json({ error: 'Database error: ' + err.message });
+  }
+});
+
+app.post('/api/rooms/assign', requireAdminOrPerawat, async (req, res) => {
+  let conn;
+  try {
+    const { room_id, emr_no } = req.body;
+    
+    if (!room_id || !room_id.trim()) {
+      return res.status(400).json({ error: 'Room ID harus diisi' });
+    }
+    if (!emr_no) {
+      return res.status(400).json({ error: 'EMR Pasien harus diisi' });
+    }
+    
+    const emrInt = parseInt(emr_no);
+    if (isNaN(emrInt)) {
+      return res.status(400).json({ error: 'EMR Pasien harus berupa angka' });
+    }
+    
+    conn = await pool.getConnection();
+    
+    const [patient] = await conn.query(
+      'SELECT 1 FROM pasien WHERE emr_no = ?',
+      [emrInt]
+    );
+    
+    if (patient.length === 0) {
+      conn.release();
+      return res.status(400).json({ error: 'Pasien tidak ditemukan' });
+    }
+    
+    const [room] = await conn.query(
+      'SELECT 1 FROM room_device WHERE room_id = ?',
+      [room_id.trim()]
+    );
+    
+    if (room.length === 0) {
+      conn.release();
+      return res.status(404).json({ error: 'Ruangan tidak ditemukan' });
+    }
+    
+    await conn.query(
+      'UPDATE room_device SET emr_no = ? WHERE room_id = ?',
+      [emrInt, room_id.trim()]
+    );
+    
+    conn.release();
+    res.json({ success: true, message: 'Pasien berhasil dimasukkan ke ruangan' });
+  } catch (err) {
+    console.error('❌ POST /api/rooms/assign error:', err.message);
+    if (conn) conn.release();
+    res.status(500).json({ error: 'Database error: ' + err.message });
+  }
+});
+
+app.post('/api/rooms/remove-patient', requireAdminOrPerawat, async (req, res) => {
+  let conn;
+  try {
+    const { room_id } = req.body;
+    
+    if (!room_id || !room_id.trim()) {
+      return res.status(400).json({ error: 'Room ID harus diisi' });
+    }
+    
+    conn = await pool.getConnection();
+    
+    const [room] = await conn.query(
+      'SELECT 1 FROM room_device WHERE room_id = ?',
+      [room_id.trim()]
+    );
+    
+    if (room.length === 0) {
+      conn.release();
+      return res.status(404).json({ error: 'Ruangan tidak ditemukan' });
+    }
+    
+    await conn.query(
+      'UPDATE room_device SET emr_no = NULL WHERE room_id = ?',
+      [room_id.trim()]
+    );
+    
+    conn.release();
+    res.json({ success: true, message: 'Pasien berhasil dikeluarkan dari ruangan' });
+  } catch (err) {
+    console.error('❌ POST /api/rooms/remove-patient error:', err.message);
+    if (conn) conn.release();
+    res.status(500).json({ error: 'Database error: ' + err.message });
+  }
+});
+
+app.delete('/api/rooms/delete', requireAdminOrPerawat, async (req, res) => {
+  let conn;
+  try {
+    const { room_id } = req.body;
+    
+    if (!room_id || !room_id.trim()) {
+      return res.status(400).json({ error: 'Room ID harus diisi' });
+    }
+    
+    conn = await pool.getConnection();
+    
+    const [room] = await conn.query(
+      'SELECT emr_no FROM room_device WHERE room_id = ?',
+      [room_id.trim()]
+    );
+    
+    if (room.length === 0) {
+      conn.release();
+      return res.status(404).json({ error: 'Ruangan tidak ditemukan' });
+    }
+    
+    if (room[0].emr_no !== null) {
+      conn.release();
+      return res.status(400).json({ error: 'Ruangan harus kosong sebelum dihapus' });
+    }
+    
+    await conn.query(
+      'DELETE FROM room_device WHERE room_id = ?',
+      [room_id.trim()]
+    );
+    
+    conn.release();
+    res.json({ success: true, message: 'Ruangan berhasil dihapus' });
+  } catch (err) {
+    console.error('❌ DELETE /api/rooms/delete error:', err.message);
+    if (conn) conn.release();
+    res.status(500).json({ error: 'Database error: ' + err.message });
+  }
+});
 
 /* ============================================================
    API ENDPOINTS - STATISTICS
