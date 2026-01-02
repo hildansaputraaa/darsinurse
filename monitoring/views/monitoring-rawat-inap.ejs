@@ -791,6 +791,7 @@
               <th>Poli</th>
               <th>HR (bpm)</th>
               <th>Respirasi</th>
+              <th>Jarak Kasur (cm)</th>
               <th>Fall Status</th>
               <th>Perawat</th>
               <th>Dokter</th>
@@ -809,7 +810,8 @@
                 <td>${p.poli}</td>
                 <td><span class="vital-value ${getHeartRateClass(p.heart_rate)}">${p.heart_rate}</span></td>
                 <td><span class="vital-value ${getRespirasiClass(p.respirasi)}">${p.respirasi}</span></td>
-                <td><span class="status-badge ${p.status_fall === 'DETECTED' ? 'status-detected' : 'status-normal'}">${p.status_fall === 'DETECTED' ? '🚨 DETECTED' : '✓ NORMAL'}</span></td>
+                <td>${p.jarak_kasur_cm}</td>
+                <td><span class="status-badge ${p.status_fall.includes('Terdeteksi') ? 'status-detected' : 'status-normal'}">${p.status_fall.includes('Terdeteksi') ? '🚨 TERDETEKSI' : '✓ NORMAL'}</span></td>
                 <td>${p.nama_perawat}</td>
                 <td>${p.nama_dokter}</td>
                 <td style="font-size: 11px;">${formatTime(p.waktu)}</td>
@@ -824,7 +826,7 @@
 
     function updateStats(patients) {
       document.getElementById('total-patients').textContent = patients.length;
-      const fallCount = patients.filter(p => p.status_fall === 'DETECTED').length;
+      const fallCount = patients.filter(p => p.status_fall === 'Terdeteksi Fall').length;
       document.getElementById('fall-count').textContent = fallCount;
       document.getElementById('active-monitoring').textContent = patients.length;
     }
