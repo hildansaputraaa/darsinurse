@@ -4,25 +4,18 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Darsinurse - Monitoring Rawat Inap</title>
-  <link rel="icon" type="image/png" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>📊</text></svg>">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
-
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  
   <style>
     :root {
       --primary-green: #00B14F;
       --secondary-green: #008a3d;
-      --primary-blue: #0056b3;
-      --primary-dark: #003d7a;
-      --secondary-teal: #20c997;
-      --light-bg: #f0f8f7;
-      --dark-text: #1a3a3a;
-      --gray-border: #e0e0e0;
       --danger-red: #dc3545;
       --warning-orange: #ff9800;
-      --success-green: #28a745;
+      --light-bg: #f0f8f7;
     }
 
     * {
@@ -31,16 +24,13 @@
       box-sizing: border-box;
     }
 
-    html, body {
+    body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      color: var(--dark-text);
       background: linear-gradient(135deg, #f5f5f5 0%, #e8f5e9 100%);
       min-height: 100vh;
-      display: flex;
-      flex-direction: column;
     }
 
-    /* ============== HEADER ============== */
+    /* Header Styles */
     .top-header {
       background: white;
       padding: 1rem 0;
@@ -57,6 +47,8 @@
       align-items: center;
       justify-content: space-between;
       padding: 0 2rem;
+      max-width: 1800px;
+      margin: 0 auto;
     }
 
     .logo-section {
@@ -73,7 +65,7 @@
     .logo-section h1 {
       font-size: 22px;
       font-weight: 700;
-      color: var(--dark-text);
+      color: #1a3a3a;
       margin: 0;
     }
 
@@ -85,45 +77,84 @@
     }
 
     .nav-section a {
-      color: var(--primary-blue);
+      color: #0056b3;
       text-decoration: none;
       font-weight: 600;
       transition: all 0.3s;
     }
 
     .nav-section a:hover {
-      color: var(--primary-dark);
+      color: #003d7a;
     }
 
-    .logout-btn {
-      color: var(--danger-red) !important;
-    }
-
-    /* ============== MAIN CONTAINER ============== */
+    /* Main Container */
     .main-container {
-      padding-top: 80px;
-      padding: 2rem;
-      flex: 1;
-      max-width: 1600px;
+      padding-top: 100px;
+      padding-bottom: 40px;
+      max-width: 1800px;
       margin: 0 auto;
-      width: 100%;
+      padding-left: 2rem;
+      padding-right: 2rem;
+    }
+
+    /* Page Views */
+    .view {
+      display: none;
+    }
+
+    .view.active {
+      display: block;
+      animation: fadeIn 0.3s;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Page Header */
+    .page-header {
+      margin-bottom: 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
 
     .page-title {
       font-size: 32px;
       font-weight: 700;
-      color: var(--dark-text);
+      color: #1a3a3a;
       margin-bottom: 8px;
     }
 
     .page-subtitle {
       font-size: 16px;
       color: #666;
-      margin-bottom: 30px;
     }
 
-    /* ============== STATS GRID ============== */
-    .stats-grid {
+    .back-btn {
+      background: var(--primary-green);
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 25px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .back-btn:hover {
+      background: var(--secondary-green);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 177, 79, 0.3);
+    }
+
+    /* Stats Row */
+    .stats-row {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
       gap: 20px;
@@ -135,8 +166,8 @@
       border-radius: 12px;
       padding: 20px;
       box-shadow: 0 4px 15px rgba(0,0,0,0.08);
-      transition: all 0.3s;
       border-top: 5px solid var(--primary-green);
+      transition: all 0.3s;
     }
 
     .stat-card:hover {
@@ -161,344 +192,318 @@
       font-size: 36px;
       font-weight: 700;
       color: var(--primary-green);
-      margin-bottom: 4px;
     }
 
     .stat-card.danger .stat-number {
       color: var(--danger-red);
     }
 
-    .stat-icon {
-      float: right;
-      font-size: 32px;
-      color: rgba(0, 177, 79, 0.2);
-    }
-
-    .stat-card.danger .stat-icon {
-      color: rgba(220, 53, 69, 0.2);
-    }
-
-    /* ============== PATIENT GRID ============== */
-    .patients-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(500px, 1fr));
-      gap: 25px;
-      margin-bottom: 40px;
-    }
-
-    .patient-card {
+    /* Table Container */
+    .patients-table-container {
       background: white;
       border-radius: 15px;
-      padding: 25px;
+      padding: 30px;
       box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-      border-left: 6px solid var(--primary-green);
+    }
+
+    .table-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 15px;
+      border-bottom: 2px solid #e0e0e0;
+    }
+
+    .table-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: #1a3a3a;
+    }
+
+    .search-box {
+      position: relative;
+      width: 300px;
+    }
+
+    .search-box input {
+      width: 100%;
+      padding: 10px 15px 10px 40px;
+      border: 2px solid #e0e0e0;
+      border-radius: 25px;
+      font-size: 14px;
       transition: all 0.3s;
     }
 
-    .patient-card.fall-alert {
-      border-left-color: var(--danger-red);
-      background: linear-gradient(135deg, #fff5f5 0%, #ffe6e6 100%);
-      box-shadow: 0 4px 25px rgba(220, 53, 69, 0.2);
-      animation: fallPulse 1.5s ease-in-out infinite;
+    .search-box input:focus {
+      outline: none;
+      border-color: var(--primary-green);
     }
 
-    @keyframes fallPulse {
-      0%, 100% { transform: scale(1); }
-      50% { transform: scale(1.02); }
-    }
-
-    .patient-card:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 8px 30px rgba(0,0,0,0.15);
-    }
-
-    .patient-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      margin-bottom: 20px;
-      padding-bottom: 15px;
-      border-bottom: 2px solid var(--gray-border);
-    }
-
-    .patient-name {
-      font-size: 20px;
-      font-weight: 700;
-      color: var(--dark-text);
-      margin-bottom: 8px;
-    }
-
-    .patient-meta {
-      font-size: 13px;
-      color: #666;
-      display: flex;
-      flex-direction: column;
-      gap: 5px;
-    }
-
-    .meta-item {
-      display: flex;
-      gap: 8px;
-    }
-
-    .meta-label {
-      font-weight: 600;
+    .search-box i {
+      position: absolute;
+      left: 15px;
+      top: 50%;
+      transform: translateY(-50%);
       color: #999;
-      min-width: 80px;
     }
 
-    .fall-badge {
-      display: inline-block;
-      background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+    .patients-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+    }
+
+    .patients-table thead th {
+      background: linear-gradient(135deg, var(--primary-green), var(--secondary-green));
       color: white;
-      padding: 8px 15px;
+      padding: 15px;
+      font-size: 13px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border: none;
+    }
+
+    .patients-table thead th:first-child {
+      border-top-left-radius: 10px;
+    }
+
+    .patients-table thead th:last-child {
+      border-top-right-radius: 10px;
+    }
+
+    .patients-table tbody tr {
+      transition: all 0.3s;
+      cursor: pointer;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .patients-table tbody tr:hover {
+      background: #f8f9fa;
+      transform: scale(1.01);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+
+    .patients-table tbody td {
+      padding: 15px;
+      font-size: 14px;
+      color: #333;
+      vertical-align: middle;
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 6px 12px;
       border-radius: 20px;
       font-size: 12px;
-      font-weight: 700;
-      animation: badgePulse 1s ease-in-out infinite;
+      font-weight: 600;
+      text-transform: uppercase;
     }
 
-    @keyframes badgePulse {
+    .status-normal {
+      background: #d4edda;
+      color: #155724;
+    }
+
+    .status-detected {
+      background: #f8d7da;
+      color: #721c24;
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
       0%, 100% { opacity: 1; }
       50% { opacity: 0.7; }
     }
 
-    /* ============== VITALS GRID ============== */
-    .vitals-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 12px;
-      margin-bottom: 20px;
-    }
-
-    .vital-box {
-      background: linear-gradient(135deg, #f0f8f7 0%, #e8f5e9 100%);
-      padding: 15px;
-      border-radius: 10px;
-      border-left: 4px solid var(--primary-green);
-      transition: all 0.3s;
-    }
-
-    .vital-box.warning {
-      background: linear-gradient(135deg, #fff8f0 0%, #ffe8d1 100%);
-      border-left-color: var(--warning-orange);
-    }
-
-    .vital-box.danger {
-      background: linear-gradient(135deg, #fff5f5 0%, #ffe6e6 100%);
-      border-left-color: var(--danger-red);
-    }
-
-    .vital-label {
-      font-size: 11px;
-      color: #999;
-      text-transform: uppercase;
-      font-weight: 700;
-      letter-spacing: 0.5px;
-      margin-bottom: 6px;
-    }
-
     .vital-value {
-      font-size: 24px;
-      font-weight: 700;
-      color: var(--dark-text);
-      display: flex;
-      align-items: baseline;
-      gap: 6px;
+      font-weight: 600;
+      color: var(--primary-green);
     }
 
-    .vital-unit {
-      font-size: 12px;
-      color: #999;
+    .vital-value.warning {
+      color: var(--warning-orange);
+    }
+
+    .vital-value.danger {
+      color: var(--danger-red);
+    }
+
+    /* Detail View Styles */
+    .detail-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 30px;
+      margin-bottom: 30px;
+    }
+
+    .info-card {
+      background: white;
+      border-radius: 15px;
+      padding: 25px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    }
+
+    .info-card h3 {
+      font-size: 18px;
+      font-weight: 700;
+      color: #1a3a3a;
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid var(--primary-green);
+    }
+
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 12px 0;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .info-row:last-child {
+      border-bottom: none;
+    }
+
+    .info-label {
+      font-size: 14px;
+      color: #666;
+      font-weight: 500;
+    }
+
+    .info-value {
+      font-size: 14px;
+      color: #1a3a3a;
       font-weight: 600;
     }
 
-    .vital-time {
-      font-size: 11px;
-      color: #bbb;
-      margin-top: 4px;
+    /* Vital Cards Grid */
+    .vital-cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
     }
 
-    /* ============== CHART CONTAINER ============== */
-    .chart-container {
+    .vital-card {
       background: white;
       border-radius: 12px;
       padding: 20px;
       box-shadow: 0 4px 15px rgba(0,0,0,0.08);
-      margin-bottom: 20px;
-      position: relative;
-      height: 300px;
+      text-align: center;
+      transition: all 0.3s;
+    }
+
+    .vital-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+    }
+
+    .vital-icon {
+      font-size: 32px;
+      margin-bottom: 10px;
+    }
+
+    .vital-label {
+      font-size: 12px;
+      color: #999;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    .vital-number {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--primary-green);
+    }
+
+    .vital-unit {
+      font-size: 14px;
+      color: #666;
+    }
+
+    /* Examination History Table */
+    .examination-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      font-size: 13px;
+    }
+
+    .examination-table thead th {
+      background: linear-gradient(135deg, var(--primary-green), var(--secondary-green));
+      color: white;
+      padding: 12px 10px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      border: none;
+    }
+
+    .examination-table thead th:first-child {
+      border-top-left-radius: 10px;
+    }
+
+    .examination-table thead th:last-child {
+      border-top-right-radius: 10px;
+    }
+
+    .examination-table tbody tr {
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .examination-table tbody tr:hover {
+      background: #f8f9fa;
+    }
+
+    .examination-table tbody td {
+      padding: 12px 10px;
+      color: #333;
+    }
+
+    /* Charts */
+    .charts-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+      gap: 30px;
+      margin-bottom: 30px;
+    }
+
+    .chart-card {
+      background: white;
+      border-radius: 15px;
+      padding: 25px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
     }
 
     .chart-title {
-      font-size: 14px;
+      font-size: 16px;
       font-weight: 700;
-      color: var(--dark-text);
+      color: #1a3a3a;
       margin-bottom: 15px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
+      text-align: center;
     }
 
-    .chart-wrapper {
-      position: relative;
-      height: 250px;
+    /* Loading & Empty States */
+    .loading-spinner {
+      text-align: center;
+      padding: 60px 20px;
     }
 
-    /* ============== STAFF INFO ============== */
-    .staff-info {
-      background: #f9f9f9;
-      padding: 15px;
-      border-radius: 8px;
-      font-size: 13px;
-      margin-top: 15px;
+    .spinner {
+      display: inline-block;
+      width: 50px;
+      height: 50px;
+      border: 5px solid rgba(0, 177, 79, 0.2);
+      border-top-color: var(--primary-green);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
     }
 
-    .staff-item {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 8px;
-      padding-bottom: 8px;
-      border-bottom: 1px solid var(--gray-border);
+    @keyframes spin {
+      to { transform: rotate(360deg); }
     }
 
-    .staff-item:last-child {
-      margin-bottom: 0;
-      border-bottom: none;
-    }
-
-    .staff-label {
-      font-weight: 600;
-      color: #999;
-    }
-
-    .staff-value {
-      color: var(--dark-text);
-      font-weight: 500;
-    }
-
-    /* ============== FALL ALERT CONTAINER ============== */
-    .fall-alert-container {
-      position: fixed;
-      top: 80px;
-      right: 20px;
-      z-index: 9999;
-      max-width: 420px;
-      width: 100%;
-    }
-
-    .fall-alert {
-      background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
-      border: 3px solid #ff0000;
-      border-radius: 15px;
-      padding: 20px;
-      margin-bottom: 15px;
-      box-shadow: 0 10px 40px rgba(255, 0, 0, 0.4);
-      animation: slideInShake 0.6s ease-out;
-      color: white;
-    }
-
-    @keyframes slideInShake {
-      0% { transform: translateX(450px); opacity: 0; }
-      50% { transform: translateX(-20px); }
-      75% { transform: translateX(10px); }
-      100% { transform: translateX(0); opacity: 1; }
-    }
-
-    @keyframes slideOut {
-      from { transform: translateX(0); opacity: 1; }
-      to { transform: translateX(450px); opacity: 0; }
-    }
-
-    .fall-alert.closing {
-      animation: slideOut 0.3s ease-in;
-    }
-
-    .fall-alert-header {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 15px;
-      padding-bottom: 15px;
-      border-bottom: 2px solid rgba(255, 255, 255, 0.3);
-    }
-
-    .fall-alert-icon {
-      font-size: 40px;
-      animation: iconPulse 0.8s ease-in-out infinite;
-    }
-
-    @keyframes iconPulse {
-      0%, 100% { transform: scale(1); }
-      50% { transform: scale(1.15); }
-    }
-
-    .fall-alert-title {
-      font-size: 22px;
-      font-weight: 700;
-      margin: 0;
-      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
-    }
-
-    .fall-alert-body {
-      margin-bottom: 15px;
-      font-size: 14px;
-    }
-
-    .alert-info-row {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 8px;
-      padding: 8px;
-      background: rgba(255, 255, 255, 0.1);
-      border-radius: 6px;
-    }
-
-    .alert-label {
-      font-weight: 600;
-      opacity: 0.9;
-    }
-
-    .alert-value {
-      font-weight: 700;
-    }
-
-    .fall-alert-footer {
-      display: flex;
-      gap: 10px;
-    }
-
-    .fall-btn {
-      flex: 1;
-      padding: 12px;
-      border: none;
-      border-radius: 8px;
-      font-weight: 700;
-      cursor: pointer;
-      transition: all 0.3s;
-      font-size: 14px;
-    }
-
-    .btn-acknowledge {
-      background: white;
-      color: #ff6b6b;
-    }
-
-    .btn-acknowledge:hover {
-      background: #f0f0f0;
-      transform: translateY(-2px);
-    }
-
-    .btn-close {
-      background: rgba(255, 255, 255, 0.2);
-      color: white;
-      border: 1px solid rgba(255, 255, 255, 0.4);
-    }
-
-    .btn-close:hover {
-      background: rgba(255, 255, 255, 0.3);
-    }
-
-    /* ============== EMPTY STATE ============== */
     .empty-state {
       text-align: center;
       padding: 60px 20px;
@@ -511,128 +516,89 @@
       color: #ddd;
     }
 
-    /* ============== LOADING ============== */
-    .loading-spinner {
-      text-align: center;
-      padding: 40px 20px;
-    }
-
-    .spinner {
-      display: inline-block;
-      width: 40px;
-      height: 40px;
-      border: 4px solid rgba(0, 177, 79, 0.2);
-      border-top-color: var(--primary-green);
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-    }
-
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-
-    /* ============== FOOTER ============== */
-    .footer {
-      background: #2c3e50;
+    .refresh-btn {
+      background: var(--primary-green);
       color: white;
-      padding: 20px 0;
-      text-align: center;
-      margin-top: auto;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 25px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
 
-    /* ============== RESPONSIVE ============== */
+    .refresh-btn:hover {
+      background: var(--secondary-green);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 177, 79, 0.3);
+    }
+
+    /* Responsive */
+    @media (max-width: 1200px) {
+      .detail-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .charts-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
     @media (max-width: 768px) {
       .main-container {
-        padding: 1rem;
+        padding-left: 1rem;
+        padding-right: 1rem;
       }
 
-      .page-title {
-        font-size: 24px;
-      }
-
-      .patients-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .vitals-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .fall-alert-container {
-        right: 10px;
-        left: 10px;
-        max-width: none;
-      }
-
-      .fall-alert {
-        padding: 15px;
-      }
-
-      .header-content {
-        padding: 0 1rem;
-      }
-
-      .stats-grid {
-        grid-template-columns: 1fr 1fr;
-      }
-    }
-
-    @media (max-width: 480px) {
-      .header-content {
+      .table-header {
         flex-direction: column;
-        gap: 12px;
+        gap: 15px;
       }
 
-      .logo-section h1 {
-        font-size: 18px;
+      .search-box {
+        width: 100%;
       }
 
-      .nav-section {
-        font-size: 12px;
-        gap: 10px;
+      .page-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
       }
 
-      .page-title {
-        font-size: 20px;
+      .patients-table,
+      .examination-table {
+        font-size: 11px;
       }
 
-      .stats-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .stat-number {
-        font-size: 28px;
-      }
-
-      .patient-name {
-        font-size: 16px;
-      }
-
-      .vital-value {
-        font-size: 20px;
+      .patients-table thead th,
+      .patients-table tbody td,
+      .examination-table thead th,
+      .examination-table tbody td {
+        padding: 8px 5px;
       }
     }
   </style>
 </head>
 <body>
-  <!-- Fall Alert Container -->
-  <div class="fall-alert-container" id="fall-alert-container"></div>
-
   <!-- Header -->
   <header class="top-header">
     <div class="header-content">
       <div class="logo-section">
-        <i class="fas fa-chart-line"></i>
+        <i class="fas fa-heartbeat"></i>
         <h1>Darsinurse</h1>
       </div>
       <div class="nav-section">
-        <span><i class="fas fa-user-circle"></i> <%= nama_perawat %></span>
+        <span><i class="fas fa-user-circle"></i> Perawat</span>
         <span>|</span>
         <a href="/"><i class="fas fa-home"></i> Dashboard</a>
         <span>|</span>
         <a href="/rooms"><i class="fas fa-door-open"></i> Ruangan</a>
         <span>|</span>
-        <a href="/logout" class="logout-btn" onclick="return confirm('Yakin logout?')">
+        <a href="/logout" class="text-danger">
           <i class="fas fa-sign-out-alt"></i> Logout
         </a>
       </div>
@@ -641,500 +607,722 @@
 
   <!-- Main Content -->
   <div class="main-container">
-    <h1 class="page-title"><i class="fas fa-bed"></i> Monitoring Rawat Inap</h1>
-    <p class="page-subtitle">Real-time monitoring vital signs pasien rawat inap</p>
-
-    <!-- Stats Grid -->
-    <div class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-icon"><i class="fas fa-users"></i></div>
-        <div class="stat-label">Total Pasien</div>
-        <div class="stat-number" id="total-patients">0</div>
+    
+    <!-- LIST VIEW -->
+    <div id="list-view" class="view active">
+      <div class="page-header">
+        <div>
+          <h1 class="page-title"><i class="fas fa-bed"></i> Daftar Pasien Rawat Inap</h1>
+          <p class="page-subtitle">Monitoring pasien yang sedang menjalani rawat inap</p>
+        </div>
       </div>
-      <div class="stat-card danger">
-        <div class="stat-icon"><i class="fas fa-exclamation-triangle"></i></div>
-        <div class="stat-label">Fall Alert Aktif</div>
-        <div class="stat-number" id="fall-count">0</div>
+
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-label">Total Pasien</div>
+          <div class="stat-number" id="total-patients">0</div>
+        </div>
+        <div class="stat-card danger">
+          <div class="stat-label">Fall Detected</div>
+          <div class="stat-number" id="fall-count">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Monitoring Aktif</div>
+          <div class="stat-number" id="active-monitoring">0</div>
+        </div>
+      </div>
+
+      <div class="patients-table-container">
+        <div class="table-header">
+          <div class="table-title">
+            <i class="fas fa-list"></i> Data Pasien
+          </div>
+          <div style="display: flex; gap: 15px; align-items: center;">
+            <div class="search-box">
+              <i class="fas fa-search"></i>
+              <input type="text" id="search-input" placeholder="Cari nama atau EMR...">
+            </div>
+            <button class="refresh-btn" onclick="loadPatients()">
+              <i class="fas fa-sync-alt"></i>
+              Refresh
+            </button>
+          </div>
+        </div>
+
+        <div id="table-container">
+          <div class="loading-spinner">
+            <div class="spinner"></div>
+            <p style="margin-top: 20px; color: #999;">Memuat data pasien...</p>
+          </div>
+        </div>
       </div>
     </div>
 
-    <!-- Patients Grid -->
-    <div class="patients-grid" id="patients-container">
-      <div class="loading-spinner">
-        <div class="spinner"></div>
-        <p style="margin-top: 20px; color: #999;">Memuat data pasien...</p>
+    <!-- DETAIL VIEW -->
+    <div id="detail-view" class="view">
+      <div class="page-header">
+        <div>
+          <h1 class="page-title"><i class="fas fa-user-injured"></i> Detail Pasien</h1>
+          <p class="page-subtitle" id="detail-subtitle">Monitoring detail dan riwayat pemeriksaan</p>
+        </div>
+        <button class="back-btn" onclick="showListView()">
+          <i class="fas fa-arrow-left"></i>
+          Kembali ke Daftar
+        </button>
+      </div>
+
+      <!-- Patient Info Grid -->
+<!-- Patient Info Grid -->
+      <div class="detail-grid">
+        <div class="info-card">
+          <h3><i class="fas fa-id-card"></i> Informasi Pasien</h3>
+          <div id="patient-info">
+            <div class="loading-spinner">
+              <div class="spinner"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="info-card">
+          <h3><i class="fas fa-user-md"></i> Penanggung Jawab</h3>
+          <div id="medical-staff-info">
+            <div class="loading-spinner">
+              <div class="spinner"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Real-time Vitals -->
+      <div class="info-card" style="margin-bottom: 30px;">
+        <h3><i class="fas fa-heartbeat"></i> Tanda Vital Real-time</h3>
+        <div class="vital-cards-grid" id="vitals-grid">
+          <div class="loading-spinner">
+            <div class="spinner"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Charts -->
+      <div class="info-card" style="margin-bottom: 30px;">
+        <h3><i class="fas fa-chart-line"></i> Grafik Monitoring (24 Jam Terakhir)</h3>
+        <div class="charts-grid" id="charts-container">
+          <div class="loading-spinner">
+            <div class="spinner"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Examination History -->
+      <div class="info-card">
+        <h3><i class="fas fa-history"></i> Riwayat Pemeriksaan</h3>
+        <div style="overflow-x: auto;" id="examinations-container">
+          <div class="loading-spinner">
+            <div class="spinner"></div>
+          </div>
+        </div>
       </div>
     </div>
+
   </div>
 
-  <!-- Footer -->
-  <footer class="footer">
-    <p>&copy; 2025 Darsinurse - Medical IoT Platform. All rights reserved.</p>
-  </footer>
-
   <script>
-    // ========================================
-    // GLOBAL STATE
-    // ========================================
-    let audioContext = null;
-    let alertAudioBuffer = null;
-    let audioSource = null;
-    let isAudioPlaying = false;
-    let audioUnlocked = false;
+    // Global Variables
+    let allPatients = [];
+    let currentPatientEMR = null;
+    let charts = {};
+    const socket = io();
 
-    const displayedAlerts = new Map();
-    let chartInstances = new Map();
-    const vitalsHistory = new Map();
-
-    // ========================================
-    // SOCKET.IO CONNECTION
-    // ========================================
-    const socket = io({
-      reconnection: true,
-      reconnectionDelay: 2000,
-      reconnectionAttempts: 10,
-      timeout: 10000
+    // Socket Connection
+    socket.on('connect', () => {
+      console.log('✓ Connected to server');
+      loadPatients();
     });
 
-    socket.on('connect', () => {
-      console.log('✓ Socket.IO connected:', socket.id);
-      loadPatientData();
+    socket.on('vitals-update', (data) => {
+      console.log('📊 Vitals update received:', data);
+      updatePatientVitals(data);
+      
+      if (currentPatientEMR === data.emr_no) {
+        loadPatientDetail(data.emr_no);
+      }
     });
 
     socket.on('fall-alert', (alert) => {
-      console.log('🚨 FALL ALERT:', alert);
-      handleFallAlert(alert);
-      updatePatientCard(alert.emr_no);
+      console.log('🚨 Fall alert:', alert);
+      loadPatients();
+      if (currentPatientEMR === alert.emr_no) {
+        loadPatientDetail(alert.emr_no);
+      }
     });
 
-    socket.on('disconnect', () => {
-      console.warn('⚠️ Socket disconnected');
-    });
+    // ============================================================
+    // LIST VIEW FUNCTIONS
+    // ============================================================
 
-    // ========================================
-    // AUDIO FUNCTIONS
-    // ========================================
-    const generateAlertSound = () => {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      const duration = 0.5;
-      const buffer = ctx.createBuffer(1, duration * ctx.sampleRate, ctx.sampleRate);
-      const data = buffer.getChannelData(0);
-      
-      for (let i = 0; i < buffer.length; i++) {
-        const t = i / ctx.sampleRate;
-        const freq = Math.sin(t * 8) * 200 + 800;
-        data[i] = Math.sin(2 * Math.PI * freq * t) * 0.3;
-      }
-      return buffer;
-    };
-
-    const initAudio = () => {
+    async function loadPatients() {
       try {
-        audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        alertAudioBuffer = generateAlertSound();
-      } catch (err) {
-        console.error('❌ Audio init failed:', err);
-      }
-    };
+        const response = await fetch('/api/rawat-inap/patients');
+        const data = await response.json();
 
-    const playSound = () => {
-      if (!audioContext || !alertAudioBuffer || isAudioPlaying) return;
-      try {
-        if (audioContext.state === 'suspended') audioContext.resume();
-        audioSource = audioContext.createBufferSource();
-        audioSource.buffer = alertAudioBuffer;
-        audioSource.loop = true;
-        audioSource.connect(audioContext.destination);
-        audioSource.start(0);
-        isAudioPlaying = true;
-      } catch (err) {
-        console.error('❌ Play error:', err);
-      }
-    };
-
-    const stopSound = () => {
-      if (audioSource) {
-        try {
-          audioSource.stop();
-          audioSource.disconnect();
-        } catch (err) {
-          console.warn('Audio stop error:', err);
-        }
-        audioSource = null;
-      }
-      isAudioPlaying = false;
-    };
-
-    // ========================================
-    // FALL ALERT HANDLER
-    // ========================================
-    function handleFallAlert(alert) {
-      if (!alert || !alert.nama_pasien) return;
-
-      const alertKey = `fall-${alert.id}`;
-      if (displayedAlerts.has(alertKey)) return;
-
-      displayedAlerts.set(alertKey, Date.now());
-      playSound();
-      showFallAlert(alert);
-
-      if (Notification.permission === 'granted') {
-        new Notification('🚨 FALL DETECTED!', {
-          body: `${alert.nama_pasien} - Room ${alert.room_id}`,
-          tag: alertKey,
-          requireInteraction: true,
-          vibrate: [200, 100, 200]
-        });
-      }
-
-      setTimeout(() => closeFallAlert(alert.id), 120000);
-    }
-
-    function showFallAlert(alert) {
-      const container = document.getElementById('fall-alert-container');
-      if (!container || document.getElementById(`fall-alert-${alert.id}`)) return;
-
-      const waktu = new Date(alert.waktu).toLocaleTimeString('id-ID');
-      const alertDiv = document.createElement('div');
-      alertDiv.className = 'fall-alert';
-      alertDiv.id = `fall-alert-${alert.id}`;
-      alertDiv.innerHTML = `
-        <div class="fall-alert-header">
-          <div class="fall-alert-icon">⚠️</div>
-          <h3 class="fall-alert-title">FALL DETECTED!</h3>
-        </div>
-        <div class="fall-alert-body">
-          <div class="alert-info-row">
-            <span class="alert-label">👤 Pasien:</span>
-            <span class="alert-value">${alert.nama_pasien}</span>
-          </div>
-          <div class="alert-info-row">
-            <span class="alert-label">🏥 Ruangan:</span>
-            <span class="alert-value">${alert.room_id}</span>
-          </div>
-          <div class="alert-info-row">
-            <span class="alert-label">💓 HR:</span>
-            <span class="alert-value">${alert.heart_rate || 'N/A'} bpm</span>
-          </div>
-          <div class="alert-info-row">
-            <span class="alert-label">🕐 Waktu:</span>
-            <span class="alert-value">${waktu}</span>
-          </div>
-        </div>
-        <div class="fall-alert-footer">
-          <button class="fall-btn btn-acknowledge" onclick="acknowledgeFallAlert(${alert.id})">
-            ✓ Acknowledge
-          </button>
-          <button class="fall-btn btn-close" onclick="closeFallAlert(${alert.id})">
-            ✕ Close
-          </button>
-        </div>
-      `;
-      container.insertBefore(alertDiv, container.firstChild);
-    }
-
-    function closeFallAlert(alertId) {
-      const alertDiv = document.getElementById(`fall-alert-${alertId}`);
-      if (!alertDiv) return;
-      alertDiv.classList.add('closing');
-      setTimeout(() => {
-        alertDiv.remove();
-        if (document.querySelectorAll('.fall-alert').length === 0) {
-          stopSound();
-        }
-      }, 300);
-    }
-
-    function acknowledgeFallAlert(alertId) {
-      const perawat = '<%= nama_perawat %>';
-      fetch(`/api/fall-detection/${alertId}/acknowledge`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          acknowledged_by: perawat,
-          timestamp: new Date().toISOString()
-        })
-      }).catch(err => console.error('Acknowledge error:', err));
-      closeFallAlert(alertId);
-    }
-
-    // ========================================
-    // LOAD & DISPLAY PATIENT DATA
-    // ========================================
-    async function loadPatientData() {
-      try {
-        const [statsRes, patientsRes] = await Promise.all([
-          fetch('/api/rawat-inap/stats'),
-          fetch('/api/rawat-inap/patients')
-        ]);
-
-        const stats = await statsRes.json();
-        const patients = await patientsRes.json();
-
-        if (stats.success) {
-          document.getElementById('total-patients').textContent = stats.stats.totalPatients;
-          document.getElementById('fall-count').textContent = stats.stats.fallAlerts;
-        }
-
-        if (patients.success && patients.patients.length > 0) {
-          displayPatients(patients.patients);
+        if (data.success) {
+          allPatients = data.patients;
+          displayPatients(allPatients);
+          updateStats(allPatients);
         } else {
-          const container = document.getElementById('patients-container');
-          container.innerHTML = '<div class="empty-state"><i class="fas fa-info-circle"></i><p>Tidak ada pasien rawat inap</p></div>';
+          showError('Gagal memuat data pasien');
         }
       } catch (err) {
-        console.error('❌ Load error:', err);
+        console.error('Load error:', err);
+        showError('Terjadi kesalahan saat memuat data');
       }
     }
 
     function displayPatients(patients) {
-      const container = document.getElementById('patients-container');
-      container.innerHTML = patients.map(p => `
-        <div class="patient-card ${p.fall_detected ? 'fall-alert' : ''}" id="card-${p.emr_no}">
-          <div class="patient-header">
-            <div>
-              <div class="patient-name">${p.nama}</div>
-              <div class="patient-meta">
-                <div class="meta-item"><span class="meta-label">EMR:</span> ${p.emr_no}</div>
-                <div class="meta-item"><span class="meta-label">Room:</span> ${p.room_id}</div>
-                <div class="meta-item"><span class="meta-label">Poli:</span> ${p.poli}</div>
-              </div>
-            </div>
-            ${p.fall_detected ? '<span class="fall-badge">🚨 FALL DETECTED</span>' : ''}
+      const container = document.getElementById('table-container');
+
+      if (patients.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <i class="fas fa-info-circle"></i>
+            <p>Tidak ada pasien rawat inap</p>
           </div>
+        `;
+        return;
+      }
 
-          <div class="vitals-grid">
-            <div class="vital-box ${parseInt(p.heart_rate) > 100 ? 'warning' : ''}">
-              <div class="vital-label">💓 Heart Rate</div>
-              <div class="vital-value">${p.heart_rate}<span class="vital-unit">bpm</span></div>
-              <div class="vital-time">Update: ${formatTime(p.waktu_vital)}</div>
-            </div>
-            <div class="vital-box ${parseInt(p.respirasi) > 20 ? 'warning' : ''}">
-              <div class="vital-label">🌬️ Respirasi</div>
-              <div class="vital-value">${p.respirasi}<span class="vital-unit">/min</span></div>
-              <div class="vital-time">Nafas per menit</div>
-            </div>
-            <div class="vital-box">
-              <div class="vital-label">📏 Jarak Kasur</div>
-              <div class="vital-value">${p.jarak_kasur_cm}<span class="vital-unit">cm</span></div>
-              <div class="vital-time">Dari lantai</div>
-            </div>
-            <div class="vital-box">
-              <div class="vital-label">📋 ID Kunjungan</div>
-              <div class="vital-value">${p.id_kunjungan || '-'}</div>
-              <div class="vital-time">Status: ${p.status || 'aktif'}</div>
-            </div>
-          </div>
+      const tableHTML = `
+        <table class="patients-table">
+          <thead>
+            <tr>
+              <th>EMR No</th>
+              <th>Nama Pasien</th>
+              <th>Alamat</th>
+              <th>Tanggal Lahir</th>
+              <th>Jenis Kelamin</th>
+              <th>Ruangan</th>
+              <th>Poli</th>
+              <th>Heart Rate</th>
+              <th>Respirasi</th>
+              <th>Status Fall</th>
+              <th>Perawat</th>
+              <th>Dokter</th>
+              <th>Update</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${patients.map(p => `
+              <tr onclick="showDetailView(${p.emr_no})">
+                <td><strong>${p.emr_no}</strong></td>
+                <td>
+                  <div style="font-weight: 600;">${p.nama}</div>
+                </td>
+                <td style="max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${p.alamat}">${p.alamat}</td>
+                <td>${formatDate(p.tanggal_lahir)}</td>
+                <td>
+                  <span class="badge ${p.jenis_kelamin === 'L' ? 'bg-info' : 'bg-warning'}">
+                    ${p.jenis_kelamin === 'L' ? 'Laki-laki' : 'Perempuan'}
+                  </span>
+                </td>
+                <td><span class="badge bg-primary">${p.room_id}</span></td>
+                <td>${p.poli}</td>
+                <td>
+                  <span class="vital-value ${getHeartRateClass(p.heart_rate)}">
+                    ${p.heart_rate} <small>bpm</small>
+                  </span>
+                </td>
+                <td>
+                  <span class="vital-value ${getRespirasiClass(p.respirasi)}">
+                    ${p.respirasi} <small>/min</small>
+                  </span>
+                </td>
+                <td>
+                  <span class="status-badge ${p.fall_detected ? 'status-detected' : 'status-normal'}">
+                    ${p.fall_detected ? '🚨 DETECTED' : '✓ NORMAL'}
+                  </span>
+                </td>
+                <td>${p.nama_perawat}</td>
+                <td>${p.nama_dokter}</td>
+                <td style="font-size: 12px; color: #666;">
+                  ${formatTime(p.waktu_vital)}
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
 
-          <div class="chart-container">
-            <div class="chart-title">📈 Heart Rate History (Realtime)</div>
-            <div class="chart-wrapper">
-              <canvas id="chart-${p.emr_no}"></canvas>
-            </div>
-          </div>
-
-          <div class="staff-info">
-            <div class="staff-item">
-              <span class="staff-label">👨‍⚕️ Perawat</span>
-              <span class="staff-value">${p.nama_perawat}</span>
-            </div>
-            <div class="staff-item">
-              <span class="staff-label">👨‍⚕️ Dokter</span>
-              <span class="staff-value">${p.nama_dokter}</span>
-            </div>
-            <div class="staff-item">
-              <span class="staff-label">📅 Lahir</span>
-              <span class="staff-value">${formatDate(p.tanggal_lahir)}</span>
-            </div>
-            <div class="staff-item">
-              <span class="staff-label">👥 Jenis Kelamin</span>
-              <span class="staff-value">${p.jenis_kelamin === 'M' ? 'Laki-laki' : 'Perempuan'}</span>
-            </div>
-          </div>
-        </div>
-      `).join('');
-
-      // Initialize charts
-      patients.forEach(p => {
-        initializeChart(p.emr_no);
-        vitalsHistory.set(p.emr_no, []);
-      });
-
-      // Setup auto-refresh untuk setiap pasien
-      setInterval(loadPatientData, 30000);
+      container.innerHTML = tableHTML;
     }
 
-    function initializeChart(emrNo) {
-      const canvasId = `chart-${emrNo}`;
-      const canvas = document.getElementById(canvasId);
-      if (!canvas) return;
+    function updateStats(patients) {
+      document.getElementById('total-patients').textContent = patients.length;
+      const fallCount = patients.filter(p => p.fall_detected).length;
+      document.getElementById('fall-count').textContent = fallCount;
+      const activeCount = patients.filter(p => p.status === 'aktif').length;
+      document.getElementById('active-monitoring').textContent = activeCount;
+    }
 
-      const ctx = canvas.getContext('2d');
-      const chartInstance = new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: [],
-          datasets: [{
-            label: 'Heart Rate (bpm)',
-            data: [],
-            borderColor: '#00B14F',
-            backgroundColor: 'rgba(0, 177, 79, 0.1)',
-            borderWidth: 3,
-            fill: true,
-            tension: 0.4,
-            pointRadius: 4,
-            pointBackgroundColor: '#00B14F',
-            pointBorderColor: 'white',
-            pointBorderWidth: 2,
-            pointHoverRadius: 6
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: {
-              display: true,
-              labels: {
-                font: { size: 12, weight: '600' },
-                color: '#666',
-                padding: 15
-              }
-            }
-          },
-          scales: {
-            y: {
-              min: 40,
-              max: 150,
-              ticks: {
-                color: '#999',
-                font: { size: 12 }
-              },
-              grid: {
-                color: 'rgba(0,0,0,0.05)',
-                drawBorder: false
-              }
-            },
-            x: {
-              ticks: {
-                color: '#999',
-                font: { size: 11 }
-              },
-              grid: {
-                display: false
-              }
-            }
+    document.getElementById('search-input').addEventListener('input', (e) => {
+      const searchTerm = e.target.value.toLowerCase();
+      const filtered = allPatients.filter(p => 
+        p.nama.toLowerCase().includes(searchTerm) ||
+        p.emr_no.toString().includes(searchTerm) ||
+        p.room_id.toLowerCase().includes(searchTerm) ||
+        p.alamat.toLowerCase().includes(searchTerm)
+      );
+      displayPatients(filtered);
+    });
+
+    function updatePatientVitals(data) {
+      const patient = allPatients.find(p => p.emr_no === data.emr_no);
+      if (patient) {
+        patient.heart_rate = data.heart_rate;
+        patient.respirasi = data.respirasi;
+        patient.fall_detected = data.fall_detected;
+        patient.waktu_vital = data.waktu;
+        displayPatients(allPatients);
+        updateStats(allPatients);
+      }
+    }
+
+    // ============================================================
+    // DETAIL VIEW FUNCTIONS
+    // ============================================================
+
+    function showDetailView(emr_no) {
+      currentPatientEMR = emr_no;
+      document.getElementById('list-view').classList.remove('active');
+      document.getElementById('detail-view').classList.add('active');
+      loadPatientDetail(emr_no);
+      loadExaminations(emr_no);
+      loadVitalsChart(emr_no);
+    }
+
+    function showListView() {
+      currentPatientEMR = null;
+      document.getElementById('detail-view').classList.remove('active');
+      document.getElementById('list-view').classList.add('active');
+      
+      Object.values(charts).forEach(chart => chart.destroy());
+      charts = {};
+    }
+
+    async function loadPatientDetail(emr_no) {
+      try {
+        const response = await fetch(`/api/rawat-inap/patients`);
+        const data = await response.json();
+
+        if (data.success) {
+          const patient = data.patients.find(p => p.emr_no === emr_no);
+          if (patient) {
+            displayPatientInfo(patient);
+            displayMedicalStaff(patient);
+            displayVitals(patient);
           }
         }
-      });
-
-      chartInstances.set(emrNo, chartInstance);
+      } catch (err) {
+        console.error('Load detail error:', err);
+      }
     }
 
-    function updateChart(emrNo, heartRate) {
-      const chartInstance = chartInstances.get(emrNo);
-      if (!chartInstance) return;
+    function displayPatientInfo(patient) {
+      const container = document.getElementById('patient-info');
+      const age = calculateAge(patient.tanggal_lahir);
+      
+      container.innerHTML = `
+        <div class="info-row">
+          <span class="info-label">EMR No</span>
+          <span class="info-value">${patient.emr_no}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Nama Lengkap</span>
+          <span class="info-value">${patient.nama}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Tanggal Lahir</span>
+          <span class="info-value">${formatDate(patient.tanggal_lahir)} (${age} tahun)</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Jenis Kelamin</span>
+          <span class="info-value">${patient.jenis_kelamin === 'L' ? 'Laki-laki' : 'Perempuan'}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Alamat</span>
+          <span class="info-value">${patient.alamat}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Ruangan</span>
+          <span class="info-value"><span class="badge bg-primary">${patient.room_id}</span></span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Poli</span>
+          <span class="info-value">${patient.poli}</span>
+        </div>
+      `;
+    }
 
-      const now = new Date().toLocaleTimeString('id-ID', { 
-        hour: '2-digit', 
-        minute: '2-digit'
-      });
+    function displayMedicalStaff(patient) {
+      const container = document.getElementById('medical-staff-info');
+      
+      container.innerHTML = `
+        <div class="info-row">
+          <span class="info-label">ID Kunjungan</span>
+          <span class="info-value">${patient.id_kunjungan || '-'}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Perawat</span>
+          <span class="info-value">${patient.nama_perawat}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Dokter</span>
+          <span class="info-value">${patient.nama_dokter}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Status Kunjungan</span>
+          <span class="info-value">
+            <span class="badge ${patient.status === 'aktif' ? 'bg-success' : 'bg-secondary'}">
+              ${patient.status || '-'}
+            </span>
+          </span>
+        </div>
+      `;
+    }
 
-      const data = chartInstance.data;
-      data.labels.push(now);
-      data.datasets[0].data.push(heartRate);
+    function displayVitals(patient) {
+      const container = document.getElementById('vitals-grid');
+      
+      container.innerHTML = `
+        <div class="vital-card">
+          <div class="vital-icon" style="color: #e74c3c;">
+            <i class="fas fa-heartbeat"></i>
+          </div>
+          <div class="vital-label">Heart Rate</div>
+          <div class="vital-number ${getHeartRateClass(patient.heart_rate)}">${patient.heart_rate || '-'}</div>
+          <div class="vital-unit">bpm</div>
+        </div>
 
-      // Keep only last 20 data points
-      if (data.labels.length > 20) {
-        data.labels.shift();
-        data.datasets[0].data.shift();
+        <div class="vital-card">
+          <div class="vital-icon" style="color: #3498db;">
+            <i class="fas fa-lungs"></i>
+          </div>
+          <div class="vital-label">Respirasi</div>
+          <div class="vital-number ${getRespirasiClass(patient.respirasi)}">${patient.respirasi || '-'}</div>
+          <div class="vital-unit">per menit</div>
+        </div>
+
+        <div class="vital-card">
+          <div class="vital-icon" style="color: #9b59b6;">
+            <i class="fas fa-tint"></i>
+          </div>
+          <div class="vital-label">Jarak Kasur</div>
+          <div class="vital-number">${patient.jarak_kasur_cm || '-'}</div>
+          <div class="vital-unit">cm</div>
+        </div>
+
+        <div class="vital-card">
+          <div class="vital-icon" style="color: ${patient.fall_detected ? '#e74c3c' : '#27ae60'};">
+            <i class="fas fa-user-injured"></i>
+          </div>
+          <div class="vital-label">Status Fall</div>
+          <div class="vital-number" style="font-size: 16px;">
+            <span class="status-badge ${patient.fall_detected ? 'status-detected' : 'status-normal'}">
+              ${patient.fall_detected ? 'DETECTED' : 'NORMAL'}
+            </span>
+          </div>
+          <div class="vital-unit">${formatTime(patient.waktu_vital)}</div>
+        </div>
+      `;
+    }
+
+    async function loadExaminations(emr_no) {
+      try {
+        const response = await fetch(`/api/rawat-inap/patient/${emr_no}/vitals`);
+        const data = await response.json();
+
+        if (data.success) {
+          displayExaminations(data.vitals);
+        }
+      } catch (err) {
+        console.error('Load examinations error:', err);
+      }
+    }
+
+    function displayExaminations(examinations) {
+      const container = document.getElementById('examinations-container');
+
+      if (examinations.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <i class="fas fa-info-circle"></i>
+            <p>Belum ada riwayat pemeriksaan</p>
+          </div>
+        `;
+        return;
       }
 
-      chartInstance.update('none');
+      const tableHTML = `
+        <table class="examination-table">
+          <thead>
+            <tr>
+              <th>Waktu</th>
+              <th>HR<br>(bpm)</th>
+              <th>Resp<br>(/min)</th>
+              <th>Sistolik<br>(mmHg)</th>
+              <th>Diastolik<br>(mmHg)</th>
+              <th>Glukosa<br>(mg/dL)</th>
+              <th>Fall</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${examinations.map(e => `
+              <tr>
+                <td>${formatDateTime(e.waktu)}</td>
+                <td><span class="vital-value ${getHeartRateClass(e.heart_rate)}">${e.heart_rate || '-'}</span></td>
+                <td><span class="vital-value ${getRespirasiClass(e.respirasi)}">${e.respirasi || '-'}</span></td>
+                <td>${e.sistolik || '-'}</td>
+                <td>${e.diastolik || '-'}</td>
+                <td>${e.glukosa || '-'}</td>
+                <td>
+                  <span class="status-badge ${e.fall_detected ? 'status-detected' : 'status-normal'}" style="font-size: 10px;">
+                    ${e.fall_detected ? 'YES' : 'NO'}
+                  </span>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+
+      container.innerHTML = tableHTML;
     }
 
-    function updatePatientCard(emrNo) {
-      fetch(`/api/rawat-inap/patients`)
-        .then(res => res.json())
-        .then(data => {
-          if (data.success) {
-            const patient = data.patients.find(p => p.emr_no == emrNo);
-            if (patient) {
-              const card = document.getElementById(`card-${emrNo}`);
-              if (card) {
-                card.classList.toggle('fall-alert', patient.fall_detected);
-              }
-              if (patient.heart_rate) {
-                updateChart(emrNo, patient.heart_rate);
-              }
+    async function loadVitalsChart(emr_no) {
+      try {
+        const response = await fetch(`/api/rawat-inap/patient/${emr_no}/vitals`);
+        const data = await response.json();
+
+        if (data.success && data.vitals.length > 0) {
+          displayCharts(data.vitals);
+        } else {
+          document.getElementById('charts-container').innerHTML = `
+            <div class="empty-state">
+              <i class="fas fa-chart-line"></i>
+              <p>Tidak ada data untuk ditampilkan</p>
+            </div>
+          `;
+        }
+} catch (err) {
+        console.error('Chart error:', err);
+        document.getElementById('charts-container').innerHTML = '<div class="empty-state"><i class="fas fa-chart-line"></i><p>Tidak ada data grafik</p></div>';
+      }
+    }
+
+    function displayCharts(vitals) {
+      const container = document.getElementById('charts-container');
+      container.innerHTML = `
+        <div class="chart-card"><div class="chart-title">Heart Rate (bpm)</div><canvas id="heart-rate-chart"></canvas></div>
+        <div class="chart-card"><div class="chart-title">Respiratory Rate</div><canvas id="respiratory-chart"></canvas></div>
+        <div class="chart-card"><div class="chart-title">Blood Pressure</div><canvas id="bp-chart"></canvas></div>
+        <div class="chart-card"><div class="chart-title">Glucose (mg/dL)</div><canvas id="glucose-chart"></canvas></div>
+        <div class="chart-card"><div class="chart-title">Fall Detection</div><canvas id="fall-chart"></canvas></div>
+      `;
+
+      const labels = vitals.map(v => formatChartTime(v.waktu));
+      
+      const opts = {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+          legend: { display: false },
+          tooltip: { backgroundColor: 'rgba(0, 0, 0, 0.8)', padding: 12 }
+        },
+        scales: {
+          y: { beginAtZero: true, grid: { color: 'rgba(0, 0, 0, 0.05)' } },
+          x: { grid: { display: false } }
+        }
+      };
+
+      // Heart Rate Chart
+      charts.hr = new Chart(document.getElementById('heart-rate-chart'), {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [{
+            label: 'Heart Rate',
+            data: vitals.map(v => v.heart_rate),
+            borderColor: '#e74c3c',
+            backgroundColor: 'rgba(231, 76, 60, 0.1)',
+            tension: 0.4,
+            fill: true
+          }]
+        },
+        options: opts
+      });
+
+      // Respiratory Rate Chart
+      charts.resp = new Chart(document.getElementById('respiratory-chart'), {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [{
+            label: 'Respirasi',
+            data: vitals.map(v => v.respirasi),
+            borderColor: '#3498db',
+            backgroundColor: 'rgba(52, 152, 219, 0.1)',
+            tension: 0.4,
+            fill: true
+          }]
+        },
+        options: opts
+      });
+
+      // Blood Pressure Chart
+      charts.bp = new Chart(document.getElementById('bp-chart'), {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [
+            {
+              label: 'Sistolik',
+              data: vitals.map(v => v.sistolik),
+              borderColor: '#e74c3c',
+              tension: 0.4
+            },
+            {
+              label: 'Diastolik',
+              data: vitals.map(v => v.diastolik),
+              borderColor: '#3498db',
+              tension: 0.4
             }
-          }
-        })
-        .catch(err => console.error('Update error:', err));
+          ]
+        },
+        options: opts
+      });
+
+      // Glucose Chart
+      charts.glukosa = new Chart(document.getElementById('glucose-chart'), {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [{
+            label: 'Glukosa',
+            data: vitals.map(v => v.glukosa),
+            borderColor: '#f39c12',
+            backgroundColor: 'rgba(243, 156, 18, 0.1)',
+            tension: 0.4,
+            fill: true
+          }]
+        },
+        options: opts
+      });
+
+      // Fall Detection Chart
+      charts.fall = new Chart(document.getElementById('fall-chart'), {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [{
+            label: 'Fall Detected',
+            data: vitals.map(v => v.fall_detected ? 1 : 0),
+            backgroundColor: vitals.map(v => v.fall_detected ? '#e74c3c' : '#27ae60')
+          }]
+        },
+        options: { ...opts, scales: { y: { ...opts.scales.y, max: 1 } } }
+      });
     }
 
-    // ========================================
+    // ============================================================
     // HELPER FUNCTIONS
-    // ========================================
-    function formatTime(timestamp) {
-      if (!timestamp) return '-';
-      const date = new Date(timestamp);
-      return date.toLocaleTimeString('id-ID', { 
-        hour: '2-digit', 
-        minute: '2-digit',
-        second: '2-digit'
-      });
+    // ============================================================
+
+    function getHeartRateClass(hr) {
+      const rate = parseInt(hr);
+      if (isNaN(rate)) return '';
+      return (rate > 100 || rate < 60) ? 'danger' : (rate > 90 || rate < 70) ? 'warning' : '';
     }
 
-    function formatDate(dateStr) {
-      if (!dateStr) return '-';
-      const date = new Date(dateStr);
-      return date.toLocaleDateString('id-ID', { 
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric'
-      });
+    function getRespirasiClass(resp) {
+      const rate = parseInt(resp);
+      if (isNaN(rate)) return '';
+      return (rate > 20 || rate < 12) ? 'danger' : (rate > 18 || rate < 14) ? 'warning' : '';
     }
 
-    // ========================================
-    // AUDIO UNLOCK & INITIALIZATION
-    // ========================================
-    function unlockAudio() {
-      if (audioUnlocked) return;
-      initAudio();
-      if (audioContext) {
-        audioContext.resume().then(() => {
-          audioUnlocked = true;
-          console.log('✓ Audio unlocked');
-        });
+    function formatDate(d) {
+      if (!d) return '-';
+      return new Date(d).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+    }
+
+    function formatTime(t) {
+      if (!t) return '-';
+      return new Date(t).toLocaleString('id-ID', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+    }
+
+    function formatDateTime(t) {
+      if (!t) return '-';
+      return new Date(t).toLocaleString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    }
+
+    function formatChartTime(t) {
+      if (!t) return '';
+      return new Date(t).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function calculateAge(birth) {
+      if (!birth) return '-';
+      const b = new Date(birth);
+      const t = new Date();
+      let age = t.getFullYear() - b.getFullYear();
+      if (t.getMonth() - b.getMonth() < 0 || (t.getMonth() - b.getMonth() === 0 && t.getDate() < b.getDate())) age--;
+      return age;
+    }
+
+    // ============================================================
+    // AUTO REFRESH & EVENT HANDLERS
+    // ============================================================
+
+    // Auto refresh detail view vitals every 10 seconds
+    setInterval(() => {
+      if (currentPatientEMR) {
+        loadPatientDetail(currentPatientEMR);
       }
-    }
+    }, 10000);
 
-    ['click', 'keydown', 'touchstart'].forEach(event => {
-      document.addEventListener(event, unlockAudio, { once: true });
-    });
-
-    // ========================================
-    // PAGE INITIALIZATION
-    // ========================================
-    document.addEventListener('DOMContentLoaded', function() {
-      console.log('✓ Monitoring dashboard initialized');
-
-      if ("Notification" in window && Notification.permission === "default") {
-        Notification.requestPermission();
+    // Auto refresh list view every 30 seconds
+    setInterval(() => {
+      if (!currentPatientEMR) {
+        loadPatients();
       }
+    }, 30000);
 
-      initAudio();
-      loadPatientData();
+    // Auto refresh charts every 5 minutes
+    setInterval(() => {
+      if (currentPatientEMR) {
+        loadVitalsChart(currentPatientEMR);
+      }
+    }, 300000);
 
-      // Refresh setiap 30 detik
-      setInterval(loadPatientData, 30000);
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+      // ESC to go back to list view
+      if (e.key === 'Escape' && currentPatientEMR) {
+        showListView();
+      }
+      // Ctrl/Cmd + R to refresh
+      if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
+        e.preventDefault();
+        if (currentPatientEMR) {
+          loadPatientDetail(currentPatientEMR);
+          loadExaminations(currentPatientEMR);
+          loadVitalsChart(currentPatientEMR);
+        } else {
+          loadPatients();
+        }
+      }
     });
 
-    window.addEventListener('beforeunload', () => {
-      stopSound();
-      if (audioContext) audioContext.close();
-    });
+    // Initial load
+    loadPatients();
   </script>
 </body>
 </html>
