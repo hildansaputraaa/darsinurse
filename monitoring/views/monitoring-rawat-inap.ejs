@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-  
+
   <style>
     :root {
       --primary-green: #00B14F;
@@ -30,7 +30,7 @@
       min-height: 100vh;
     }
 
-    /* Header Styles */
+    /* Header */
     .top-header {
       background: white;
       padding: 1rem 0;
@@ -97,7 +97,6 @@
       padding-right: 2rem;
     }
 
-    /* Page Views */
     .view {
       display: none;
     }
@@ -252,13 +251,14 @@
       width: 100%;
       border-collapse: separate;
       border-spacing: 0;
+      font-size: 13px;
     }
 
     .patients-table thead th {
       background: linear-gradient(135deg, var(--primary-green), var(--secondary-green));
       color: white;
-      padding: 15px;
-      font-size: 13px;
+      padding: 12px 10px;
+      font-size: 12px;
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.5px;
@@ -281,13 +281,12 @@
 
     .patients-table tbody tr:hover {
       background: #f8f9fa;
-      transform: scale(1.01);
       box-shadow: 0 2px 8px rgba(0,0,0,0.05);
     }
 
     .patients-table tbody td {
-      padding: 15px;
-      font-size: 14px;
+      padding: 12px 10px;
+      font-size: 13px;
       color: #333;
       vertical-align: middle;
     }
@@ -296,7 +295,7 @@
       display: inline-block;
       padding: 6px 12px;
       border-radius: 20px;
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 600;
       text-transform: uppercase;
     }
@@ -330,7 +329,7 @@
       color: var(--danger-red);
     }
 
-    /* Detail View Styles */
+    /* Detail View */
     .detail-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -380,7 +379,7 @@
     /* Vital Cards Grid */
     .vital-cards-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
       gap: 20px;
       margin-bottom: 30px;
     }
@@ -392,6 +391,7 @@
       box-shadow: 0 4px 15px rgba(0,0,0,0.08);
       text-align: center;
       transition: all 0.3s;
+      border-left: 4px solid var(--primary-green);
     }
 
     .vital-card:hover {
@@ -405,20 +405,21 @@
     }
 
     .vital-label {
-      font-size: 12px;
+      font-size: 11px;
       color: #999;
       text-transform: uppercase;
       margin-bottom: 8px;
+      font-weight: 600;
     }
 
     .vital-number {
-      font-size: 28px;
+      font-size: 24px;
       font-weight: 700;
       color: var(--primary-green);
     }
 
     .vital-unit {
-      font-size: 14px;
+      font-size: 12px;
       color: #666;
     }
 
@@ -427,13 +428,13 @@
       width: 100%;
       border-collapse: separate;
       border-spacing: 0;
-      font-size: 13px;
+      font-size: 12px;
     }
 
     .examination-table thead th {
       background: linear-gradient(135deg, var(--primary-green), var(--secondary-green));
       color: white;
-      padding: 12px 10px;
+      padding: 10px 8px;
       font-size: 11px;
       font-weight: 600;
       text-transform: uppercase;
@@ -457,14 +458,14 @@
     }
 
     .examination-table tbody td {
-      padding: 12px 10px;
+      padding: 10px 8px;
       color: #333;
     }
 
     /* Charts */
     .charts-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
       gap: 30px;
       margin-bottom: 30px;
     }
@@ -537,12 +538,10 @@
       box-shadow: 0 4px 12px rgba(0, 177, 79, 0.3);
     }
 
-    /* Responsive */
     @media (max-width: 1200px) {
       .detail-grid {
         grid-template-columns: 1fr;
       }
-
       .charts-grid {
         grid-template-columns: 1fr;
       }
@@ -553,27 +552,21 @@
         padding-left: 1rem;
         padding-right: 1rem;
       }
-
       .table-header {
         flex-direction: column;
         gap: 15px;
       }
-
       .search-box {
         width: 100%;
       }
-
       .page-header {
         flex-direction: column;
         align-items: flex-start;
         gap: 15px;
       }
-
-      .patients-table,
-      .examination-table {
+      .patients-table, .examination-table {
         font-size: 11px;
       }
-
       .patients-table thead th,
       .patients-table tbody td,
       .examination-table thead th,
@@ -592,7 +585,7 @@
         <h1>Darsinurse</h1>
       </div>
       <div class="nav-section">
-        <span><i class="fas fa-user-circle"></i> Perawat</span>
+        <span><i class="fas fa-user-circle"></i> <%= nama_perawat %></span>
         <span>|</span>
         <a href="/"><i class="fas fa-home"></i> Dashboard</a>
         <span>|</span>
@@ -612,8 +605,8 @@
     <div id="list-view" class="view active">
       <div class="page-header">
         <div>
-          <h1 class="page-title"><i class="fas fa-bed"></i> Daftar Pasien Rawat Inap</h1>
-          <p class="page-subtitle">Monitoring pasien yang sedang menjalani rawat inap</p>
+          <h1 class="page-title"><i class="fas fa-bed"></i> Monitoring Rawat Inap</h1>
+          <p class="page-subtitle">Data pasien yang sedang dirawat inap</p>
         </div>
       </div>
 
@@ -635,7 +628,7 @@
       <div class="patients-table-container">
         <div class="table-header">
           <div class="table-title">
-            <i class="fas fa-list"></i> Data Pasien
+            <i class="fas fa-list"></i> Data Pasien Rawat Inap
           </div>
           <div style="display: flex; gap: 15px; align-items: center;">
             <div class="search-box">
@@ -643,13 +636,12 @@
               <input type="text" id="search-input" placeholder="Cari nama atau EMR...">
             </div>
             <button class="refresh-btn" onclick="loadPatients()">
-              <i class="fas fa-sync-alt"></i>
-              Refresh
+              <i class="fas fa-sync-alt"></i> Refresh
             </button>
           </div>
         </div>
 
-        <div id="table-container">
+        <div id="table-container" style="overflow-x: auto;">
           <div class="loading-spinner">
             <div class="spinner"></div>
             <p style="margin-top: 20px; color: #999;">Memuat data pasien...</p>
@@ -663,16 +655,14 @@
       <div class="page-header">
         <div>
           <h1 class="page-title"><i class="fas fa-user-injured"></i> Detail Pasien</h1>
-          <p class="page-subtitle" id="detail-subtitle">Monitoring detail dan riwayat pemeriksaan</p>
+          <p class="page-subtitle" id="detail-subtitle">Monitoring detail dan hasil pemeriksaan</p>
         </div>
         <button class="back-btn" onclick="showListView()">
-          <i class="fas fa-arrow-left"></i>
-          Kembali ke Daftar
+          <i class="fas fa-arrow-left"></i> Kembali
         </button>
       </div>
 
       <!-- Patient Info Grid -->
-<!-- Patient Info Grid -->
       <div class="detail-grid">
         <div class="info-card">
           <h3><i class="fas fa-id-card"></i> Informasi Pasien</h3>
@@ -715,7 +705,7 @@
 
       <!-- Examination History -->
       <div class="info-card">
-        <h3><i class="fas fa-history"></i> Riwayat Pemeriksaan</h3>
+        <h3><i class="fas fa-history"></i> Hasil Pemeriksaan</h3>
         <div style="overflow-x: auto;" id="examinations-container">
           <div class="loading-spinner">
             <div class="spinner"></div>
@@ -727,7 +717,6 @@
   </div>
 
   <script>
-    // Global Variables
     let allPatients = [];
     let currentPatientEMR = null;
     let charts = {};
@@ -739,20 +728,19 @@
       loadPatients();
     });
 
-    socket.on('vitals-update', (data) => {
-      console.log('📊 Vitals update received:', data);
-      updatePatientVitals(data);
-      
-      if (currentPatientEMR === data.emr_no) {
-        loadPatientDetail(data.emr_no);
-      }
-    });
-
     socket.on('fall-alert', (alert) => {
       console.log('🚨 Fall alert:', alert);
       loadPatients();
       if (currentPatientEMR === alert.emr_no) {
-        loadPatientDetail(alert.emr_no);
+        loadPatientDetail(currentPatientEMR);
+      }
+    });
+
+    socket.on('vitals-update', () => {
+      if (currentPatientEMR) {
+        loadPatientDetail(currentPatientEMR);
+      } else {
+        loadPatients();
       }
     });
 
@@ -762,7 +750,7 @@
 
     async function loadPatients() {
       try {
-        const response = await fetch('/api/rawat-inap/patients');
+        const response = await fetch('/api/patients/inpatient/list');
         const data = await response.json();
 
         if (data.success) {
@@ -770,11 +758,10 @@
           displayPatients(allPatients);
           updateStats(allPatients);
         } else {
-          showError('Gagal memuat data pasien');
+          console.error('Error:', data.error);
         }
       } catch (err) {
         console.error('Load error:', err);
-        showError('Terjadi kesalahan saat memuat data');
       }
     }
 
@@ -795,16 +782,16 @@
         <table class="patients-table">
           <thead>
             <tr>
-              <th>EMR No</th>
+              <th>EMR</th>
               <th>Nama Pasien</th>
               <th>Alamat</th>
-              <th>Tanggal Lahir</th>
-              <th>Jenis Kelamin</th>
+              <th>Tgl Lahir</th>
+              <th>JK</th>
               <th>Ruangan</th>
               <th>Poli</th>
-              <th>Heart Rate</th>
+              <th>HR (bpm)</th>
               <th>Respirasi</th>
-              <th>Status Fall</th>
+              <th>Fall Status</th>
               <th>Perawat</th>
               <th>Dokter</th>
               <th>Update</th>
@@ -812,40 +799,20 @@
           </thead>
           <tbody>
             ${patients.map(p => `
-              <tr onclick="showDetailView(${p.emr_no})">
+              <tr onclick="showDetailView('${p.emr_no}')">
                 <td><strong>${p.emr_no}</strong></td>
-                <td>
-                  <div style="font-weight: 600;">${p.nama}</div>
-                </td>
-                <td style="max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${p.alamat}">${p.alamat}</td>
+                <td>${p.nama}</td>
+                <td style="max-width: 100px; overflow: hidden; text-overflow: ellipsis;" title="${p.alamat}">${p.alamat}</td>
                 <td>${formatDate(p.tanggal_lahir)}</td>
-                <td>
-                  <span class="badge ${p.jenis_kelamin === 'L' ? 'bg-info' : 'bg-warning'}">
-                    ${p.jenis_kelamin === 'L' ? 'Laki-laki' : 'Perempuan'}
-                  </span>
-                </td>
+                <td><span class="badge ${p.jenis_kelamin === 'L' ? 'bg-info' : 'bg-warning'}">${p.jenis_kelamin}</span></td>
                 <td><span class="badge bg-primary">${p.room_id}</span></td>
                 <td>${p.poli}</td>
-                <td>
-                  <span class="vital-value ${getHeartRateClass(p.heart_rate)}">
-                    ${p.heart_rate} <small>bpm</small>
-                  </span>
-                </td>
-                <td>
-                  <span class="vital-value ${getRespirasiClass(p.respirasi)}">
-                    ${p.respirasi} <small>/min</small>
-                  </span>
-                </td>
-                <td>
-                  <span class="status-badge ${p.fall_detected ? 'status-detected' : 'status-normal'}">
-                    ${p.fall_detected ? '🚨 DETECTED' : '✓ NORMAL'}
-                  </span>
-                </td>
+                <td><span class="vital-value ${getHeartRateClass(p.heart_rate)}">${p.heart_rate}</span></td>
+                <td><span class="vital-value ${getRespirasiClass(p.respirasi)}">${p.respirasi}</span></td>
+                <td><span class="status-badge ${p.status_fall === 'DETECTED' ? 'status-detected' : 'status-normal'}">${p.status_fall === 'DETECTED' ? '🚨 DETECTED' : '✓ NORMAL'}</span></td>
                 <td>${p.nama_perawat}</td>
                 <td>${p.nama_dokter}</td>
-                <td style="font-size: 12px; color: #666;">
-                  ${formatTime(p.waktu_vital)}
-                </td>
+                <td style="font-size: 11px;">${formatTime(p.waktu)}</td>
               </tr>
             `).join('')}
           </tbody>
@@ -857,10 +824,9 @@
 
     function updateStats(patients) {
       document.getElementById('total-patients').textContent = patients.length;
-      const fallCount = patients.filter(p => p.fall_detected).length;
+      const fallCount = patients.filter(p => p.status_fall === 'DETECTED').length;
       document.getElementById('fall-count').textContent = fallCount;
-      const activeCount = patients.filter(p => p.status === 'aktif').length;
-      document.getElementById('active-monitoring').textContent = activeCount;
+      document.getElementById('active-monitoring').textContent = patients.length;
     }
 
     document.getElementById('search-input').addEventListener('input', (e) => {
@@ -873,18 +839,6 @@
       );
       displayPatients(filtered);
     });
-
-    function updatePatientVitals(data) {
-      const patient = allPatients.find(p => p.emr_no === data.emr_no);
-      if (patient) {
-        patient.heart_rate = data.heart_rate;
-        patient.respirasi = data.respirasi;
-        patient.fall_detected = data.fall_detected;
-        patient.waktu_vital = data.waktu;
-        displayPatients(allPatients);
-        updateStats(allPatients);
-      }
-    }
 
     // ============================================================
     // DETAIL VIEW FUNCTIONS
@@ -904,22 +858,21 @@
       document.getElementById('detail-view').classList.remove('active');
       document.getElementById('list-view').classList.add('active');
       
-      Object.values(charts).forEach(chart => chart.destroy());
+      Object.values(charts).forEach(chart => {
+        if (chart) chart.destroy();
+      });
       charts = {};
     }
 
     async function loadPatientDetail(emr_no) {
       try {
-        const response = await fetch(`/api/rawat-inap/patients`);
+        const response = await fetch(`/api/patients/inpatient/${emr_no}`);
         const data = await response.json();
 
         if (data.success) {
-          const patient = data.patients.find(p => p.emr_no === emr_no);
-          if (patient) {
-            displayPatientInfo(patient);
-            displayMedicalStaff(patient);
-            displayVitals(patient);
-          }
+          displayPatientInfo(data.patient);
+          displayMedicalStaff(data.patient);
+          displayVitals(data.patient, data.vitals);
         }
       } catch (err) {
         console.error('Load detail error:', err);
@@ -955,10 +908,6 @@
           <span class="info-label">Ruangan</span>
           <span class="info-value"><span class="badge bg-primary">${patient.room_id}</span></span>
         </div>
-        <div class="info-row">
-          <span class="info-label">Poli</span>
-          <span class="info-value">${patient.poli}</span>
-        </div>
       `;
     }
 
@@ -981,15 +930,15 @@
         <div class="info-row">
           <span class="info-label">Status Kunjungan</span>
           <span class="info-value">
-            <span class="badge ${patient.status === 'aktif' ? 'bg-success' : 'bg-secondary'}">
-              ${patient.status || '-'}
+            <span class="badge ${patient.status_kunjungan === 'aktif' ? 'bg-success' : 'bg-secondary'}">
+              ${patient.status_kunjungan || '-'}
             </span>
           </span>
         </div>
       `;
     }
 
-    function displayVitals(patient) {
+    function displayVitals(patient, vitals) {
       const container = document.getElementById('vitals-grid');
       
       container.innerHTML = `
@@ -998,7 +947,7 @@
             <i class="fas fa-heartbeat"></i>
           </div>
           <div class="vital-label">Heart Rate</div>
-          <div class="vital-number ${getHeartRateClass(patient.heart_rate)}">${patient.heart_rate || '-'}</div>
+          <div class="vital-number ${getHeartRateClass(vitals.heart_rate)}">${vitals.heart_rate || '-'}</div>
           <div class="vital-unit">bpm</div>
         </div>
 
@@ -1007,41 +956,41 @@
             <i class="fas fa-lungs"></i>
           </div>
           <div class="vital-label">Respirasi</div>
-          <div class="vital-number ${getRespirasiClass(patient.respirasi)}">${patient.respirasi || '-'}</div>
+          <div class="vital-number ${getRespirasiClass(vitals.respirasi)}">${vitals.respirasi || '-'}</div>
           <div class="vital-unit">per menit</div>
         </div>
 
         <div class="vital-card">
           <div class="vital-icon" style="color: #9b59b6;">
-            <i class="fas fa-tint"></i>
+            <i class="fas fa-weight"></i>
           </div>
-          <div class="vital-label">Jarak Kasur</div>
-          <div class="vital-number">${patient.jarak_kasur_cm || '-'}</div>
-          <div class="vital-unit">cm</div>
+          <div class="vital-label">Glukosa</div>
+          <div class="vital-number">${vitals.glukosa || '-'}</div>
+          <div class="vital-unit">mg/dL</div>
         </div>
 
         <div class="vital-card">
-          <div class="vital-icon" style="color: ${patient.fall_detected ? '#e74c3c' : '#27ae60'};">
+          <div class="vital-icon" style="color: ${vitals.status_fall === 'DETECTED' ? '#e74c3c' : '#27ae60'};">
             <i class="fas fa-user-injured"></i>
           </div>
           <div class="vital-label">Status Fall</div>
-          <div class="vital-number" style="font-size: 16px;">
-            <span class="status-badge ${patient.fall_detected ? 'status-detected' : 'status-normal'}">
-              ${patient.fall_detected ? 'DETECTED' : 'NORMAL'}
+          <div style="margin: 5px 0;">
+            <span class="status-badge ${vitals.status_fall === 'DETECTED' ? 'status-detected' : 'status-normal'}">
+              ${vitals.status_fall}
             </span>
           </div>
-          <div class="vital-unit">${formatTime(patient.waktu_vital)}</div>
+          <div class="vital-unit">${formatTime(vitals.waktu)}</div>
         </div>
       `;
     }
 
     async function loadExaminations(emr_no) {
       try {
-        const response = await fetch(`/api/rawat-inap/patient/${emr_no}/vitals`);
+        const response = await fetch(`/api/patients/inpatient/${emr_no}/examinations`);
         const data = await response.json();
 
         if (data.success) {
-          displayExaminations(data.vitals);
+          displayExaminations(data.examinations);
         }
       } catch (err) {
         console.error('Load examinations error:', err);
@@ -1055,7 +1004,7 @@
         container.innerHTML = `
           <div class="empty-state">
             <i class="fas fa-info-circle"></i>
-            <p>Belum ada riwayat pemeriksaan</p>
+            <p>Belum ada hasil pemeriksaan</p>
           </div>
         `;
         return;
@@ -1066,11 +1015,15 @@
           <thead>
             <tr>
               <th>Waktu</th>
-              <th>HR<br>(bpm)</th>
-              <th>Resp<br>(/min)</th>
-              <th>Sistolik<br>(mmHg)</th>
-              <th>Diastolik<br>(mmHg)</th>
-              <th>Glukosa<br>(mg/dL)</th>
+              <th>HR (bpm)</th>
+              <th>Resp (/min)</th>
+              <th>Jarak Kasur (cm)</th>
+              <th>Glukosa (mg/dL)</th>
+              <th>Berat (kg)</th>
+              <th>Tinggi (cm)</th>
+              <th>BMI</th>
+              <th>Sistolik (mmHg)</th>
+              <th>Diastolik (mmHg)</th>
               <th>Fall</th>
             </tr>
           </thead>
@@ -1080,14 +1033,14 @@
                 <td>${formatDateTime(e.waktu)}</td>
                 <td><span class="vital-value ${getHeartRateClass(e.heart_rate)}">${e.heart_rate || '-'}</span></td>
                 <td><span class="vital-value ${getRespirasiClass(e.respirasi)}">${e.respirasi || '-'}</span></td>
+                <td>${e.jarak_kasur_cm || '-'}</td>
+                <td>${e.glukosa || '-'}</td>
+                <td>${e.berat_badan_kg || '-'}</td>
+                <td>${e.tinggi_badan_cm || '-'}</td>
+                <td>${e.bmi || '-'}</td>
                 <td>${e.sistolik || '-'}</td>
                 <td>${e.diastolik || '-'}</td>
-                <td>${e.glukosa || '-'}</td>
-                <td>
-                  <span class="status-badge ${e.fall_detected ? 'status-detected' : 'status-normal'}" style="font-size: 10px;">
-                    ${e.fall_detected ? 'YES' : 'NO'}
-                  </span>
-                </td>
+                <td><span class="status-badge ${e.fall_detected === 1 ? 'status-detected' : 'status-normal'}">${e.fall_detected === 1 ? 'YES' : 'NO'}</span></td>
               </tr>
             `).join('')}
           </tbody>
@@ -1099,7 +1052,7 @@
 
     async function loadVitalsChart(emr_no) {
       try {
-        const response = await fetch(`/api/rawat-inap/patient/${emr_no}/vitals`);
+        const response = await fetch(`/api/patients/inpatient/${emr_no}/vitals/chart`);
         const data = await response.json();
 
         if (data.success && data.vitals.length > 0) {
@@ -1112,7 +1065,7 @@
             </div>
           `;
         }
-} catch (err) {
+      } catch (err) {
         console.error('Chart error:', err);
         document.getElementById('charts-container').innerHTML = '<div class="empty-state"><i class="fas fa-chart-line"></i><p>Tidak ada data grafik</p></div>';
       }
@@ -1122,8 +1075,8 @@
       const container = document.getElementById('charts-container');
       container.innerHTML = `
         <div class="chart-card"><div class="chart-title">Heart Rate (bpm)</div><canvas id="heart-rate-chart"></canvas></div>
-        <div class="chart-card"><div class="chart-title">Respiratory Rate</div><canvas id="respiratory-chart"></canvas></div>
-        <div class="chart-card"><div class="chart-title">Blood Pressure</div><canvas id="bp-chart"></canvas></div>
+        <div class="chart-card"><div class="chart-title">Respiratory Rate (/min)</div><canvas id="respiratory-chart"></canvas></div>
+        <div class="chart-card"><div class="chart-title">Blood Pressure (mmHg)</div><canvas id="bp-chart"></canvas></div>
         <div class="chart-card"><div class="chart-title">Glucose (mg/dL)</div><canvas id="glucose-chart"></canvas></div>
         <div class="chart-card"><div class="chart-title">Fall Detection</div><canvas id="fall-chart"></canvas></div>
       `;
@@ -1278,37 +1231,31 @@
     }
 
     // ============================================================
-    // AUTO REFRESH & EVENT HANDLERS
+    // AUTO REFRESH
     // ============================================================
 
-    // Auto refresh detail view vitals every 10 seconds
     setInterval(() => {
       if (currentPatientEMR) {
         loadPatientDetail(currentPatientEMR);
       }
     }, 10000);
 
-    // Auto refresh list view every 30 seconds
     setInterval(() => {
       if (!currentPatientEMR) {
         loadPatients();
       }
     }, 30000);
 
-    // Auto refresh charts every 5 minutes
     setInterval(() => {
       if (currentPatientEMR) {
         loadVitalsChart(currentPatientEMR);
       }
     }, 300000);
 
-    // Keyboard shortcuts
     document.addEventListener('keydown', (e) => {
-      // ESC to go back to list view
       if (e.key === 'Escape' && currentPatientEMR) {
         showListView();
       }
-      // Ctrl/Cmd + R to refresh
       if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
         e.preventDefault();
         if (currentPatientEMR) {
@@ -1321,7 +1268,6 @@
       }
     });
 
-    // Initial load
     loadPatients();
   </script>
 </body>
