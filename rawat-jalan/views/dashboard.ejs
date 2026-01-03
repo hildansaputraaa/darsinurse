@@ -1934,6 +1934,28 @@
         addLog(`Error loading patients for filter: ${err.message}`, 'error');
       }
     }
+      async function loadDoctorsForKunjungan() {
+        try {
+          const response = await fetch('/api/doctors/list');
+          const result = await response.json();
+          
+          if (result.success) {
+            const select = document.getElementById('new-emr-dokter');
+            select.innerHTML = '<option value="">-- Pilih Dokter --</option>';
+            
+            result.doctors.forEach(doctor => {
+              const option = document.createElement('option');
+              option.value = doctor.emr_dokter;
+              option.textContent = `${doctor.nama}${doctor.spesialisasi ? ` - ${doctor.spesialisasi}` : ''}`;
+              select.appendChild(option);
+            });
+            
+            addLog(`${result.doctors.length} dokter dimuat untuk kunjungan`, 'success');
+          }
+        } catch (err) {
+          addLog(`Error loading doctors: ${err.message}`, 'error');
+        }
+      }
 
     // ============================================
     // INITIALIZATION - SINGLE DOMContentLoaded
@@ -2153,30 +2175,6 @@
         await validatePatient(emr, 'kunjungan');
       }
     });
-
-      // ✅ TAMBAH FUNGSI BARU:
-      async function loadDoctorsForKunjungan() {
-        try {
-          const response = await fetch('/api/doctors/list');
-          const result = await response.json();
-          
-          if (result.success) {
-            const select = document.getElementById('new-emr-dokter');
-            select.innerHTML = '<option value="">-- Pilih Dokter --</option>';
-            
-            result.doctors.forEach(doctor => {
-              const option = document.createElement('option');
-              option.value = doctor.emr_dokter;
-              option.textContent = `${doctor.nama}${doctor.spesialisasi ? ` - ${doctor.spesialisasi}` : ''}`;
-              select.appendChild(option);
-            });
-            
-            addLog(`${result.doctors.length} dokter dimuat untuk kunjungan`, 'success');
-          }
-        } catch (err) {
-          addLog(`Error loading doctors: ${err.message}`, 'error');
-        }
-      }
 
       // Cancel pasien baru
       document.getElementById('btn-cancel-pasien-baru').addEventListener('click', function() {

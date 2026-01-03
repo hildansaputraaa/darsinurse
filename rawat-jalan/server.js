@@ -274,8 +274,46 @@ async function optimizeDatabase() {
   }
 }
 
+async function migrateAddEmrDokter() {
+  const conn = await pool.getConnection();
+  
+  try {
+    console.log('🔧 Checking emr_dokter column...');
+    
+    // Cek apakah kolom sudah ada
+    const [columns] = await conn.query(`
+      SELECT COLUMN_NAME 
+      FROM INFORMATION_SCHEMA.COLUMNS 
+      WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'kunjungan' 
+      AND COLUMN_NAME = 'emr_dokter'
+    `);
+    
+    if (columns.length === 0) {
+      console.log('➕ Adding emr_dokter column...');
+      
+      await conn.query(`
+        ALTER TABLE kunjungan 
+        ADD COLUMN emr_dokter INT DEFAULT NULL
+        AFTER emr_perawat
+      `);
+      
+      console.log('✓ emr_dokter column added successfully');
+    } else {
+      console.log('✓ emr_dokter column already exists');
+    }
+    
+  } catch (err) {
+    console.error('❌ Migration error:', err);
+  } finally {
+    conn.release();
+  }
+}
+
+
 // Panggil setelah initDatabase()
 initDatabase()
+  .then(() => migrateAddEmrDokter())  // ← TAMBAH INI
   .then(() => optimizeDatabase())
   .catch(err => {
     console.error('Failed to initialize:', err);
