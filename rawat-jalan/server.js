@@ -498,7 +498,37 @@ app.put('/admin/api/users/:emr', requireAdmin, async (req, res) => {
     res.status(500).json({ error: 'Database error: ' + err.message });
   }
 });
+// ============================================================
+// API ENDPOINTS - DOCTORS
+// ============================================================
 
+app.get('/api/doctors/list', requireAdminOrPerawat, async (req, res) => {
+  let conn;
+  try {
+    conn = await pool.getConnection();
+    
+    const [doctors] = await conn.query(`
+      SELECT emr_dokter, nama, spesialisasi
+      FROM dokter
+      ORDER BY nama ASC
+    `);
+    
+    conn.release();
+    
+    res.json({
+      success: true,
+      doctors: doctors,
+      count: doctors.length
+    });
+  } catch (err) {
+    console.error('❌ GET /api/doctors/list error:', err.message);
+    if (conn) conn.release();
+    res.status(500).json({
+      success: false,
+      error: err.message
+    });
+  }
+});
 /* ============================================================
    VITALS & MEASUREMENTS ROUTES
    ============================================================ */
@@ -577,11 +607,12 @@ async function checkAndBroadcastFall(vitalsId, emrNo) {
   }
 }
 app.post('/simpan_data', requireLogin, async (req, res) => {
-  const { id_kunjungan, emr_no, tipe_device, data } = req.body;
+  const { id_kunjungan, emr_no, tipe_device, data, emr_dokter } = req.body;
   
   const idInt = parseInt(id_kunjungan);
   const emrInt = parseInt(emr_no);
-  
+  const emrDokterInt = emr_dokter ? parseInt(emr_dokter) : null; // ✅ Parse dokter
+
   if (isNaN(idInt) || isNaN(emrInt) || !tipe_device || !data) {
     return res.status(400).json({ error: 'Data tidak lengkap atau tidak valid' });
   }
@@ -593,6 +624,7 @@ app.post('/simpan_data', requireLogin, async (req, res) => {
       emr_no: emrInt,
       id_kunjungan: idInt,
       emr_perawat: req.session.emr_perawat,
+      emr_dokter: emrDokterInt, 
       heart_rate: null,
       sistolik: null,
       diastolik: null,
@@ -672,6 +704,7 @@ app.post('/simpan_data', requireLogin, async (req, res) => {
         emr_no, 
         id_kunjungan,
         emr_perawat,
+        emr_dokter,
         waktu,
         heart_rate, 
         sistolik, 
@@ -688,6 +721,7 @@ app.post('/simpan_data', requireLogin, async (req, res) => {
         vitalsData.emr_no,
         vitalsData.id_kunjungan,
         vitalsData.emr_perawat,
+        vitalsData.emr_dokter,
         vitalsData.heart_rate,
         vitalsData.sistolik,
         vitalsData.diastolik,
