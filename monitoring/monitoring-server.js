@@ -914,29 +914,44 @@ app.get('/api/patients/inpatient/list', requireAdminOrPerawat, async (req, res) 
   let conn;
   try {
     conn = await pool.getConnection();
-    
     const [patients] = await conn.query(`
-      SELECT DISTINCT
+      SELECT 
         p.emr_no,
         p.nama,
         p.alamat,
         p.tanggal_lahir,
         p.jenis_kelamin,
-        rd.room_id,
         p.poli,
-        k.emr_perawat,
-        k.emr_dokter,          -- ✅ AMBIL DARI KUNJUNGAN
-        k.id_kunjungan,
-        (SELECT respirasi FROM vitals WHERE emr_no = p.emr_no ORDER BY waktu DESC LIMIT 1) as respirasi,
-        (SELECT heart_rate FROM vitals WHERE emr_no = p.emr_no ORDER BY waktu DESC LIMIT 1) as heart_rate,
-        (SELECT jarak_kasur_cm FROM vitals WHERE emr_no = p.emr_no ORDER BY waktu DESC LIMIT 1) as jarak_kasur_cm,
-        (SELECT fall_detected FROM vitals WHERE emr_no = p.emr_no ORDER BY waktu DESC LIMIT 1) as fall_detected,
-        (SELECT waktu FROM vitals WHERE emr_no = p.emr_no ORDER BY waktu DESC LIMIT 1) as waktu_vital
-      FROM room_device rd
-      INNER JOIN pasien p ON rd.emr_no = p.emr_no
-      LEFT JOIN kunjungan k ON p.emr_no = k.emr_no AND k.status = 'aktif'  -- ✅ JOIN KE KUNJUNGAN
-      WHERE rd.emr_no IS NOT NULL
-      ORDER BY rd.room_id, p.emr_no
+        v.heart_rate,
+        v.respirasi,
+        v.jarak_kasur_cm,
+        v.fall_detected,
+        v.waktu,
+        pr.nama as nama_perawat,
+        rd.room_id,
+        COALESCE(d.nama, 'Belum ditentukan') as nama_dokter
+      FROM pasien p
+      LEFT JOIN room_device rd ON p.emr_no = rd.emr_no
+      LEFT JOIN (
+        SELECT 
+          v1.emr_no,
+          v1.heart_rate,
+          v1.respirasi,
+          v1.jarak_kasur_cm,
+          v1.fall_detected,
+          v1.waktu,
+          v1.emr_perawat
+        FROM vitals v1
+        INNER JOIN (
+          SELECT emr_no, MAX(waktu) as max_waktu
+          FROM vitals
+          GROUP BY emr_no
+        ) v2 ON v1.emr_no = v2.emr_no AND v1.waktu = v2.max_waktu
+      ) v ON p.emr_no = v.emr_no
+      LEFT JOIN perawat pr ON v.emr_perawat = pr.emr_perawat
+      LEFT JOIN dokter d ON p.emr_dokter = d.emr_dokter
+      WHERE rd.room_id IS NOT NULL
+      ORDER BY v.waktu DESC, p.emr_no ASC
     `);
     
     const formattedPatients = [];
