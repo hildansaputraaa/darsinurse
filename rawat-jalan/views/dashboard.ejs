@@ -743,6 +743,16 @@
             </div>
 
             <div class="col-md-6 col-lg-3 mb-3">
+              <div class="card selection-card kunjungan-card-select" data-action="kelola-kunjungan">
+                <div class="card-body">
+                  <i class="fas fa-clipboard-check"></i>
+                  <h5>Kelola Kunjungan</h5>
+                  <small class="text-muted">Update Status</small>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-md-6 col-lg-3 mb-3">
               <div class="card selection-card" data-action="glucose">
                 <div class="card-body">
                   <i class="fas fa-droplet"></i>
@@ -784,6 +794,54 @@
           </div>
         </div>
 
+        <div id="card-kelola-kunjungan" class="kunjungan-card">
+            <div class="card">
+              <div class="card-header">
+                <i class="fas fa-clipboard-check"></i> Kelola Status Kunjungan
+              </div>
+              <div class="card-body">
+                <!-- Filter -->
+                <div class="mb-3">
+                  <label class="form-label">Filter Berdasarkan Pasien (Opsional)</label>
+                  <select class="form-control" id="kelola-filter-pasien">
+                    <option value="">-- Semua Pasien --</option>
+                  </select>
+                </div>
+
+                <!-- Tabel Kunjungan -->
+                <div class="table-responsive">
+                  <table class="table table-hover" id="table-kunjungan">
+                    <thead class="table-light">
+                      <tr>
+                        <th>ID</th>
+                        <th>Pasien</th>
+                        <th>Tanggal</th>
+                        <th>Keluhan</th>
+                        <th>Status</th>
+                        <th>Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody id="tbody-kunjungan">
+                      <tr>
+                        <td colspan="6" class="text-center text-muted">
+                          <i class="fas fa-spinner fa-spin"></i> Memuat data...
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <div class="d-grid gap-2 mt-3">
+                  <button type="button" class="btn btn-back" data-back-menu>
+                    <i class="fas fa-arrow-left"></i> Kembali ke Menu
+                  </button>
+                </div>
+                
+                <div id="kelola-status" class="mt-3"></div>
+              </div>
+            </div>
+          </div>
+
         <!-- KUNJUNGAN BARU FORM -->
         <div id="card-kunjungan" class="kunjungan-card">
           <div class="card">
@@ -801,6 +859,13 @@
                   <label class="form-label">Keluhan Pasien</label>
                   <textarea class="form-control" id="new-keluhan" rows="3" placeholder="Masukkan keluhan pasien..."></textarea>
                 </div>
+              <div class="mb-3">
+                <label class="form-label">Pilih Dokter (Opsional)</label>
+                <select class="form-control" id="new-emr-dokter">
+                  <option value="">-- Pilih Dokter --</option>
+                </select>
+                <small class="text-muted">Dokter yang menangani kunjungan ini</small>
+              </div>
                 <div class="d-grid gap-2">
                   <button type="submit" class="btn btn-success">
                     <i class="fas fa-save"></i> Simpan Kunjungan
@@ -902,13 +967,9 @@
                   <small class="text-muted">Pilih kunjungan yang aktif</small>
                 </div>
 
-                <!-- DROPDOWN DOKTER -->
                 <div class="mb-3">
-                  <label class="form-label">Pilih Dokter</label>
-                  <select class="form-control" id="glucose-emr-dokter" disabled>
-                    <option value="">-- Pilih pasien terlebih dahulu --</option>
-                  </select>
-                  <small class="text-muted">Dokter yang menangani pasien (opsional)</small>
+                  <label class="form-label">Keluhan Pasien</label>
+                  <textarea class="form-control" id="new-keluhan" rows="3"></textarea>
                 </div>
 
                 <div class="mb-3">
@@ -961,15 +1022,6 @@
                   </select>
                 </div>
 
-                <!-- DROPDOWN DOKTER -->
-                <div class="mb-3">
-                  <label class="form-label">Pilih Dokter</label>
-                  <select class="form-control" id="bp-emr-dokter" disabled>
-                    <option value="">-- Pilih pasien terlebih dahulu --</option>
-                  </select>
-                  <small class="text-muted">Dokter yang menangani pasien (opsional)</small>
-                </div>
-
                 <div class="mb-3">
                   <label class="form-label">Tekanan Darah (mmHg)</label>
                   <div class="measurement-display">
@@ -1020,15 +1072,6 @@
                   </select>
                 </div>
 
-                <!-- DROPDOWN DOKTER -->
-                <div class="mb-3">
-                  <label class="form-label">Pilih Dokter</label>
-                  <select class="form-control" id="hr-emr-dokter" disabled>
-                    <option value="">-- Pilih pasien terlebih dahulu --</option>
-                  </select>
-                  <small class="text-muted">Dokter yang menangani pasien (opsional)</small>
-                </div>
-
                 <div class="mb-3">
                   <label class="form-label">Detak Jantung (bpm)</label>
                   <div class="measurement-display">
@@ -1077,15 +1120,6 @@
                   <select class="form-control" id="weight-id-kunjungan" required disabled>
                     <option value="">-- Pilih pasien terlebih dahulu --</option>
                   </select>
-                </div>
-
-                <!-- DROPDOWN DOKTER -->
-                <div class="mb-3">
-                  <label class="form-label">Pilih Dokter</label>
-                  <select class="form-control" id="weight-emr-dokter" disabled>
-                    <option value="">-- Pilih pasien terlebih dahulu --</option>
-                  </select>
-                  <small class="text-muted">Dokter yang menangani pasien (opsional)</small>
                 </div>
 
                 <div class="mb-3">
@@ -1435,6 +1469,7 @@
         card.classList.remove('active');
       });
       document.getElementById('card-kunjungan').classList.add('active');
+      loadDoctorsForKunjungan(); // ✅ TAMBAH INI
       addLog('Formulir Kunjungan Baru dibuka', 'success');
     }
 
@@ -1552,83 +1587,6 @@
       }
     }
 
-    async function loadDoctors(type) {
-      try {
-        const response = await fetch('/api/doctors/list');
-        const result = await response.json();
-        
-        if (result.success) {
-          const select = document.getElementById(`${type}-emr-dokter`);
-          select.innerHTML = '<option value="">-- Pilih Dokter --</option>';
-          
-          result.doctors.forEach(doctor => {
-            const option = document.createElement('option');
-            option.value = doctor.emr_dokter;
-            // ✅ Sesuaikan: tampilkan nama dan spesialisasi
-            option.textContent = `${doctor.nama}${doctor.spesialisasi ? ` - ${doctor.spesialisasi}` : ''}`;
-            select.appendChild(option);
-          });
-          
-          select.disabled = false;
-          addLog(`${result.doctors.length} dokter dimuat`, 'success');
-        }
-      } catch (err) {
-        addLog(`Error loading doctors: ${err.message}`, 'error');
-      }
-    }
-
-function setupDropdowns(type) {
-  const patientSelect = document.getElementById(`${type}-emr-pasien`);
-  const visitSelect = document.getElementById(`${type}-id-kunjungan`);
-  const doctorSelect = document.getElementById(`${type}-emr-dokter`); // ✅ TAMBAHKAN INI
-  const scanBtn = document.getElementById(`btn-scan-${type}`);
-  
-  patientSelect.addEventListener('change', async function() {
-    const emr = parseInt(this.value);
-    
-    if (emr && !isNaN(emr)) {
-      await displayPatientInfo(emr, type);
-      await loadVisitsByPatient(emr, type);
-      await loadDoctors(type); // ✅ Load dokter saat pasien dipilih
-      visitSelect.value = '';
-      doctorSelect.value = ''; // ✅ Reset dokter
-      scanBtn.disabled = true;
-    } else {
-      document.getElementById(`${type}-patient-info`).innerHTML = '';
-      visitSelect.innerHTML = '<option value="">-- Pilih pasien terlebih dahulu --</option>';
-      visitSelect.disabled = true;
-      doctorSelect.innerHTML = '<option value="">-- Pilih pasien terlebih dahulu --</option>'; // ✅ Reset dokter
-      doctorSelect.disabled = true;
-      scanBtn.disabled = true;
-      currentPatients[type] = null;
-      currentDoctors[type] = null; // ✅ Reset state dokter
-    }
-  });
-  
-  visitSelect.addEventListener('change', function() {
-    const idKunjungan = parseInt(this.value);
-    
-    if (idKunjungan && !isNaN(idKunjungan)) {
-      currentVisits[type] = idKunjungan;
-      scanBtn.disabled = false;
-      addLog(`Kunjungan ID ${idKunjungan} dipilih`, 'success');
-    } else {
-      currentVisits[type] = null;
-      scanBtn.disabled = true;
-    }
-  });
-  
-  // ✅ Event listener untuk dokter
-  doctorSelect.addEventListener('change', function() {
-    const emrDokter = parseInt(this.value);
-    if (emrDokter && !isNaN(emrDokter)) {
-      currentDoctors[type] = emrDokter;
-      addLog(`Dokter EMR ${emrDokter} dipilih`, 'success');
-    } else {
-      currentDoctors[type] = null;
-    }
-  });
-}
     // ============================================
     // PATIENT VALIDATION
     // ============================================
@@ -1898,7 +1856,6 @@ function setupDropdowns(type) {
           body: JSON.stringify({
             id_kunjungan: parseInt(idKunjungan),
             emr_no: parseInt(emrPasien),
-            emr_dokter: emrDokter ? parseInt(emrDokter) : null, // ✅ Kirim dokter
             tipe_device: tipe,
             data: dataValue
           })
@@ -1919,6 +1876,65 @@ function setupDropdowns(type) {
       }
     }
 
+    function setupDropdowns(type) {
+      const patientSelect = document.getElementById(`${type}-emr-pasien`);
+      const visitSelect = document.getElementById(`${type}-id-kunjungan`);
+      const scanBtn = document.getElementById(`btn-scan-${type}`);
+      
+      patientSelect.addEventListener('change', async function() {
+        const emr = parseInt(this.value);
+        
+        if (emr && !isNaN(emr)) {
+          await displayPatientInfo(emr, type);
+          await loadVisitsByPatient(emr, type);
+          visitSelect.value = '';
+          scanBtn.disabled = true;
+        } else {
+          document.getElementById(`${type}-patient-info`).innerHTML = '';
+          visitSelect.innerHTML = '<option value="">-- Pilih pasien terlebih dahulu --</option>';
+          visitSelect.disabled = true;
+          scanBtn.disabled = true;
+          currentPatients[type] = null;
+        }
+      });
+      
+      visitSelect.addEventListener('change', function() {
+        const idKunjungan = parseInt(this.value);
+        
+        if (idKunjungan && !isNaN(idKunjungan)) {
+          currentVisits[type] = idKunjungan;
+          scanBtn.disabled = false;
+          addLog(`Kunjungan ID ${idKunjungan} dipilih`, 'success');
+        } else {
+          currentVisits[type] = null;
+          scanBtn.disabled = true;
+        }
+      });
+    }
+
+    async function loadPatientsForFilter() {
+      try {
+        const response = await fetch('/api/patients/active');
+        const result = await response.json();
+        
+        if (result.success) {
+          const select = document.getElementById('kelola-filter-pasien');
+          select.innerHTML = '<option value="">-- Semua Pasien --</option>';
+          
+          result.patients.forEach(patient => {
+            const option = document.createElement('option');
+            option.value = patient.emr_no;
+            option.textContent = `${patient.nama} (EMR: ${patient.emr_no})`;
+            select.appendChild(option);
+          });
+          
+          addLog(`${result.patients.length} pasien dimuat untuk filter`, 'success');
+        }
+      } catch (err) {
+        addLog(`Error loading patients for filter: ${err.message}`, 'error');
+      }
+    }
+
     // ============================================
     // INITIALIZATION - SINGLE DOMContentLoaded
     // ============================================
@@ -1934,12 +1950,21 @@ function setupDropdowns(type) {
       document.querySelectorAll('.selection-card').forEach(card => {
         card.addEventListener('click', function() {
           const action = this.getAttribute('data-action');
+          
           if (action === 'kunjungan') {
-            showKunjungan();
+            showKunjungan(); // ✅ BENAR: Kunjungan Baru
+          } else if (action === 'kelola-kunjungan') {
+            showKelolaKunjungan(); // ✅ BENAR: Kelola Kunjungan
           } else {
-            showMeasurement(action);
+            showMeasurement(action); // ✅ Untuk glucose, bp, hr, weight
           }
         });
+      });
+
+      // ✅ Event listener untuk filter pasien di Kelola Kunjungan
+      document.getElementById('kelola-filter-pasien').addEventListener('change', function() {
+        const emr = this.value;
+        loadKunjunganForKelola(emr || null);
       });
 
       // Back buttons
@@ -1974,10 +1999,9 @@ function setupDropdowns(type) {
         const value = measurementData.glucose;
         const emrPasien = currentPatients.glucose;
         const idKunjungan = currentVisits.glucose;
-        const emrDokter = currentDoctors.glucose; // ✅ Ambil dokter
 
         if (value && emrPasien && idKunjungan) {
-          const success = await sendToServer('glukosa', emrPasien, idKunjungan, value.toString(), emrDokter); // ✅ KIRIM DOKTER
+          const success = await sendToServer('glukosa', emrPasien, idKunjungan, value.toString()); // ✅ KIRIM DOKTER
           if (success) {
             alert('Data Glukosa berhasil disimpan!');
             setTimeout(() => {
@@ -1997,10 +2021,9 @@ function setupDropdowns(type) {
         const value = measurementData.bp;
         const emrPasien = currentPatients.bp;
         const idKunjungan = currentVisits.bp;
-        const emrDokter = currentDoctors.bp; // ✅ Ambil dokter
 
         if (value && emrPasien && idKunjungan) {
-          const success = await sendToServer('tensimeter', emrPasien, idKunjungan, value, emrDokter); // ✅ KIRIM DOKTER
+          const success = await sendToServer('tensimeter', emrPasien, idKunjungan, value); 
           if (success) {
             alert('Data Tekanan Darah berhasil disimpan!');
             setTimeout(() => {
@@ -2020,10 +2043,9 @@ function setupDropdowns(type) {
         const value = measurementData.hr;
         const emrPasien = currentPatients.hr;
         const idKunjungan = currentVisits.hr;
-        const emrDokter = currentDoctors.hr; // ✅ Ambil dokter
 
         if (value && emrPasien && idKunjungan) {
-          const success = await sendToServer('heart_rate', emrPasien, idKunjungan, value.toString(), emrDokter); // ✅ KIRIM DOKTER
+          const success = await sendToServer('heart_rate', emrPasien, idKunjungan, value.toString());
           if (success) {
             alert('Data Heart Rate berhasil disimpan!');
             setTimeout(() => {
@@ -2045,12 +2067,11 @@ function setupDropdowns(type) {
         const height = measurementData.height;
         const emrPasien = currentPatients.weight;
         const idKunjungan = currentVisits.weight;
-        const emrDokter = currentDoctors.weight; // ✅ Ambil dokter
 
         if (weight && bmi && height && emrPasien && idKunjungan) {
-          const okWeight = await sendToServer('timbangan', emrPasien, idKunjungan, weight, emrDokter); // ✅ KIRIM DOKTER
-          const okHeight = await sendToServer('tinggi', emrPasien, idKunjungan, height, emrDokter); // ✅ KIRIM DOKTER
-          const okBmi = await sendToServer('bmi', emrPasien, idKunjungan, bmi, emrDokter); // ✅ KIRIM DOKTER
+          const okWeight = await sendToServer('timbangan', emrPasien, idKunjungan, weight);
+          const okHeight = await sendToServer('tinggi', emrPasien, idKunjungan, height);
+          const okBmi = await sendToServer('bmi', emrPasien, idKunjungan, bmi);
 
           if (okWeight && okHeight && okBmi) {
             alert('Data Berat, Tinggi, dan BMI berhasil disimpan!');
@@ -2080,6 +2101,7 @@ function setupDropdowns(type) {
         e.preventDefault();
         const emrPasien = document.getElementById('new-emr-pasien').value.trim();
         const keluhan = document.getElementById('new-keluhan').value.trim();
+        const emrDokter = document.getElementById('new-emr-dokter').value; 
         
         if (!emrPasien) {
           showStatus('kunjungan', '✗ EMR Pasien harus diisi', 'danger');
@@ -2103,7 +2125,7 @@ function setupDropdowns(type) {
           const response = await fetch('/api/visits', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ emr_no: emrInt, keluhan: keluhan || '' })
+            body: JSON.stringify({ emr_no: emrInt, keluhan: keluhan || '',emr_dokter: emrDokter ? parseInt(emrDokter) : null})
           });
           
           const result = await response.json();
@@ -2125,12 +2147,36 @@ function setupDropdowns(type) {
       });
 
       // Auto-validate patient when EMR is entered
-      document.getElementById('new-emr-pasien').addEventListener('blur', async function() {
-        const emr = parseInt(this.value);
-        if (emr && !isNaN(emr)) {
-          await validatePatient(emr, 'kunjungan');
+    document.getElementById('new-emr-pasien').addEventListener('blur', async function() {
+      const emr = parseInt(this.value);
+      if (emr && !isNaN(emr)) {
+        await validatePatient(emr, 'kunjungan');
+      }
+    });
+
+      // ✅ TAMBAH FUNGSI BARU:
+      async function loadDoctorsForKunjungan() {
+        try {
+          const response = await fetch('/api/doctors/list');
+          const result = await response.json();
+          
+          if (result.success) {
+            const select = document.getElementById('new-emr-dokter');
+            select.innerHTML = '<option value="">-- Pilih Dokter --</option>';
+            
+            result.doctors.forEach(doctor => {
+              const option = document.createElement('option');
+              option.value = doctor.emr_dokter;
+              option.textContent = `${doctor.nama}${doctor.spesialisasi ? ` - ${doctor.spesialisasi}` : ''}`;
+              select.appendChild(option);
+            });
+            
+            addLog(`${result.doctors.length} dokter dimuat untuk kunjungan`, 'success');
+          }
+        } catch (err) {
+          addLog(`Error loading doctors: ${err.message}`, 'error');
         }
-      });
+      }
 
       // Cancel pasien baru
       document.getElementById('btn-cancel-pasien-baru').addEventListener('click', function() {
@@ -2212,6 +2258,112 @@ function setupDropdowns(type) {
       console.log('✓ Dropdown handlers initialized');
       console.log('✓ Fall detection client initialized');
     });
+
+    async function loadKunjunganForKelola(filterEmr = null) {
+      try {
+        const tbody = document.getElementById('tbody-kunjungan');
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center"><i class="fas fa-spinner fa-spin"></i> Memuat...</td></tr>';
+        
+        const url = filterEmr 
+          ? `/api/visits/by-patient/${filterEmr}` 
+          : '/api/visits/all'; // ⚠️ Endpoint ini perlu dibuat (lihat di bawah)
+        
+        const response = await fetch(url);
+        const result = await response.json();
+        
+        if (result.success && result.visits.length > 0) {
+          tbody.innerHTML = '';
+          
+          result.visits.forEach(visit => {
+            const date = new Date(visit.tanggal_kunjungan);
+            const dateStr = date.toLocaleDateString('id-ID', {
+              year: 'numeric', month: 'short', day: 'numeric'
+            });
+            const timeStr = date.toLocaleTimeString('id-ID', {
+              hour: '2-digit', minute: '2-digit'
+            });
+            
+            const statusBadge = visit.status === 'aktif' 
+              ? '<span class="badge bg-success">Aktif</span>' 
+              : '<span class="badge bg-secondary">Selesai</span>';
+            
+            const toggleBtn = visit.status === 'aktif'
+              ? `<button class="btn btn-danger btn-sm" onclick="updateStatusKunjungan(${visit.id_kunjungan}, 'selesai')">
+                  <i class="fas fa-check"></i> Selesaikan
+                </button>`
+              : `<button class="btn btn-success btn-sm" onclick="updateStatusKunjungan(${visit.id_kunjungan}, 'aktif')">
+                  <i class="fas fa-redo"></i> Aktifkan Kembali
+                </button>`;
+            
+            const row = `
+              <tr>
+                <td>${visit.id_kunjungan}</td>
+                <td>${visit.nama_pasien || 'Unknown'}</td>
+                <td>${dateStr}<br><small class="text-muted">${timeStr}</small></td>
+                <td><small>${visit.keluhan ? visit.keluhan.substring(0, 40) : '-'}</small></td>
+                <td>${statusBadge}</td>
+                <td>${toggleBtn}</td>
+              </tr>
+            `;
+            
+            tbody.insertAdjacentHTML('beforeend', row);
+          });
+          
+          addLog(`${result.visits.length} kunjungan dimuat`, 'success');
+        } else {
+          tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">Tidak ada data kunjungan</td></tr>';
+        }
+      } catch (err) {
+        const tbody = document.getElementById('tbody-kunjungan');
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Error: ' + err.message + '</td></tr>';
+        addLog('Error loading kunjungan: ' + err.message, 'error');
+      }
+    }
+
+    // Update status kunjungan
+    async function updateStatusKunjungan(idKunjungan, newStatus) {
+      if (!confirm(`Yakin ${newStatus === 'selesai' ? 'menyelesaikan' : 'mengaktifkan kembali'} kunjungan ID ${idKunjungan}?`)) {
+        return;
+      }
+      
+      try {
+        const response = await fetch(`/api/visits/${idKunjungan}/status`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: newStatus })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+          addLog(`Kunjungan ID ${idKunjungan} diubah ke ${newStatus}`, 'success');
+          alert('✓ Status kunjungan berhasil diupdate!');
+          loadKunjunganForKelola(); // Reload table
+        } else {
+          alert('Error: ' + result.error);
+          addLog('Error update status: ' + result.error, 'error');
+        }
+      } catch (err) {
+        alert('Network error: ' + err.message);
+        addLog('Network error: ' + err.message, 'error');
+      }
+    }
+
+    function showKelolaKunjungan() {
+      document.getElementById('selection-menu').style.display = 'none';
+      document.querySelectorAll('.measurement-card, .kunjungan-card').forEach(card => {
+        card.classList.remove('active');
+      });
+      document.getElementById('card-kelola-kunjungan').classList.add('active');
+      
+      // ✅ Load patients untuk filter dropdown
+      loadPatientsForFilter();
+      
+      // ✅ Load all visits
+      loadKunjunganForKelola();
+      
+      addLog('Menu Kelola Kunjungan dibuka', 'success');
+    }
   </script>
 </body>
 </html>

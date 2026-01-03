@@ -508,10 +508,14 @@ app.get('/api/doctors/list', requireAdminOrPerawat, async (req, res) => {
     conn = await pool.getConnection();
     
     const [doctors] = await conn.query(`
-      SELECT emr_dokter, nama, spesialisasi
-      FROM dokter
-      ORDER BY nama ASC
-    `);
+          SELECT 
+            emr_no as emr_dokter,
+            nama,
+            poli as spesialisasi
+          FROM pasien
+          WHERE poli IS NOT NULL
+          ORDER BY nama ASC
+        `);
     
     conn.release();
     
@@ -608,11 +612,9 @@ async function checkAndBroadcastFall(vitalsId, emrNo) {
 }
 // ✅ FIXED: /simpan_data - SESUAI URUTAN KOLOM ASLI TABEL
 app.post('/simpan_data', requireLogin, async (req, res) => {
-  const { id_kunjungan, emr_no, tipe_device, data, emr_dokter } = req.body;
-  
+  const { id_kunjungan, emr_no, tipe_device, data } = req.body;  
   const idInt = parseInt(id_kunjungan);
   const emrInt = parseInt(emr_no);
-  const emrDokterInt = emr_dokter ? parseInt(emr_dokter) : null;
 
   if (isNaN(idInt) || isNaN(emrInt) || !tipe_device || !data) {
     return res.status(400).json({ error: 'Data tidak lengkap atau tidak valid' });
@@ -636,7 +638,6 @@ app.post('/simpan_data', requireLogin, async (req, res) => {
       tinggi_badan_cm: null,
       bmi: null,
       emr_perawat: req.session.emr_perawat,
-      emr_dokter: emrDokterInt
     };
 
     // Parse data berdasarkan tipe device
@@ -719,7 +720,6 @@ app.post('/simpan_data', requireLogin, async (req, res) => {
         tinggi_badan_cm,     /* 13 */
         bmi,                 /* 14 */
         emr_perawat,         /* 15 */
-        emr_dokter           /* 16 */
       ) VALUES (?, ?, NOW(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         vitalsData.emr_no,              // 1
@@ -735,7 +735,6 @@ app.post('/simpan_data', requireLogin, async (req, res) => {
         vitalsData.tinggi_badan_cm,     // 11
         vitalsData.bmi,                 // 12
         vitalsData.emr_perawat,         // 13
-        vitalsData.emr_dokter           // 14
       ]
     );
 
@@ -1347,9 +1346,10 @@ app.get('/api/patients/:emr/visits', requireLogin, async (req, res) => {
 });
 
 app.post('/api/visits', requireLogin, async (req, res) => {
-  const { emr_no, keluhan } = req.body;
+  const { emr_no, keluhan, emr_dokter} = req.body;
   
   const emrInt = parseInt(emr_no);
+  const emrDokterInt = emr_dokter ? parseInt(emr_dokter) : null;
   
   if (isNaN(emrInt)) {
     return res.status(400).json({ error: 'EMR Pasien harus berupa angka' });
@@ -1359,9 +1359,10 @@ app.post('/api/visits', requireLogin, async (req, res) => {
     const conn = await pool.getConnection();
     
     const [result] = await conn.query(
-      'INSERT INTO kunjungan (emr_no, emr_perawat, keluhan, status) VALUES (?, ?, ?, ?)',
-      [emrInt, req.session.emr_perawat, keluhan || '', 'aktif']
+      'INSERT INTO kunjungan (emr_no, emr_perawat, keluhan, status, emr_dokter) VALUES (?, ?, ?, ?, ?)', // ✅ Tambah emr_dokter
+      [emrInt, req.session.emr_perawat, keluhan || '', 'aktif', emrDokterInt] // ✅ Tambah value
     );
+
     
     conn.release();
     
@@ -1449,5 +1450,56 @@ app.get('/api/visits/by-patient/:emr', requireLogin, async (req, res) => {
     });
   } catch (err) {
     res.status(500).json({ error: 'Database error: ' + err.message });
+  }
+});
+
+// ============================================
+// GET ALL VISITS (untuk admin/perawat)
+// ============================================
+app.get('/api/visits/all', requireLogin, async (req, res) => {
+  try {
+    const conn = await pool.getConnection();
+    
+    let query = `
+      SELECT 
+        k.id_kunjungan,
+        k.emr_no,
+        k.tanggal_kunjungan,
+        k.keluhan,
+        k.status,
+        p.nama as nama_pasien,
+        p.poli,
+        pr.nama as nama_perawat
+      FROM kunjungan k
+      LEFT JOIN pasien p ON k.emr_no = p.emr_no
+      LEFT JOIN perawat pr ON k.emr_perawat = pr.emr_perawat
+    `;
+    
+    const params = [];
+    
+    // Jika bukan admin, hanya tampilkan kunjungan milik perawat ini
+    if (req.session.role !== 'admin') {
+      query += ` WHERE k.emr_perawat = ?`;
+      params.push(req.session.emr_perawat);
+    }
+    
+    query += `
+      ORDER BY 
+        CASE WHEN k.status = 'aktif' THEN 0 ELSE 1 END,
+        k.tanggal_kunjungan DESC
+      LIMIT 100
+    `;
+    
+    const [visits] = await conn.query(query, params);
+    conn.release();
+    
+    res.json({ 
+      success: true, 
+      visits: visits 
+    });
+  } catch (err) {
+    res.status(500).json({ 
+      error: 'Database error: ' + err.message 
+    });
   }
 });
