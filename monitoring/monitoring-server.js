@@ -688,6 +688,8 @@ app.get('/api/visits/today', requireAdminOrPerawat, async (req, res) => {
       ? '' 
       : `AND k.emr_perawat = ${req.session.emr_perawat}`;
     
+    // ✅ FIXED: Hapus JOIN ke pasien dokter yang salah
+    // Tambahkan JOIN ke perawat untuk nama dokter
     const [visits] = await conn.query(
       `SELECT 
         k.id_kunjungan,
@@ -697,12 +699,13 @@ app.get('/api/visits/today', requireAdminOrPerawat, async (req, res) => {
         k.status,
         pas.nama as nama_pasien,
         pr.nama as nama_perawat,
+        dok.nama as nama_dokter,
         COUNT(v.id) as total_measurements
        FROM kunjungan k
        JOIN pasien pas ON k.emr_no = pas.emr_no
        JOIN perawat pr ON k.emr_perawat = pr.emr_perawat
+       LEFT JOIN perawat dok ON k.emr_dokter = dok.emr_perawat
        LEFT JOIN vitals v ON k.id_kunjungan = v.id_kunjungan
-      LEFT JOIN pasien dokter ON k.emr_dokter = dokter.emr_no
        WHERE k.tanggal_kunjungan >= ? AND k.tanggal_kunjungan < ? ${whereClause}
        GROUP BY k.id_kunjungan
        ORDER BY k.tanggal_kunjungan DESC`,
@@ -730,6 +733,7 @@ app.get('/api/measurements/today', requireAdminOrPerawat, async (req, res) => {
       ? '' 
       : `AND k.emr_perawat = ${req.session.emr_perawat}`;
     
+    // ✅ FIXED: Ambil emr_perawat dari kunjungan (bukan vitals)
     const [measurements] = await conn.query(
       `SELECT 
         v.id, v.waktu as timestamp,
@@ -740,8 +744,7 @@ app.get('/api/measurements/today', requireAdminOrPerawat, async (req, res) => {
         pas.nama as nama_pasien, pas.emr_no,
         pr.nama as nama_perawat,
         k.id_kunjungan,
-        k.emr_perawat,
-        k.emr_dokter
+        k.emr_perawat
        FROM vitals v
        JOIN pasien pas ON v.emr_no = pas.emr_no
        LEFT JOIN kunjungan k ON v.id_kunjungan = k.id_kunjungan
@@ -801,18 +804,23 @@ app.get('/api/fall-detection/latest', requireAdminOrPerawat, async (req, res) =>
   try {
     const conn = await pool.getConnection();
     
-    // ✅ FIX: Only get falls from last 30 minutes instead of 24 hours
+    // Get falls from last 30 minutes
     const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
     
+    // ✅ FIXED: Tambahkan JOIN ke kunjungan
     const [falls] = await conn.query(`
       SELECT 
         v.id, v.emr_no, v.waktu, v.fall_detected,
         v.heart_rate, v.sistolik, v.diastolik,
         p.nama as nama_pasien, p.poli,
-        rd.room_id, rd.device_id
+        rd.room_id, rd.device_id,
+        k.id_kunjungan,
+        k.emr_perawat,
+        k.emr_dokter
       FROM vitals v
       LEFT JOIN pasien p ON v.emr_no = p.emr_no
       LEFT JOIN room_device rd ON v.emr_no = rd.emr_no
+      LEFT JOIN kunjungan k ON v.id_kunjungan = k.id_kunjungan
       WHERE v.fall_detected = 1 AND v.waktu >= ?
       ORDER BY v.waktu DESC
       LIMIT 50
@@ -828,7 +836,6 @@ app.get('/api/fall-detection/latest', requireAdminOrPerawat, async (req, res) =>
     
     const displayedIds = userDisplayedAlerts.get(sessionId);
     
-    // ✅ FIX: Filter out old alerts even if not displayed
     const now = Date.now();
     const newFalls = falls.filter(fall => {
       if (displayedIds.has(fall.id)) return false;
@@ -837,7 +844,6 @@ app.get('/api/fall-detection/latest', requireAdminOrPerawat, async (req, res) =>
       const fiveMinutes = 5 * 60 * 1000;
       
       if (fallAge > fiveMinutes) {
-        // Auto-mark as displayed if too old
         displayedIds.add(fall.id);
         return false;
       }
@@ -939,7 +945,7 @@ app.get('/api/patients/inpatient/list', requireAdminOrPerawat, async (req, res) 
       FROM room_device rd
       INNER JOIN pasien p ON rd.emr_no = p.emr_no
       
-      -- Ambil HANYA kunjungan terakhir yang aktif per pasien
+      -- Get active visit dengan emr_perawat & emr_dokter dari kunjungan
       LEFT JOIN (
         SELECT k1.*
         FROM kunjungan k1
@@ -952,7 +958,7 @@ app.get('/api/patients/inpatient/list', requireAdminOrPerawat, async (req, res) 
         WHERE k1.status = 'aktif'
       ) latest_k ON p.emr_no = latest_k.emr_no
       
-      -- Ambil HANYA vital terakhir per pasien
+      -- Get latest vitals
       LEFT JOIN (
         SELECT v1.*
         FROM vitals v1
@@ -972,7 +978,7 @@ app.get('/api/patients/inpatient/list', requireAdminOrPerawat, async (req, res) 
       let namaperawat = 'Belum ditugaskan';
       let namadokter = 'Belum ditentukan';
       
-      // Get nama perawat dari kunjungan
+      // ✅ FIXED: Get perawat dari kunjungan.emr_perawat
       if (p.emr_perawat) {
         const [perawat] = await conn.query(
           'SELECT nama FROM perawat WHERE emr_perawat = ?',
@@ -981,16 +987,16 @@ app.get('/api/patients/inpatient/list', requireAdminOrPerawat, async (req, res) 
         namaperawat = perawat[0]?.nama || 'Belum ditugaskan';
       }
       
-      // Get nama dokter dari kunjungan
+      // ✅ FIXED: Get dokter dari kunjungan.emr_dokter
+      // Asumsi: emr_dokter juga referensi ke tabel perawat
       if (p.emr_dokter) {
-        const [dokterInfo] = await conn.query(
-          'SELECT nama FROM pasien WHERE emr_no = ?',
+        const [dokter] = await conn.query(
+          'SELECT nama FROM perawat WHERE emr_perawat = ?',
           [p.emr_dokter]
         );
-        namadokter = dokterInfo[0]?.nama || 'Belum ditentukan';
+        namadokter = dokter[0]?.nama || 'Belum ditentukan';
       }
       
-      // Determine fall status
       let status_fall = 'Tidak Ada Data';
       if (p.fall_detected === 1) {
         status_fall = 'Terdeteksi Fall';
@@ -1032,6 +1038,7 @@ app.get('/api/patients/inpatient/list', requireAdminOrPerawat, async (req, res) 
     res.status(500).json({ success: false, error: err.message });
   }
 });
+
 // GET: Patient detail with real-time vitals
 app.get('/api/patients/inpatient/:emr_no', requireAdminOrPerawat, async (req, res) => {
   let conn;
@@ -1045,7 +1052,7 @@ app.get('/api/patients/inpatient/:emr_no', requireAdminOrPerawat, async (req, re
     
     conn = await pool.getConnection();
     
-    // Ambil emr_dokter dan emr_perawat dari kunjungan
+    // ✅ FIXED: Ambil emr_dokter & emr_perawat dari kunjungan
     const [patient] = await conn.query(`
       SELECT 
         p.emr_no,
@@ -1075,7 +1082,7 @@ app.get('/api/patients/inpatient/:emr_no', requireAdminOrPerawat, async (req, re
     
     const patientData = patient[0];
     
-    // Get latest vitals (tanpa emr_dokter/emr_perawat karena sudah di kunjungan)
+    // Get latest vitals
     const [latestVital] = await conn.query(`
       SELECT 
         heart_rate, respirasi, fall_detected, waktu,
@@ -1109,7 +1116,7 @@ app.get('/api/patients/inpatient/:emr_no', requireAdminOrPerawat, async (req, re
       };
     }
     
-    // Get nama perawat dan dokter dari kunjungan
+    // ✅ FIXED: Get perawat dari emr_perawat di kunjungan
     let namaperawat = 'Belum ditugaskan';
     let namadokter = 'Belum ditentukan';
     
@@ -1121,9 +1128,10 @@ app.get('/api/patients/inpatient/:emr_no', requireAdminOrPerawat, async (req, re
       namaperawat = perawat[0]?.nama || 'Belum ditugaskan';
     }
     
+    // ✅ FIXED: Get dokter dari emr_dokter di kunjungan
     if (patientData.emr_dokter) {
       const [dokter] = await conn.query(
-        'SELECT nama FROM pasien WHERE emr_no = ?',
+        'SELECT nama FROM perawat WHERE emr_perawat = ?',
         [patientData.emr_dokter]
       );
       namadokter = dokter[0]?.nama || 'Belum ditentukan';
