@@ -915,47 +915,48 @@ app.get('/api/patients/inpatient/list', requireAdminOrPerawat, async (req, res) 
   try {
     conn = await pool.getConnection();
     
-        const [patients] = await conn.query(`
-        SELECT DISTINCT
-          p.emr_no,
-          p.nama,
-          p.alamat,
-          p.tanggal_lahir,
-          p.jenis_kelamin,
-          rd.room_id,
-          p.poli,
-          k.emr_perawat,
-          k.emr_dokter,
-          k.id_kunjungan,
-          
-          -- Ambil hanya data vital terakhir
-          (SELECT respirasi FROM vitals 
-          WHERE emr_no = p.emr_no 
-          ORDER BY waktu DESC LIMIT 1) as respirasi,
-          
-          (SELECT heart_rate FROM vitals 
-          WHERE emr_no = p.emr_no 
-          ORDER BY waktu DESC LIMIT 1) as heart_rate,
-          
-          (SELECT jarak_kasur_cm FROM vitals 
-          WHERE emr_no = p.emr_no 
-          ORDER BY waktu DESC LIMIT 1) as jarak_kasur_cm,
-          
-          (SELECT fall_detected FROM vitals 
-          WHERE emr_no = p.emr_no 
-          ORDER BY waktu DESC LIMIT 1) as fall_detected,
-          
-          (SELECT waktu FROM vitals 
-          WHERE emr_no = p.emr_no 
-          ORDER BY waktu DESC LIMIT 1) as waktu_vital
-          
-        FROM room_device rd
-        INNER JOIN pasien p ON rd.emr_no = p.emr_no
-        LEFT JOIN kunjungan k ON p.emr_no = k.emr_no AND k.status = 'aktif'
-        WHERE rd.emr_no IS NOT NULL
-        ORDER BY rd.room_id, p.emr_no
-      `);
-      
+    // ✅ FIXED: Ambil HANYA data vital terakhir per pasien (tidak ada duplikasi)
+    const [patients] = await conn.query(`
+      SELECT DISTINCT
+        p.emr_no,
+        p.nama,
+        p.alamat,
+        p.tanggal_lahir,
+        p.jenis_kelamin,
+        rd.room_id,
+        p.poli,
+        k.emr_perawat,
+        k.emr_dokter,
+        k.id_kunjungan,
+        
+        -- ✅ Ambil hanya vital terakhir per pasien
+        (SELECT respirasi FROM vitals 
+         WHERE emr_no = p.emr_no 
+         ORDER BY waktu DESC LIMIT 1) as respirasi,
+         
+        (SELECT heart_rate FROM vitals 
+         WHERE emr_no = p.emr_no 
+         ORDER BY waktu DESC LIMIT 1) as heart_rate,
+         
+        (SELECT jarak_kasur_cm FROM vitals 
+         WHERE emr_no = p.emr_no 
+         ORDER BY waktu DESC LIMIT 1) as jarak_kasur_cm,
+         
+        (SELECT fall_detected FROM vitals 
+         WHERE emr_no = p.emr_no 
+         ORDER BY waktu DESC LIMIT 1) as fall_detected,
+         
+        (SELECT waktu FROM vitals 
+         WHERE emr_no = p.emr_no 
+         ORDER BY waktu DESC LIMIT 1) as waktu_vital
+         
+      FROM room_device rd
+      INNER JOIN pasien p ON rd.emr_no = p.emr_no
+      LEFT JOIN kunjungan k ON p.emr_no = k.emr_no AND k.status = 'aktif'
+      WHERE rd.emr_no IS NOT NULL
+      ORDER BY rd.room_id, p.emr_no
+    `);
+    
     const formattedPatients = [];
     for (const p of patients) {
       let namaperawat = 'Belum ditugaskan';
@@ -970,7 +971,7 @@ app.get('/api/patients/inpatient/list', requireAdminOrPerawat, async (req, res) 
         namaperawat = perawat[0]?.nama || 'Belum ditugaskan';
       }
       
-      // ✅ UBAH: Get nama dokter dari data yang sudah di-join
+      // Get nama dokter
       if (p.emr_dokter) {
         const [dokterInfo] = await conn.query(
           'SELECT nama FROM pasien WHERE emr_no = ?',
@@ -1007,7 +1008,14 @@ app.get('/api/patients/inpatient/list', requireAdminOrPerawat, async (req, res) 
     }
     
     conn.release();
-    res.json({ success: true, patients: formattedPatients, count: formattedPatients.length });
+    
+    console.log(`✅ Loaded ${formattedPatients.length} unique inpatients with latest vitals`);
+    
+    res.json({ 
+      success: true, 
+      patients: formattedPatients, 
+      count: formattedPatients.length 
+    });
   } catch (err) {
     console.error('❌ Error:', err.message);
     if (conn) conn.release();
