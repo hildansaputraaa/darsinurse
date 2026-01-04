@@ -1693,9 +1693,8 @@
 
 .chart-filter-controls {
   display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  align-items: end;
+  flex-direction: column; /* ✅ Paksa vertikal */
+  gap: 15px;
   padding: 15px;
   background: linear-gradient(135deg, #f9f9f9, #ffffff);
   border-radius: 10px 10px 0 0;
@@ -1704,55 +1703,20 @@
   box-shadow: 0 2px 8px rgba(0,0,0,0.05);
 }
 
-/* Laptop: horizontal layout */
-@media (min-width: 1200px) {
-  .chart-filter-controls {
-    flex-wrap: nowrap;
-    gap: 12px;
-    padding: 15px 20px;
-  }
-  
-  .filter-group {
-    flex: 0 0 200px;
-  }
-  
-  .filter-btn {
-    flex: 0 0 auto;
-    min-width: 100px;
-  }
-}
-
-/* Large screens */
-@media (min-width: 1400px) {
-  .chart-filter-controls {
-    gap: 15px;
-    padding: 18px 25px;
-  }
-  
-  .filter-group {
-    flex: 0 0 220px;
-  }
-}
-
-/* Mobile */
-@media (max-width: 768px) {
-  .chart-filter-controls {
-    flex-direction: column;
-    gap: 12px;
-    padding: 12px;
-  }
-  
-  .filter-group,
-  .filter-btn {
-    width: 100%;
-  }
+/* ✅ Baris filter inputs dalam 1 row */
+.filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: flex-end;
 }
 
 .filter-group {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  min-width: 0; /* ✅ PENTING: prevent overflow */
+  flex: 1;
+  min-width: 180px;
 }
 
 .filter-label {
@@ -1820,18 +1784,14 @@
   background: #5a6268;
 }
 
+/* ✅ Quick filters selalu di bawah */
 .quick-filters {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
-  padding: 12px 15px;
-  background: #f0f8f7;
-  border-radius: 0;
-  margin-bottom: 0;
-  border: 1px solid #e0e0e0;
-  border-bottom: none;
-  border-top: 1px solid #e0e0e0;
   justify-content: center;
+  padding-top: 10px;
+  border-top: 1px solid #e0e0e0;
 }
 
 .quick-filter-btn {
@@ -1858,27 +1818,31 @@
   box-shadow: 0 4px 12px rgba(0, 177, 79, 0.3);
 }
 
-/* Laptop: inline without wrap */
-@media (min-width: 1200px) {
-  .quick-filters {
-    flex-wrap: nowrap;
-    gap: 8px;
-    padding: 10px 15px;
-    overflow-x: visible;
-  }
-}
+/* ✅ HAPUS semua media query yang override layout */
+/* Jangan ada lagi @media yang ubah flex-direction atau flex-wrap */
 
-/* Mobile */
+/* Mobile tetap bagus */
 @media (max-width: 768px) {
+  .filter-row {
+    flex-direction: column;
+  }
+  
+  .filter-group {
+    width: 100%;
+    min-width: auto;
+  }
+  
+  .filter-btn {
+    width: 100%;
+  }
+  
   .quick-filters {
-    overflow-x: auto;
-    justify-content: flex-start;
+    gap: 6px;
   }
   
   .quick-filter-btn {
-    flex: 0 0 auto;
-    padding: 8px 12px;
-    font-size: 11px;
+    flex: 1;
+    min-width: 70px;
   }
 }
   </style>
@@ -3882,37 +3846,40 @@ async function loadVisitsData() {
       // ✅ Build HTML dengan ID yang UNIK dan VALID
       const filterHTML = `
         <div class="chart-filter-controls">
-          <div class="filter-group">
-            <label class="filter-label">📅 Dari</label>
-            <input type="datetime-local" id="chart-start-date" class="filter-input" value="${formatDateTimeLocal(yesterday)}" />
+          <!-- ✅ Baris filter dalam 1 row -->
+          <div class="filter-row">
+            <div class="filter-group">
+              <label class="filter-label">📅 Dari</label>
+              <input type="datetime-local" id="chart-start-date" class="filter-input" value="${formatDateTimeLocal(yesterday)}" />
+            </div>
+            
+            <div class="filter-group">
+              <label class="filter-label">📅 Sampai</label>
+              <input type="datetime-local" id="chart-end-date" class="filter-input" value="${formatDateTimeLocal(now)}" />
+            </div>
+            
+            <button class="filter-btn" onclick="applyChartFilter()">
+              <i class="fas fa-filter"></i> Terapkan
+            </button>
+            
+            <button class="filter-btn secondary" onclick="resetChartFilter()">
+              <i class="fas fa-undo"></i> Reset
+            </button>
+            
+            <button class="filter-btn" onclick="refreshCharts()">
+              <i class="fas fa-sync-alt"></i> Refresh
+            </button>
           </div>
           
-          <div class="filter-group">
-            <label class="filter-label">📅 Sampai</label>
-            <input type="datetime-local" id="chart-end-date" class="filter-input" value="${formatDateTimeLocal(now)}" />
+          <!-- ✅ Quick filters di bawah dengan border-top -->
+          <div class="quick-filters">
+            <button class="quick-filter-btn" onclick="setQuickFilter(1)">1 Jam</button>
+            <button class="quick-filter-btn" onclick="setQuickFilter(3)">3 Jam</button>
+            <button class="quick-filter-btn" onclick="setQuickFilter(6)">6 Jam</button>
+            <button class="quick-filter-btn" onclick="setQuickFilter(12)">12 Jam</button>
+            <button class="quick-filter-btn active" onclick="setQuickFilter(24)">24 Jam</button>
           </div>
-          
-          <button class="filter-btn" onclick="applyChartFilter()">
-            <i class="fas fa-filter"></i> Terapkan
-          </button>
-          
-          <button class="filter-btn secondary" onclick="resetChartFilter()">
-            <i class="fas fa-undo"></i> Reset
-          </button>
-          
-          <button class="filter-btn" onclick="refreshCharts()">
-            <i class="fas fa-sync-alt"></i> Refresh
-          </button>
-        </div>
-        
-        <div class="quick-filters">
-          <button class="quick-filter-btn" onclick="setQuickFilter(1)">1 Jam</button>
-          <button class="quick-filter-btn" onclick="setQuickFilter(3)">3 Jam</button>
-          <button class="quick-filter-btn" onclick="setQuickFilter(6)">6 Jam</button>
-          <button class="quick-filter-btn" onclick="setQuickFilter(12)">12 Jam</button>
-          <button class="quick-filter-btn active" onclick="setQuickFilter(24)">24 Jam</button>
-        </div>
-                
+        </div>                
         <div class="charts-grid">
           <div class="chart-card">
             <div class="chart-title"><i class="fas fa-heartbeat" style="color: #e74c3c;"></i> Heart Rate (bpm)</div>
@@ -4300,37 +4267,39 @@ function displayRawatJalanVitals(vitals) {
     // ✅ Build HTML dengan ID yang UNIK
     const filterHTML = `
       <div class="chart-filter-controls">
-        <div class="filter-group">
-          <label class="filter-label">📅 Dari</label>
-          <input type="datetime-local" id="jalan-chart-start-date" class="filter-input" value="${formatDateTimeLocal(yesterday)}" />
+        <div class="filter-row">
+          <div class="filter-group">
+            <label class="filter-label">📅 Dari</label>
+            <input type="datetime-local" id="jalan-chart-start-date" class="filter-input" value="${formatDateTimeLocal(yesterday)}" />
+          </div>
+          
+          <div class="filter-group">
+            <label class="filter-label">📅 Sampai</label>
+            <input type="datetime-local" id="jalan-chart-end-date" class="filter-input" value="${formatDateTimeLocal(now)}" />
+          </div>
+          
+          <button class="filter-btn" onclick="applyJalanChartFilter()">
+            <i class="fas fa-filter"></i> Terapkan
+          </button>
+          
+          <button class="filter-btn secondary" onclick="resetJalanChartFilter()">
+            <i class="fas fa-undo"></i> Reset
+          </button>
+          
+          <button class="filter-btn" onclick="refreshJalanCharts()">
+            <i class="fas fa-sync-alt"></i> Refresh
+          </button>
         </div>
         
-        <div class="filter-group">
-          <label class="filter-label">📅 Sampai</label>
-          <input type="datetime-local" id="jalan-chart-end-date" class="filter-input" value="${formatDateTimeLocal(now)}" />
+        <div class="quick-filters">
+          <button class="quick-filter-btn" onclick="setJalanQuickFilter(1)">1 Jam</button>
+          <button class="quick-filter-btn" onclick="setJalanQuickFilter(3)">3 Jam</button>
+          <button class="quick-filter-btn" onclick="setJalanQuickFilter(6)">6 Jam</button>
+          <button class="quick-filter-btn active" onclick="setJalanQuickFilter(24)">24 Jam</button>
+          <button class="quick-filter-btn" onclick="setJalanQuickFilter(168)">7 Hari</button>
         </div>
-        
-        <button class="filter-btn" onclick="applyJalanChartFilter()">
-          <i class="fas fa-filter"></i> Terapkan
-        </button>
-        
-        <button class="filter-btn secondary" onclick="resetJalanChartFilter()">
-          <i class="fas fa-undo"></i> Reset
-        </button>
-        
-        <button class="filter-btn" onclick="refreshJalanCharts()">
-          <i class="fas fa-sync-alt"></i> Refresh
-        </button>
       </div>
       
-      <div class="quick-filters">
-        <button class="quick-filter-btn" onclick="setJalanQuickFilter(1)">1 Jam</button>
-        <button class="quick-filter-btn" onclick="setJalanQuickFilter(3)">3 Jam</button>
-        <button class="quick-filter-btn" onclick="setJalanQuickFilter(6)">6 Jam</button>
-        <button class="quick-filter-btn active" onclick="setJalanQuickFilter(24)">24 Jam</button>
-        <button class="quick-filter-btn" onclick="setJalanQuickFilter(168)">7 Hari</button>
-      </div>
-            
       <div class="charts-grid">
         <div class="chart-card">
           <div class="chart-title"><i class="fas fa-heartbeat" style="color: #e74c3c;"></i> Heart Rate (bpm)</div>
