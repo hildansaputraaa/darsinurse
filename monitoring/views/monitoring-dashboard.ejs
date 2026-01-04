@@ -3993,9 +3993,7 @@ async function loadVisitsData() {
 
     function displayCharts(vitals) {
       const container = document.getElementById('charts-container');
-      const fallSummary = displayFallSummary(vitals);
-      container.innerHTML = filterHTML;
-
+      
       if (!container) {
         console.error('❌ Charts container not found');
         return;
@@ -4016,6 +4014,9 @@ async function loadVisitsData() {
       // ✅ Set default date range (last 24 hours)
       const now = new Date();
       const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+      
+      // ✅ Get Fall Summary FIRST
+      const fallSummary = displayFallSummary(vitals);
       
       // ✅ Build HTML dengan ID yang UNIK dan VALID
       const filterHTML = `
@@ -4050,20 +4051,9 @@ async function loadVisitsData() {
           <button class="quick-filter-btn" onclick="setQuickFilter(12)">12 Jam</button>
           <button class="quick-filter-btn active" onclick="setQuickFilter(24)">24 Jam</button>
         </div>
-        <div class="chart-filter-controls">
-          <!-- filter controls ... -->
-        </div>
-        
-        <div class="quick-filters">
-          <!-- quick filters ... -->
-        </div>
         
         ${fallSummary}
         
-        <div class="charts-grid" style="margin-top: 20px;">
-          <!-- charts ... -->
-        </div>
-
         <div class="charts-grid" style="margin-top: 20px;">
           <div class="chart-card">
             <div class="chart-title"><i class="fas fa-heartbeat" style="color: #e74c3c;"></i> Heart Rate (bpm)</div>
@@ -4103,7 +4093,6 @@ async function loadVisitsData() {
         renderCharts(vitals);
       }, 100);
     }
-
     // ============================================================
     // HELPER FUNCTIONS
     // ============================================================
