@@ -769,7 +769,7 @@ app.post('/simpan_data', requireLogin, async (req, res) => {
         fall_detected,
         tinggi_badan_cm,
         bmi
-      ) VALUES (?, ?, NOW(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ) VALUES (?, NOW(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         vitalsData.emr_no,
         vitalsData.heart_rate,
