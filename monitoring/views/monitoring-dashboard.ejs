@@ -1326,14 +1326,6 @@
 
 @media (max-width: 768px) {
   /* Search Box Mobile */
-   .charts-grid {
-    grid-template-columns: 1fr; /* 1 column on mobile */
-    gap: 15px;
-  }
-  
-  .chart-card canvas {
-    max-height: 250px;
-  }
   .search-box {
     width: 100%;
     min-width: auto;
@@ -1692,131 +1684,91 @@
 
     <!-- TAB 1: RAWAT JALAN (Custom Dashboard) -->
     <div id="rawat-jalan" class="tab-content active">
-      
-      <!-- LIST VIEW -->
-      <div id="outpatient-list-view">
-        <!-- Statistics Cards -->
-        <div class="stats-grid">
-          <div class="stat-card">
-            <div class="stat-icon"><i class="fas fa-users"></i></div>
-            <div class="stat-label">Total Kunjungan Hari Ini</div>
-            <div class="stat-number" id="total-visits">-</div>
-            <div class="stat-change">Pasien</div>
-          </div>
-
-          <div class="stat-card">
-            <div class="stat-icon"><i class="fas fa-heartbeat"></i></div>
-            <div class="stat-label">Total Pengukuran</div>
-            <div class="stat-number" id="total-measurements">-</div>
-            <div class="stat-change">Data</div>
-          </div>
+      <!-- Statistics Cards -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon"><i class="fas fa-users"></i></div>
+          <div class="stat-label">Total Kunjungan Hari Ini</div>
+          <div class="stat-number" id="total-visits">-</div>
+          <div class="stat-change">Pasien</div>
         </div>
 
-        <!-- Active Visits Table -->
-        <div class="patients-table-container">
-          <div class="table-header">
-            <div class="table-title">
-              <i class="fas fa-hospital-user"></i> Kunjungan Rawat Jalan Aktif
-            </div>
-            <button class="refresh-btn" onclick="loadActiveVisits()">
-              <i class="fas fa-sync"></i> Refresh
-            </button>
-          </div>
-          
-          <div id="table-container" style="overflow-x: auto;">
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Nama Pasien</th>
-                  <th>EMR</th>
-                  <th>Keluhan</th>
-                  <th>Perawat</th>
-                  <th>HR (bpm)</th>
-                  <th>Resp (/min)</th>
-                  <th>Pengukuran</th>
-                </tr>
-              </thead>
-              <tbody id="visits-table-body">
-                <tr>
-                  <td colspan="8" class="text-center text-muted py-4">
-                    <i class="fas fa-spinner fa-spin"></i> Memuat data...
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+        <div class="stat-card">
+          <div class="stat-icon"><i class="fas fa-heartbeat"></i></div>
+          <div class="stat-label">Total Pengukuran</div>
+          <div class="stat-number" id="total-measurements">-</div>
+          <div class="stat-change">Data</div>
         </div>
       </div>
-    <!-- DETAIL VIEW -->
-      <div id="outpatient-detail-view" style="display: none;">
-        <div class="page-header">
-          <button class="back-btn" onclick="showOutpatientList()">
-            <i class="fas fa-arrow-left"></i> Kembali ke Daftar
+
+      <!-- Visits Table -->
+      <div class="data-container" style="margin-bottom: 30px;">
+        <div class="data-header">
+          <h3><i class="fas fa-list"></i> Daftar Kunjungan Hari Ini</h3>
+          <button class="refresh-btn" onclick="loadRawatJalanData()">
+            <i class="fas fa-sync"></i> Refresh
           </button>
-          <h2 class="page-title">Detail Kunjungan Rawat Jalan</h2>
         </div>
-
-        <!-- Patient Info Grid -->
-        <div class="detail-grid">
-          <div class="info-card">
-            <h3><i class="fas fa-id-card"></i> Informasi Pasien</h3>
-            <div id="outpatient-info">
-              <div class="loading-spinner">
-                <div class="spinner"></div>
-                <p>Memuat data pasien...</p>
-              </div>
-            </div>
-          </div>
-
-          <div class="info-card">
-            <h3><i class="fas fa-user-md"></i> Informasi Kunjungan</h3>
-            <div id="outpatient-visit-info">
-              <div class="loading-spinner">
-                <div class="spinner"></div>
-                <p>Memuat data kunjungan...</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Real-time Vitals -->
-        <div class="info-card" style="margin-bottom: 30px;">
-          <h3><i class="fas fa-heartbeat"></i> Tanda Vital Terkini</h3>
-          <div class="vital-cards-grid" id="outpatient-vitals-grid">
-            <div class="loading-spinner">
-              <div class="spinner"></div>
-              <p>Memuat data vital...</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- Charts -->
-        <div class="info-card" style="margin-bottom: 30px;">
-          <h3><i class="fas fa-chart-line"></i> Grafik Monitoring Kunjungan Hari Ini</h3>
-          <div class="charts-grid" id="outpatient-charts-container">
-            <div class="loading-spinner">
-              <div class="spinner"></div>
-              <p>Memuat grafik...</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- Examination History -->
-        <div class="info-card">
-          <h3><i class="fas fa-history"></i> Riwayat Pemeriksaan Hari Ini</h3>
-          <div style="overflow-x: auto;" id="outpatient-examinations-container">
-            <div class="loading-spinner">
-              <div class="spinner"></div>
-              <p>Memuat riwayat pemeriksaan...</p>
-            </div>
-          </div>
+        <div class="data-body">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>ID Kunjungan</th>
+                <th>Nama Pasien</th>
+                <th>EMR</th>
+                <th>Keluhan</th>
+                <th>Perawat</th>
+                <th>Status</th>
+                <th>Pengukuran</th>
+              </tr>
+            </thead>
+            <tbody id="visits-table-body">
+              <tr>
+                <td colspan="7" class="text-center text-muted py-4">
+                  <i class="fas fa-spinner fa-spin"></i> Memuat data...
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
-      <!-- End of DETAIL VIEW -->
 
+      <!-- Measurements Table -->
+      <div class="data-container">
+        <div class="data-header">
+          <h3><i class="fas fa-heartbeat"></i> Data Pengukuran Hari Ini <% if (role !== 'admin') { %><small style="font-size: 14px; opacity: 0.9;">(Data pasien Anda)</small><% } %></h3>
+          <button class="refresh-btn" onclick="loadMeasurementsData()">
+            <i class="fas fa-sync"></i> Refresh
+          </button>
+        </div>
+        <div class="data-body">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Waktu</th>
+                <th>Pasien</th>
+                <th>Jenis Pengukuran</th>
+                <th>Nilai</th>
+                <% if (role === 'admin') { %>
+                <th>Perawat</th>
+                <% } %>
+              </tr>
+            </thead>
+            <tbody id="measurements-table-body">
+              <tr>
+                <td colspan="<%= role === 'admin' ? '5' : '4' %>" class="text-center text-muted py-4">
+                  <i class="fas fa-spinner fa-spin"></i> Memuat data...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="info-box">
+        <i class="fas fa-info-circle"></i>
+        <strong>Informasi:</strong> Dashboard ini menampilkan data real-time kunjungan rawat jalan dan pengukuran vital sign dari <% if (role === 'admin') { %>semua pasien<% } else { %>pasien yang Anda tangani<% } %> yang berkunjung hari ini.
+      </div>
     </div>
-
 
     <!-- TAB 2: RAWAT INAP  -->
     <div id="rawat-inap" class="tab-content">
@@ -1953,9 +1905,6 @@
     let currentPatientEMR = null;
     let currentPatientRoom = null;  // ✅ BARU
     let charts = {};
-    let currentVisitId = null;
-    let outpatientCharts = {};
-
 
     // ============================================
     // AUDIO INITIALIZATION
@@ -2998,17 +2947,24 @@ function updateChartsRealtime(vitals, timestamp) {
       try {
         console.log('🔄 Loading Rawat Jalan data...');
         
-        // Load statistics
         const statsResponse = await fetch('/api/statistics/today');
         const statsData = await statsResponse.json();
         
         if (statsData.success) {
-          document.getElementById('total-visits').textContent = statsData.stats.totalVisits || 0;
-          document.getElementById('total-measurements').textContent = statsData.stats.totalMeasurements || 0;
+          const totalVisitsEl = document.getElementById('total-visits');
+          const totalMeasurementsEl = document.getElementById('total-measurements');
+          
+          if (totalVisitsEl) {
+            totalVisitsEl.textContent = statsData.stats.totalVisits || 0;
+          }
+          
+          if (totalMeasurementsEl) {
+            totalMeasurementsEl.textContent = statsData.stats.totalMeasurements || 0;
+          }
         }
 
-        // Load active visits with monitoring capability
-        await loadActiveVisits();
+        await loadVisitsData();
+        await loadMeasurementsData();
 
         console.log('✓ Rawat Jalan data loaded');
       } catch (err) {
@@ -3016,493 +2972,36 @@ function updateChartsRealtime(vitals, timestamp) {
       }
     }
 
-    async function loadActiveVisits() {
+    async function loadVisitsData() {
       try {
-        const response = await fetch('/api/patients/outpatient/active');
-        const data = await response.json();
+        const visitsResponse = await fetch('/api/visits/today');
+        const visitsData = await visitsResponse.json();
         
-        if (data.success) {
-          displayActiveVisits(data.visits);
+        if (visitsData.success) {
+          const tbody = document.getElementById('visits-table-body');
+          
+          if (!tbody) return;
+          
+          if (visitsData.visits.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">Tidak ada data kunjungan hari ini</td></tr>';
+          } else {
+            tbody.innerHTML = visitsData.visits.map(visit => `
+              <tr>
+                <td><strong>${visit.id_kunjungan}</strong></td>
+                <td>${visit.nama_pasien}</td>
+                <td>${visit.emr_pasien}</td>
+                <td>${visit.keluhan || '-'}</td>
+                <td>${visit.nama_perawat}</td>
+                <td><span class="badge-status badge-${visit.status}">${visit.status === 'aktif' ? 'Aktif' : 'Selesai'}</span></td>
+                <td><span class="badge bg-info">${visit.total_measurements} data</span></td>
+              </tr>
+            `).join('');
+          }
         }
       } catch (err) {
         console.error('❌ Error loading visits:', err);
       }
     }
-
-    function displayActiveVisits(visits) {
-      const tbody = document.getElementById('visits-table-body');
-      
-      if (!tbody) return;
-      
-      if (visits.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">Tidak ada kunjungan aktif hari ini</td></tr>';
-      } else {
-        tbody.innerHTML = visits.map(visit => {
-          const heartRateClass = getHeartRateClass(visit.heart_rate);
-          const respirasiClass = getRespirasiClass(visit.respirasi);
-          
-          return `
-            <tr style="cursor: pointer;" onclick="showOutpatientDetail(${visit.id_kunjungan})">
-              <td><strong>${visit.id_kunjungan}</strong></td>
-              <td>${visit.nama_pasien}</td>
-              <td>${visit.emr_no}</td>
-              <td>${visit.keluhan || '-'}</td>
-              <td>${visit.nama_perawat}</td>
-              <td>
-                <span class="vital-value ${heartRateClass}">
-                  ${visit.heart_rate || '-'}
-                </span>
-              </td>
-              <td>
-                <span class="vital-value ${respirasiClass}">
-                  ${visit.respirasi || '-'}
-                </span>
-              </td>
-              <td>
-                <span class="badge bg-info">${visit.total_measurements} data</span>
-              </td>
-            </tr>
-          `;
-        }).join('');
-      }
-    }
-
-    // ============================================
-    // OUTPATIENT DETAIL VIEW
-    // ============================================
-
-    function showOutpatientDetail(id_kunjungan) {
-      console.log('👁️ Opening outpatient detail:', id_kunjungan);
-      currentVisitId = id_kunjungan;
-      
-      // Hide list, show detail
-      document.getElementById('outpatient-list-view').style.display = 'none';
-      document.getElementById('outpatient-detail-view').style.display = 'block';
-      
-      // Load detail data
-      loadOutpatientDetail(id_kunjungan);
-      loadOutpatientExaminations(id_kunjungan);
-      loadOutpatientVitalsChart(id_kunjungan);
-    }
-
-    function showOutpatientList() {
-      currentVisitId = null;
-      
-      // Clean up charts
-      Object.values(outpatientCharts).forEach(chart => {
-        if (chart && typeof chart.destroy === 'function') {
-          chart.destroy();
-        }
-      });
-      outpatientCharts = {};
-      
-      document.getElementById('outpatient-detail-view').style.display = 'none';
-      document.getElementById('outpatient-list-view').style.display = 'block';
-      
-      // Reload list
-      loadActiveVisits();
-    }
-
-    async function loadOutpatientDetail(id_kunjungan) {
-      try {
-        const response = await fetch(`/api/patients/outpatient/${id_kunjungan}`);
-        const data = await response.json();
-        
-        if (data.success) {
-          displayOutpatientInfo(data.visit);
-          displayOutpatientVisitInfo(data.visit); // ← TAMBAHKAN INI
-          displayOutpatientVitals(data.visit, data.vitals);
-        }
-      } catch (err) {
-        console.error('❌ Error:', err);
-      }
-    }
-
-    function displayOutpatientInfo(visit) {
-      const container = document.getElementById('outpatient-info');
-      const age = calculateAge(visit.tanggal_lahir);
-      
-      container.innerHTML = `
-        <div class="info-row">
-          <span class="info-label">ID Kunjungan</span>
-          <span class="info-value">${visit.id_kunjungan}</span>
-        </div>
-        <div class="info-row">
-          <span class="info-label">EMR No</span>
-          <span class="info-value">${visit.emr_no}</span>
-        </div>
-        <div class="info-row">
-          <span class="info-label">Nama Pasien</span>
-          <span class="info-value">${visit.nama_pasien}</span>
-        </div>
-        <div class="info-row">
-          <span class="info-label">Tanggal Lahir</span>
-          <span class="info-value">${formatDate(visit.tanggal_lahir)} (${age} tahun)</span>
-        </div>
-        <div class="info-row">
-          <span class="info-label">Jenis Kelamin</span>
-          <span class="info-value">${visit.jenis_kelamin === 'L' ? 'Laki-laki' : 'Perempuan'}</span>
-        </div>
-        <div class="info-row">
-          <span class="info-label">Keluhan</span>
-          <span class="info-value">${visit.keluhan || '-'}</span>
-        </div>
-        <div class="info-row">
-          <span class="info-label">Poli</span>
-          <span class="info-value">${visit.poli || '-'}</span>
-        </div>
-        <div class="info-row">
-          <span class="info-label">Perawat</span>
-          <span class="info-value">${visit.nama_perawat}</span>
-        </div>
-        <div class="info-row">
-          <span class="info-label">Dokter</span>
-          <span class="info-value">${visit.nama_dokter || '-'}</span>
-        </div>
-        <div class="info-row">
-          <span class="info-label">Status</span>
-          <span class="info-value">
-            <span class="badge bg-success">Aktif</span>
-          </span>
-        </div>
-      `;
-    }
-
-    function displayOutpatientVitals(visit, vitals) {
-      const container = document.getElementById('outpatient-vitals-grid');
-      
-      container.innerHTML = `
-        <div class="vital-card">
-          <div class="vital-icon" style="color: #e74c3c;">
-            <i class="fas fa-heartbeat"></i>
-          </div>
-          <div class="vital-label">Heart Rate</div>
-          <div class="vital-number ${getHeartRateClass(vitals.heart_rate)}">${vitals.heart_rate || '-'}</div>
-          <div class="vital-unit">bpm</div>
-        </div>
-
-        <div class="vital-card">
-          <div class="vital-icon" style="color: #3498db;">
-            <i class="fas fa-lungs"></i>
-          </div>
-          <div class="vital-label">Respirasi</div>
-          <div class="vital-number ${getRespirasiClass(vitals.respirasi)}">${vitals.respirasi || '-'}</div>
-          <div class="vital-unit">per menit</div>
-        </div>
-
-        <div class="vital-card">
-          <div class="vital-icon" style="color: #e67e22;">
-            <i class="fas fa-tachometer-alt"></i>
-          </div>
-          <div class="vital-label">Blood Pressure</div>
-          <div class="vital-number">${vitals.sistolik || '-'}/${vitals.diastolik || '-'}</div>
-          <div class="vital-unit">mmHg</div>
-        </div>
-
-        <div class="vital-card">
-          <div class="vital-icon" style="color: #9b59b6;">
-            <i class="fas fa-tint"></i>
-          </div>
-          <div class="vital-label">Glukosa</div>
-          <div class="vital-number">${vitals.glukosa || '-'}</div>
-          <div class="vital-unit">mg/dL</div>
-        </div>
-
-        <div class="vital-card">
-          <div class="vital-icon" style="color: #16a085;">
-            <i class="fas fa-weight"></i>
-          </div>
-          <div class="vital-label">Berat Badan</div>
-          <div class="vital-number">${vitals.berat_badan_kg || '-'}</div>
-          <div class="vital-unit">kg</div>
-        </div>
-
-        <div class="vital-card">
-          <div class="vital-icon" style="color: #27ae60;">
-            <i class="fas fa-ruler-vertical"></i>
-          </div>
-          <div class="vital-label">BMI</div>
-          <div class="vital-number">${vitals.bmi || '-'}</div>
-          <div class="vital-unit">kg/m²</div>
-        </div>
-      `;
-      
-      // Update timestamp
-      if (vitals.waktu) {
-        container.innerHTML += `
-          <div style="grid-column: 1 / -1; text-align: center; color: #999; font-size: 12px; margin-top: 10px;">
-            Terakhir diukur: ${formatDateTime(vitals.waktu)}
-          </div>
-        `;
-      }
-    }
-
-    async function loadOutpatientExaminations(id_kunjungan) {
-      try {
-        const response = await fetch(`/api/patients/outpatient/${id_kunjungan}/examinations`);
-        const data = await response.json();
-
-        if (data.success) {
-          displayOutpatientExaminations(data.examinations);
-        }
-      } catch (err) {
-        console.error('❌ Error:', err);
-      }
-    }
-
-    function displayOutpatientExaminations(examinations) {
-      const container = document.getElementById('outpatient-examinations-container');
-
-      if (examinations.length === 0) {
-        container.innerHTML = `
-          <div class="empty-state">
-            <i class="fas fa-info-circle"></i>
-            <p>Belum ada pemeriksaan untuk kunjungan ini</p>
-          </div>
-        `;
-        return;
-      }
-
-      const tableHTML = `
-        <table class="examination-table">
-          <thead>
-            <tr>
-              <th>Waktu</th>
-              <th>HR (bpm)</th>
-              <th>Resp (/min)</th>
-              <th>Sistolik</th>
-              <th>Diastolik</th>
-              <th>Glukosa</th>
-              <th>BB (kg)</th>
-              <th>TB (cm)</th>
-              <th>BMI</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${examinations.map(e => `
-              <tr>
-                <td>${formatTime(e.waktu)}</td>
-                <td><span class="vital-value ${getHeartRateClass(e.heart_rate)}">${e.heart_rate || '-'}</span></td>
-                <td><span class="vital-value ${getRespirasiClass(e.respirasi)}">${e.respirasi || '-'}</span></td>
-                <td>${e.sistolik || '-'}</td>
-                <td>${e.diastolik || '-'}</td>
-                <td>${e.glukosa || '-'}</td>
-                <td>${e.berat_badan_kg || '-'}</td>
-                <td>${e.tinggi_badan_cm || '-'}</td>
-                <td>${e.bmi || '-'}</td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-      `;
-
-      container.innerHTML = tableHTML;
-    }
-
-    async function loadOutpatientVitalsChart(id_kunjungan) {
-      try {
-        const response = await fetch(`/api/patients/outpatient/${id_kunjungan}/vitals/chart`);
-        const data = await response.json();
-
-        if (data.success && data.vitals.length > 0) {
-          displayOutpatientCharts(data.vitals);
-        } else {
-          document.getElementById('outpatient-charts-container').innerHTML = `
-            <div class="empty-state">
-              <i class="fas fa-chart-line"></i>
-              <p>Belum ada data untuk grafik</p>
-            </div>
-          `;
-        }
-      } catch (err) {
-        console.error('❌ Chart error:', err);
-      }
-    }
-function displayOutpatientCharts(vitals) {
-  const container = document.getElementById('outpatient-charts-container');
-  
-  // Buat container untuk setiap chart
-  container.innerHTML = `
-    <div class="chart-card">
-      <div class="chart-title"><i class="fas fa-heartbeat"></i> Heart Rate (bpm)</div>
-      <canvas id="outpatient-hr-chart"></canvas>
-    </div>
-    <div class="chart-card">
-      <div class="chart-title"><i class="fas fa-lungs"></i> Respiratory Rate (/min)</div>
-      <canvas id="outpatient-resp-chart"></canvas>
-    </div>
-    <div class="chart-card">
-      <div class="chart-title"><i class="fas fa-tachometer-alt"></i> Blood Pressure (mmHg)</div>
-      <canvas id="outpatient-bp-chart"></canvas>
-    </div>
-    <div class="chart-card">
-      <div class="chart-title"><i class="fas fa-tint"></i> Glucose (mg/dL)</div>
-      <canvas id="outpatient-glucose-chart"></canvas>
-    </div>
-  `;
-
-  const labels = vitals.map(v => formatChartTime(v.waktu));
-  
-  const chartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { 
-        display: true,
-        position: 'top',
-        labels: { boxWidth: 12, padding: 10, font: { size: 11 } }
-      },
-      tooltip: {
-        backgroundColor: 'rgba(0, 0, 0, 0.8)',
-        padding: 12,
-        titleFont: { size: 13 },
-        bodyFont: { size: 12 }
-      }
-    },
-    scales: {
-      y: { 
-        beginAtZero: true,
-        grid: { color: 'rgba(0, 0, 0, 0.05)' },
-        ticks: { font: { size: 11 } }
-      },
-      x: { 
-        grid: { display: false },
-        ticks: { 
-          font: { size: 10 }, 
-          maxRotation: 45,
-          minRotation: 0
-        }
-      }
-    }
-  };
-
-  // Heart Rate Chart
-  outpatientCharts.hr = new Chart(document.getElementById('outpatient-hr-chart'), {
-    type: 'line',
-    data: {
-      labels,
-      datasets: [{
-        label: 'Heart Rate',
-        data: vitals.map(v => v.heart_rate),
-        borderColor: '#e74c3c',
-        backgroundColor: 'rgba(231, 76, 60, 0.1)',
-        tension: 0.4,
-        fill: true,
-        pointRadius: 4,
-        pointHoverRadius: 6
-      }]
-    },
-    options: chartOptions
-  });
-
-  // Respiratory Chart
-  outpatientCharts.resp = new Chart(document.getElementById('outpatient-resp-chart'), {
-    type: 'line',
-    data: {
-      labels,
-      datasets: [{
-        label: 'Respirasi',
-        data: vitals.map(v => v.respirasi),
-        borderColor: '#3498db',
-        backgroundColor: 'rgba(52, 152, 219, 0.1)',
-        tension: 0.4,
-        fill: true,
-        pointRadius: 4,
-        pointHoverRadius: 6
-      }]
-    },
-    options: chartOptions
-  });
-
-  // Blood Pressure Chart
-  outpatientCharts.bp = new Chart(document.getElementById('outpatient-bp-chart'), {
-    type: 'line',
-    data: {
-      labels,
-      datasets: [
-        {
-          label: 'Sistolik',
-          data: vitals.map(v => v.sistolik),
-          borderColor: '#e74c3c',
-          backgroundColor: 'rgba(231, 76, 60, 0.1)',
-          tension: 0.4,
-          pointRadius: 4,
-          pointHoverRadius: 6
-        },
-        {
-          label: 'Diastolik',
-          data: vitals.map(v => v.diastolik),
-          borderColor: '#3498db',
-          backgroundColor: 'rgba(52, 152, 219, 0.1)',
-          tension: 0.4,
-          pointRadius: 4,
-          pointHoverRadius: 6
-        }
-      ]
-    },
-    options: chartOptions
-  });
-
-  // Glucose Chart
-  outpatientCharts.glucose = new Chart(document.getElementById('outpatient-glucose-chart'), {
-    type: 'line',
-    data: {
-      labels,
-      datasets: [{
-        label: 'Glukosa',
-        data: vitals.map(v => v.glukosa),
-        borderColor: '#f39c12',
-        backgroundColor: 'rgba(243, 156, 18, 0.1)',
-        tension: 0.4,
-        fill: true,
-        pointRadius: 4,
-        pointHoverRadius: 6
-      }]
-    },
-    options: chartOptions
-  });
-  
-  console.log('✅ Outpatient charts rendered:', Object.keys(outpatientCharts));
-}
-
-function displayOutpatientVisitInfo(visit) {
-  const container = document.getElementById('outpatient-visit-info');
-  
-  container.innerHTML = `
-    <div class="info-row">
-      <span class="info-label">ID Kunjungan</span>
-      <span class="info-value"><strong>${visit.id_kunjungan}</strong></span>
-    </div>
-    <div class="info-row">
-      <span class="info-label">Tanggal Kunjungan</span>
-      <span class="info-value">${formatDateTime(visit.tanggal_kunjungan)}</span>
-    </div>
-    <div class="info-row">
-      <span class="info-label">Keluhan</span>
-      <span class="info-value">${visit.keluhan || '-'}</span>
-    </div>
-    <div class="info-row">
-      <span class="info-label">Poli</span>
-      <span class="info-value">${visit.poli || '-'}</span>
-    </div>
-    <div class="info-row">
-      <span class="info-label">Perawat</span>
-      <span class="info-value">${visit.nama_perawat}</span>
-    </div>
-    <div class="info-row">
-      <span class="info-label">Dokter</span>
-      <span class="info-value">${visit.nama_dokter || 'Belum ditentukan'}</span>
-    </div>
-    <div class="info-row">
-      <span class="info-label">Status</span>
-      <span class="info-value">
-        <span class="badge ${visit.status === 'aktif' ? 'bg-success' : 'bg-secondary'}">
-          ${visit.status.toUpperCase()}
-        </span>
-      </span>
-    </div>
-  `;
-}
 
     async function loadMeasurementsData() {
       try {
