@@ -1942,7 +1942,7 @@ async function checkFallDetectionFromDatabase() {
         v.sistolik, v.diastolik,
         p.nama as nama_pasien, p.poli,
         rd.room_id, 
-        rd.device_id,  // ✅ TAMBAHKAN INI
+        rd.device_id,
         latest_k.emr_perawat,
         pr.nama as nama_perawat
       FROM vitals v
