@@ -101,7 +101,7 @@ async function initDatabase() {
     await conn.query(`
       CREATE TABLE IF NOT EXISTS vitals (
         id INT AUTO_INCREMENT PRIMARY KEY,
-        emr_no VARCHAR(11) NOT NULL,,
+        emr_no VARCHAR(11) NOT NULL,
         id_kunjungan INT,
         emr_perawat INT,
         waktu TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -128,7 +128,7 @@ async function initDatabase() {
     await conn.query(`
       CREATE TABLE IF NOT EXISTS room_device (
         id INT AUTO_INCREMENT PRIMARY KEY,
-        emr_no INT,
+        emr_no VARCHAR(11),
         room_id VARCHAR(50),
         device_id VARCHAR(50),
         assigned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
