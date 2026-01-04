@@ -3840,16 +3840,37 @@ function backToRawatJalanList() {
   currentVisitId = null;
   currentPatientEMRJalan = null;
   
-  // Destroy charts
+  // Hancurkan charts
   Object.values(chartsJalan).forEach(chart => {
     if (chart) chart.destroy();
   });
   chartsJalan = {};
   
-  // Show table, hide detail
-  document.getElementById('rawat-jalan').querySelector('.data-container:nth-of-type(1)').style.display = 'block';
-  document.getElementById('rawat-jalan').querySelector('.data-container:nth-of-type(2)').style.display = 'block';
-  document.getElementById('rawat-jalan-detail-view').style.display = 'none';
+  // Tampilkan tabel, sembunyikan detail
+  const rawatJalanTab = document.getElementById('rawat-jalan');
+  if (!rawatJalanTab) {
+    console.error('❌ Tab rawat-jalan tidak ditemukan');
+    return;
+  }
+  
+  const dataContainers = rawatJalanTab.querySelectorAll('.data-container');
+  dataContainers.forEach(container => {
+    container.style.display = 'block';
+  });
+  
+  // Tampilkan info box
+  const infoBox = rawatJalanTab.querySelector('.info-box');
+  if (infoBox) {
+    infoBox.style.display = 'block';
+  }
+  
+  // Sembunyikan detail - ✅ PERBAIKAN: Tambahkan pengecekan null
+  const detailView = document.getElementById('rawat-jalan-detail-view');
+  if (detailView) {
+    detailView.style.display = 'none';
+  } else {
+    console.warn('⚠️ rawat-jalan-detail-view tidak ditemukan');
+  }
   
   loadRawatJalanData();
 }
