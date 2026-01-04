@@ -752,6 +752,36 @@
         .footer p {
           font-size: 12px;
         }
+        .chart-filter-controls {
+          grid-template-columns: 1fr;
+          gap: 10px;
+        }
+
+        .filter-group {
+          width: 100%;
+        }
+
+        .filter-input {
+          width: 100%;
+        }
+
+        .filter-btn {
+          width: 100%;
+          justify-content: center;
+          padding: 12px;
+        }
+
+        .quick-filters {
+          grid-template-columns: repeat(2, 1fr);
+          gap: 6px;
+        }
+
+        .quick-filter-btn {
+          flex: 1;
+          justify-content: center;
+          padding: 10px 8px;
+          font-size: 11px;
+        }
       }
 
       /* Extra small devices */
@@ -1617,38 +1647,43 @@
 .vital-number {
   transition: all 0.3s ease;
 }
+
 .chart-filter-controls {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  margin-bottom: 15px;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  align-items: end;
+  margin-bottom: 20px;
   padding: 15px;
-  background: #f9f9f9;
-  border-radius: 8px;
+  background: linear-gradient(135deg, #f9f9f9, #ffffff);
+  border-radius: 10px;
+  border: 1px solid #e0e0e0;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
 }
 
 .filter-group {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .filter-label {
-  font-size: 13px;
-  font-weight: 600;
-  color: #666;
-  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--dark-text);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .filter-input {
-  padding: 8px 12px;
-  border: 1px solid var(--gray-border);
+  padding: 10px 12px;
+  border: 1.5px solid var(--gray-border);
   border-radius: 6px;
   font-size: 13px;
   color: var(--dark-text);
   background: white;
   transition: all 0.3s;
+  font-family: 'Segoe UI', sans-serif;
 }
 
 .filter-input:focus {
@@ -1661,7 +1696,7 @@
   background: var(--primary-green);
   color: white;
   border: none;
-  padding: 8px 16px;
+  padding: 10px 18px;
   border-radius: 6px;
   font-size: 13px;
   font-weight: 600;
@@ -1669,13 +1704,16 @@
   transition: all 0.3s;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
   white-space: nowrap;
+  min-height: 40px;
+  box-shadow: 0 2px 8px rgba(0, 177, 79, 0.2);
 }
 
 .filter-btn:hover {
   background: var(--secondary-green);
-  transform: translateY(-1px);
+  transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 177, 79, 0.3);
 }
 
@@ -1685,6 +1723,7 @@
 
 .filter-btn.secondary {
   background: #6c757d;
+  box-shadow: 0 2px 8px rgba(108, 117, 125, 0.2);
 }
 
 .filter-btn.secondary:hover {
@@ -1696,24 +1735,34 @@
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
+  padding: 12px 15px;
+  background: #f0f8f7;
+  border-radius: 8px;
+  margin-bottom: 20px;
 }
 
 .quick-filter-btn {
   background: white;
   color: var(--primary-green);
   border: 2px solid var(--primary-green);
-  padding: 6px 12px;
+  padding: 8px 14px;
   border-radius: 6px;
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s;
+  flex: 0 1 auto;
 }
 
-.quick-filter-btn:hover,
+.quick-filter-btn:hover {
+  background: #e6f9e6;
+  box-shadow: 0 2px 6px rgba(0, 177, 79, 0.2);
+}
+
 .quick-filter-btn.active {
   background: var(--primary-green);
   color: white;
+  box-shadow: 0 4px 12px rgba(0, 177, 79, 0.3);
 }
 
 /* Mobile responsive */
@@ -3722,17 +3771,17 @@ async function loadVisitsData() {
       container.innerHTML = `
         <div class="chart-filter-controls">
           <div class="filter-group">
-            <span class="filter-label">📅 Dari:</span>
+            <label class="filter-label">📅 Dari</label>
             <input type="datetime-local" id="chart-start-date" class="filter-input" />
           </div>
           
           <div class="filter-group">
-            <span class="filter-label">📅 Sampai:</span>
+            <label class="filter-label">📅 Sampai</label>
             <input type="datetime-local" id="chart-end-date" class="filter-input" />
           </div>
           
           <button class="filter-btn" onclick="applyChartFilter()">
-            <i class="fas fa-filter"></i> Terapkan Filter
+            <i class="fas fa-filter"></i> Terapkan
           </button>
           
           <button class="filter-btn secondary" onclick="resetChartFilter()">
@@ -3743,21 +3792,13 @@ async function loadVisitsData() {
             <i class="fas fa-sync-alt"></i> Refresh
           </button>
         </div>
-        
+
         <div class="quick-filters">
-          <button class="quick-filter-btn" onclick="setQuickFilter(1)">1 Jam Terakhir</button>
-          <button class="quick-filter-btn" onclick="setQuickFilter(3)">3 Jam Terakhir</button>
-          <button class="quick-filter-btn" onclick="setQuickFilter(6)">6 Jam Terakhir</button>
-          <button class="quick-filter-btn" onclick="setQuickFilter(12)">12 Jam Terakhir</button>
-          <button class="quick-filter-btn active" onclick="setQuickFilter(24)">24 Jam Terakhir</button>
-        </div>
-        
-        <div class="charts-grid" style="margin-top: 20px;">
-          <div class="chart-card"><div class="chart-title">Heart Rate (bpm)</div><canvas id="heart-rate-chart"></canvas></div>
-          <div class="chart-card"><div class="chart-title">Respiratory Rate (/min)</div><canvas id="respiratory-chart"></canvas></div>
-          <div class="chart-card"><div class="chart-title">Blood Pressure (mmHg)</div><canvas id="bp-chart"></canvas></div>
-          <div class="chart-card"><div class="chart-title">Glucose (mg/dL)</div><canvas id="glucose-chart"></canvas></div>
-          <div class="chart-card"><div class="chart-title">Fall Detection</div><canvas id="fall-chart"></canvas></div>
+          <button class="quick-filter-btn" onclick="setQuickFilter(1)">1 Jam</button>
+          <button class="quick-filter-btn" onclick="setQuickFilter(3)">3 Jam</button>
+          <button class="quick-filter-btn" onclick="setQuickFilter(6)">6 Jam</button>
+          <button class="quick-filter-btn" onclick="setQuickFilter(12)">12 Jam</button>
+          <button class="quick-filter-btn active" onclick="setQuickFilter(24)">24 Jam</button>
         </div>
       `;
       
