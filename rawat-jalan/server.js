@@ -544,15 +544,15 @@ app.get('/api/doctors/list', requireAdminOrPerawat, async (req, res) => {
   try {
     conn = await pool.getConnection();
     
+    // ✅ Ambil dari tabel DOKTER, bukan perawat
     const [doctors] = await conn.query(`
-          SELECT 
-            emr_no as emr_dokter,
-            nama,
-            poli as spesialisasi
-          FROM pasien
-          WHERE poli IS NOT NULL
-          ORDER BY nama ASC
-        `);
+      SELECT 
+        emr_dokter,
+        nama,
+        spesialisasi
+      FROM dokter
+      ORDER BY nama ASC
+    `);
     
     conn.release();
     
@@ -570,6 +570,7 @@ app.get('/api/doctors/list', requireAdminOrPerawat, async (req, res) => {
     });
   }
 });
+
 /* ============================================================
    VITALS & MEASUREMENTS ROUTES
    ============================================================ */
