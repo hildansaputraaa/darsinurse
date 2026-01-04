@@ -791,7 +791,7 @@ app.post('/simpan_data', requireLogin, async (req, res) => {
 
     console.log(`✓ Data vitals ID ${vitalsId} berhasil disimpan untuk EMR ${emrStr}`);
 
-    await checkAndBroadcastFall(vitalsId, emrInt);
+    await checkAndBroadcastFall(vitalsId, emrStr);
     
     conn.release();
 
