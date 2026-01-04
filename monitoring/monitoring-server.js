@@ -755,18 +755,26 @@ app.get('/api/measurements/today', requireAdminOrPerawat, async (req, res) => {
     
     let measurementQuery = `
       SELECT 
-        v.id, v.waktu as timestamp,
-        v.heart_rate, v.sistolik, v.diastolik,
-        v.respirasi, v.glukosa,
-        v.berat_badan_kg, v.tinggi_badan_cm, v.bmi,
-        v.jarak_kasur_cm, v.fall_detected,
-        pas.nama as nama_pasien, pas.emr_no,
-        pr.nama as nama_perawat,
-        k.id_kunjungan,
-        k.emr_perawat
+        v.id, 
+        v.waktu as timestamp,
+        v.heart_rate, 
+        v.sistolik, 
+        v.diastolik,
+        v.respirasi, 
+        v.glukosa,
+        v.berat_badan_kg, 
+        v.tinggi_badan_cm, 
+        v.bmi,
+        v.jarak_kasur_cm, 
+        v.fall_detected,
+        v.emr_no,
+        pas.nama as nama_pasien,
+        k.emr_perawat,
+        pr.nama as nama_perawat
        FROM vitals v
        JOIN pasien pas ON v.emr_no = pas.emr_no
-       LEFT JOIN kunjungan k ON v.id_kunjungan = k.id_kunjungan
+       LEFT JOIN kunjungan k ON v.emr_no = k.emr_no 
+         AND k.status = 'aktif'
        LEFT JOIN perawat pr ON k.emr_perawat = pr.emr_perawat
        WHERE v.waktu >= ? AND v.waktu < ?
     `;
@@ -808,8 +816,7 @@ app.get('/api/measurements/today', requireAdminOrPerawat, async (req, res) => {
         timestamp: m.timestamp,
         nama_pasien: m.nama_pasien,
         emr_no: m.emr_no,
-        nama_perawat: m.nama_perawat || 'System',
-        id_kunjungan: m.id_kunjungan,
+        nama_perawat: m.nama_perawat || 'System',  // ✅ DARI KUNJUNGAN (PENANGGUNG JAWAB)
         tipe_device: tipe_device.join(', ') || 'Unknown',
         data: data.join(', ') || 'No data'
       };
