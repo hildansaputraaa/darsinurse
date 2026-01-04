@@ -3993,7 +3993,9 @@ async function loadVisitsData() {
 
     function displayCharts(vitals) {
       const container = document.getElementById('charts-container');
-      
+      const fallSummary = displayFallSummary(vitals);
+      container.innerHTML = filterHTML;
+
       if (!container) {
         console.error('❌ Charts container not found');
         return;
@@ -4048,7 +4050,20 @@ async function loadVisitsData() {
           <button class="quick-filter-btn" onclick="setQuickFilter(12)">12 Jam</button>
           <button class="quick-filter-btn active" onclick="setQuickFilter(24)">24 Jam</button>
         </div>
+        <div class="chart-filter-controls">
+          <!-- filter controls ... -->
+        </div>
         
+        <div class="quick-filters">
+          <!-- quick filters ... -->
+        </div>
+        
+        ${fallSummary}
+        
+        <div class="charts-grid" style="margin-top: 20px;">
+          <!-- charts ... -->
+        </div>
+
         <div class="charts-grid" style="margin-top: 20px;">
           <div class="chart-card">
             <div class="chart-title"><i class="fas fa-heartbeat" style="color: #e74c3c;"></i> Heart Rate (bpm)</div>
@@ -4431,6 +4446,8 @@ function displayRawatJalanVitals(vitals) {
     const now = new Date();
     const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
     
+    const fallSummary = displayFallSummary(vitals);
+
     // ✅ Build HTML dengan ID yang UNIK
     const filterHTML = `
       <div class="chart-filter-controls">
@@ -4465,6 +4482,8 @@ function displayRawatJalanVitals(vitals) {
         <button class="quick-filter-btn" onclick="setJalanQuickFilter(168)">7 Hari</button>
       </div>
       
+      ${fallSummary}
+      
       <div class="charts-grid" style="margin-top: 20px;">
         <div class="chart-card">
           <div class="chart-title"><i class="fas fa-heartbeat" style="color: #e74c3c;"></i> Heart Rate (bpm)</div>
@@ -4487,7 +4506,6 @@ function displayRawatJalanVitals(vitals) {
         </div>
       </div>
     `;
-    
     // ✅ Set innerHTML
     container.innerHTML = filterHTML;
     
@@ -4590,7 +4608,14 @@ function refreshJalanCharts() {
 
 function renderJalanCharts(vitals) {
   console.log('🎨 Starting renderJalanCharts with', vitals.length, 'data points');
-  
+  const fallSummaryContainer = document.querySelector('.chart-filter-controls');
+  if (fallSummaryContainer) {
+    const fallSummary = displayFallSummary(vitals);
+    const summaryDiv = document.createElement('div');
+    summaryDiv.innerHTML = fallSummary;
+    fallSummaryContainer.insertAdjacentElement('afterend', summaryDiv);
+  }
+
   // ✅ Destroy existing charts
   Object.values(chartsJalan).forEach(chart => {
     if (chart && typeof chart.destroy === 'function') {
@@ -4901,7 +4926,37 @@ function refreshCharts() {
   // Reload data
   loadVitalsChart(currentPatientEMR);
 }
-
+function displayFallSummary(vitals) {
+  const fallEvents = vitals.filter(v => v.fall_detected === 1);
+  
+  if (fallEvents.length === 0) {
+    return `
+      <div style="text-align: center; padding: 20px; color: #27ae60; font-weight: 600;">
+        <i class="fas fa-check-circle" style="font-size: 24px; margin-bottom: 10px;"></i>
+        <p>✓ Tidak ada Fall terdeteksi dalam periode ini</p>
+      </div>
+    `;
+  }
+  
+  return `
+    <div style="padding: 15px; background: #fff5f5; border-left: 4px solid #e74c3c; border-radius: 8px; margin-bottom: 15px;">
+      <div style="font-weight: 700; color: #e74c3c; margin-bottom: 10px;">
+        🚨 ${fallEvents.length} Fall Terdeteksi
+      </div>
+      <div style="font-size: 13px; color: #333;">
+        ${fallEvents.map((e, i) => `
+          <div style="padding: 8px 0; border-bottom: 1px solid #ffe0e0;">
+            <strong>#${i + 1}</strong> - ${new Date(e.waktu).toLocaleString('id-ID')}
+            <br/>
+            <span style="font-size: 12px; color: #666;">
+              HR: ${e.heart_rate || '-'} bpm | RR: ${e.respirasi || '-'} /min
+            </span>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+}
     // Render charts with given data
     function renderCharts(vitals) {
       console.log('🎨 Starting renderCharts with', vitals.length, 'data points');
@@ -5130,26 +5185,120 @@ function refreshCharts() {
           return;
         }
         
+        // ✅ FIXED: Gunakan scatter chart untuk timeline
+        const fallEvents = vitals
+          .map((v, index) => ({
+            x: index,
+            y: v.fall_detected ? 1 : 0,
+            time: formatChartTime(v.waktu),
+            fullTime: v.waktu,
+            isFall: v.fall_detected === 1
+          }))
+          .filter(e => e.isFall); // Hanya tampilkan yang ada fall
+        
+        // Jika ada fall, highlight
+        const fallIndices = vitals
+          .map((v, i) => v.fall_detected ? i : -1)
+          .filter(i => i !== -1);
+        
+        // Create background colors
+        const bgColors = vitals.map((v, i) => {
+          if (v.fall_detected === 1) {
+            return '#e74c3c'; // Red untuk fall
+          }
+          return '#27ae60'; // Green untuk normal
+        });
+        
         charts.fall = new Chart(fallCtx, {
           type: 'bar',
           data: {
-            labels,
+            labels: vitals.map((v, i) => {
+              if (v.fall_detected === 1) {
+                return `🚨 ${formatChartTime(v.waktu)}`;
+              }
+              return formatChartTime(v.waktu);
+            }),
             datasets: [{
-              label: 'Fall Detected',
+              label: 'Fall Status',
               data: vitals.map(v => v.fall_detected ? 1 : 0),
-              backgroundColor: vitals.map(v => v.fall_detected ? '#e74c3c' : '#27ae60')
+              backgroundColor: bgColors,
+              borderColor: bgColors,
+              borderWidth: 1,
+              borderRadius: 4,
+              barThickness: 'flex',
+              maxBarThickness: 15
             }]
           },
           options: {
-            ...opts,
+            indexAxis: 'x', // Horizontal
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+              legend: {
+                display: true,
+                labels: {
+                  boxWidth: 12,
+                  padding: 10,
+                  font: { size: 11 }
+                }
+              },
+              tooltip: {
+                backgroundColor: 'rgba(0, 0, 0, 0.9)',
+                padding: 12,
+                titleFont: { size: 13 },
+                bodyFont: { size: 12 },
+                borderColor: '#333',
+                borderWidth: 1,
+                callbacks: {
+                  title: function(context) {
+                    const idx = context[0].dataIndex;
+                    const vital = vitals[idx];
+                    return vital.fall_detected === 1 
+                      ? `🚨 FALL DETECTED - ${formatChartTime(vital.waktu)}`
+                      : `✓ Normal - ${formatChartTime(vital.waktu)}`;
+                  },
+                  label: function(context) {
+                    const idx = context.dataIndex;
+                    const vital = vitals[idx];
+                    return [
+                      vital.fall_detected === 1 ? 'Status: FALL TERDETEKSI' : 'Status: NORMAL',
+                      `HR: ${vital.heart_rate || '-'} bpm`,
+                      `RR: ${vital.respirasi || '-'} /min`,
+                      `Waktu: ${new Date(vital.waktu).toLocaleString('id-ID')}`
+                    ];
+                  }
+                }
+              }
+            },
             scales: {
-              ...opts.scales,
-              y: { 
-                ...opts.scales.y,
+              y: {
+                beginAtZero: true,
                 max: 1,
-                ticks: { 
-                  ...opts.scales.y.ticks,
-                  stepSize: 1
+                ticks: {
+                  stepSize: 1,
+                  callback: function(value) {
+                    if (value === 0) return 'Normal';
+                    if (value === 1) return 'Fall';
+                    return '';
+                  },
+                  font: { size: 11 }
+                },
+                grid: { color: 'rgba(0, 0, 0, 0.05)' }
+              },
+              x: {
+                grid: { display: false },
+                ticks: {
+                  font: { size: 9 },
+                  maxRotation: 45,
+                  minRotation: 0,
+                  callback: function(value) {
+                    const idx = value;
+                    const vital = vitals[idx];
+                    if (vital && vital.fall_detected === 1) {
+                      return `🚨 ${formatChartTime(vital.waktu)}`;
+                    }
+                    return '';
+                  }
                 }
               }
             }
