@@ -1764,6 +1764,48 @@
           </table>
         </div>
       </div>
+
+<!-- TAB 1: RAWAT JALAN DETAIL VIEW -->
+<div id="rawat-jalan-detail-view" style="display: none;">
+  <div class="page-header">
+    <button class="back-btn" onclick="backToRawatJalanList()">
+      <i class="fas fa-arrow-left"></i> Kembali
+    </button>
+  </div>
+
+  <!-- Patient Info -->
+  <div class="detail-grid">
+    <div class="info-card">
+      <h3><i class="fas fa-id-card"></i> Informasi Pasien</h3>
+      <div id="jalan-patient-info">
+        <div class="loading-spinner"><div class="spinner"></div></div>
+      </div>
+    </div>
+
+    <div class="info-card">
+      <h3><i class="fas fa-heartbeat"></i> Tanda Vital Real-time</h3>
+      <div class="vital-cards-grid" id="jalan-vitals-grid">
+        <div class="loading-spinner"><div class="spinner"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Charts -->
+  <div class="info-card" style="margin-bottom: 30px;">
+    <h3><i class="fas fa-chart-line"></i> Grafik Monitoring (24 Jam Terakhir)</h3>
+    <div class="charts-grid" id="jalan-charts-container">
+      <div class="loading-spinner"><div class="spinner"></div></div>
+    </div>
+  </div>
+
+  <!-- Measurements History -->
+  <div class="info-card">
+    <h3><i class="fas fa-history"></i> Riwayat Pengukuran</h3>
+    <div style="overflow-x: auto;" id="jalan-measurements-container">
+      <div class="loading-spinner"><div class="spinner"></div></div>
+    </div>
+  </div>
+</div>
       <div class="info-box">
         <i class="fas fa-info-circle"></i>
         <strong>Informasi:</strong> Dashboard ini menampilkan data real-time kunjungan rawat jalan dan pengukuran vital sign dari <% if (role === 'admin') { %>semua pasien<% } else { %>pasien yang Anda tangani<% } %> yang berkunjung hari ini.
@@ -2972,37 +3014,36 @@ function updateChartsRealtime(vitals, timestamp) {
       }
     }
 
-    async function loadVisitsData() {
-      try {
-        const visitsResponse = await fetch('/api/visits/today');
-        const visitsData = await visitsResponse.json();
-        
-        if (visitsData.success) {
-          const tbody = document.getElementById('visits-table-body');
-          
-          if (!tbody) return;
-          
-          if (visitsData.visits.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">Tidak ada data kunjungan hari ini</td></tr>';
-          } else {
-            tbody.innerHTML = visitsData.visits.map(visit => `
-              <tr>
-                <td><strong>${visit.id_kunjungan}</strong></td>
-                <td>${visit.nama_pasien}</td>
-                <td>${visit.emr_pasien}</td>
-                <td>${visit.keluhan || '-'}</td>
-                <td>${visit.nama_perawat}</td>
-                <td><span class="badge-status badge-${visit.status}">${visit.status === 'aktif' ? 'Aktif' : 'Selesai'}</span></td>
-                <td><span class="badge bg-info">${visit.total_measurements} data</span></td>
-              </tr>
-            `).join('');
-          }
-        }
-      } catch (err) {
-        console.error('❌ Error loading visits:', err);
+async function loadVisitsData() {
+  try {
+    const visitsResponse = await fetch('/api/visits/today');
+    const visitsData = await visitsResponse.json();
+    
+    if (visitsData.success) {
+      const tbody = document.getElementById('visits-table-body');
+      
+      if (!tbody) return;
+      
+      if (visitsData.visits.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">Tidak ada data kunjungan hari ini</td></tr>';
+      } else {
+        tbody.innerHTML = visitsData.visits.map(visit => `
+          <tr onclick="showRawatJalanDetail('${visit.id_kunjungan}', '${visit.emr_pasien}', '${visit.nama_pasien}')" style="cursor: pointer;">
+            <td><strong>${visit.id_kunjungan}</strong></td>
+            <td>${visit.nama_pasien}</td>
+            <td>${visit.emr_pasien}</td>
+            <td>${visit.keluhan || '-'}</td>
+            <td>${visit.nama_perawat}</td>
+            <td><span class="badge-status badge-${visit.status}">${visit.status === 'aktif' ? 'Aktif' : 'Selesai'}</span></td>
+            <td><span class="badge bg-info">${visit.total_measurements} data</span></td>
+          </tr>
+        `).join('');
       }
     }
-
+  } catch (err) {
+    console.error('❌ Error loading visits:', err);
+  }
+}
     async function loadMeasurementsData() {
       try {
         const measurementsResponse = await fetch('/api/measurements/today');
@@ -3731,6 +3772,306 @@ function updateChartsRealtime(vitals, timestamp) {
       return age;
     }
 
+    // ============================================================
+// RAWAT JALAN DETAIL VIEW
+// ============================================================
+let currentVisitId = null;
+let currentPatientEMRJalan = null;
+let chartsJalan = {};
+
+function showRawatJalanDetail(visitId, emrNo, namaPasien) {
+  console.log('👁️ Opening Rawat Jalan detail:', { visitId, emrNo, namaPasien });
+  
+  currentVisitId = visitId;
+  currentPatientEMRJalan = emrNo;
+  
+  // Hide table, show detail
+  document.getElementById('rawat-jalan').querySelector('.data-container:nth-of-type(1)').style.display = 'none';
+  document.getElementById('rawat-jalan').querySelector('.data-container:nth-of-type(2)').style.display = 'none';
+  document.getElementById('rawat-jalan-detail-view').style.display = 'block';
+  
+  // Load data
+  loadRawatJalanPatientDetail(emrNo, visitId);
+  loadRawatJalanMeasurements(emrNo);
+  loadRawatJalanChart(emrNo);
+}
+
+function backToRawatJalanList() {
+  currentVisitId = null;
+  currentPatientEMRJalan = null;
+  
+  // Destroy charts
+  Object.values(chartsJalan).forEach(chart => {
+    if (chart) chart.destroy();
+  });
+  chartsJalan = {};
+  
+  // Show table, hide detail
+  document.getElementById('rawat-jalan').querySelector('.data-container:nth-of-type(1)').style.display = 'block';
+  document.getElementById('rawat-jalan').querySelector('.data-container:nth-of-type(2)').style.display = 'block';
+  document.getElementById('rawat-jalan-detail-view').style.display = 'none';
+  
+  loadRawatJalanData();
+}
+
+async function loadRawatJalanPatientDetail(emrNo, visitId) {
+  try {
+    const response = await fetch(`/api/visits/${visitId}`);
+    const data = await response.json();
+    
+    if (data.success) {
+      const visit = data.visit;
+      const patient = data.patient;
+      
+      document.getElementById('jalan-patient-info').innerHTML = `
+        <div class="info-row">
+          <span class="info-label">ID Kunjungan</span>
+          <span class="info-value">${visit.id_kunjungan}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">EMR No</span>
+          <span class="info-value">${patient.emr_no}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Nama Pasien</span>
+          <span class="info-value">${patient.nama}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Tanggal Lahir</span>
+          <span class="info-value">${formatDate(patient.tanggal_lahir)} (${calculateAge(patient.tanggal_lahir)} tahun)</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Keluhan</span>
+          <span class="info-value">${visit.keluhan || '-'}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Perawat</span>
+          <span class="info-value">${data.perawat?.nama || '-'}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Dokter</span>
+          <span class="info-value">${data.dokter?.nama || '-'}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Status</span>
+          <span class="info-value">
+            <span class="badge badge-${visit.status}">${visit.status === 'aktif' ? 'Aktif' : 'Selesai'}</span>
+          </span>
+        </div>
+      `;
+      
+      // Display vitals
+      if (data.vitals) {
+        displayRawatJalanVitals(data.vitals);
+      }
+    }
+  } catch (err) {
+    console.error('❌ Error loading detail:', err);
+  }
+}
+
+function displayRawatJalanVitals(vitals) {
+  const container = document.getElementById('jalan-vitals-grid');
+  
+  container.innerHTML = `
+    <div class="vital-card">
+      <div class="vital-icon" style="color: #e74c3c;"><i class="fas fa-heartbeat"></i></div>
+      <div class="vital-label">Heart Rate</div>
+      <div class="vital-number ${getHeartRateClass(vitals.heart_rate)}">${vitals.heart_rate || '-'}</div>
+      <div class="vital-unit">bpm</div>
+    </div>
+
+    <div class="vital-card">
+      <div class="vital-icon" style="color: #3498db;"><i class="fas fa-lungs"></i></div>
+      <div class="vital-label">Respirasi</div>
+      <div class="vital-number ${getRespirasiClass(vitals.respirasi)}">${vitals.respirasi || '-'}</div>
+      <div class="vital-unit">per menit</div>
+    </div>
+
+    <div class="vital-card">
+      <div class="vital-icon" style="color: #9b59b6;"><i class="fas fa-weight"></i></div>
+      <div class="vital-label">Glukosa</div>
+      <div class="vital-number">${vitals.glukosa || '-'}</div>
+      <div class="vital-unit">mg/dL</div>
+    </div>
+
+    <div class="vital-card">
+      <div class="vital-icon" style="color: #f39c12;"><i class="fas fa-tint"></i></div>
+      <div class="vital-label">Blood Pressure</div>
+      <div class="vital-number">${vitals.sistolik || '-'}/${vitals.diastolik || '-'}</div>
+      <div class="vital-unit">mmHg</div>
+    </div>
+  `;
+}
+
+async function loadRawatJalanMeasurements(emrNo) {
+  try {
+    const response = await fetch(`/api/patients/outpatient/${emrNo}/measurements`);
+    const data = await response.json();
+    
+    if (data.success && data.measurements.length > 0) {
+      const container = document.getElementById('jalan-measurements-container');
+      
+      container.innerHTML = `
+        <table class="examination-table">
+          <thead>
+            <tr>
+              <th>Waktu</th>
+              <th>HR (bpm)</th>
+              <th>Resp (/min)</th>
+              <th>Glukosa (mg/dL)</th>
+              <th>Sistolik</th>
+              <th>Diastolik</th>
+              <th>Berat (kg)</th>
+              <th>BMI</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${data.measurements.map(m => `
+              <tr>
+                <td>${formatDateTime(m.waktu)}</td>
+                <td><span class="vital-value ${getHeartRateClass(m.heart_rate)}">${m.heart_rate || '-'}</span></td>
+                <td><span class="vital-value ${getRespirasiClass(m.respirasi)}">${m.respirasi || '-'}</span></td>
+                <td>${m.glukosa || '-'}</td>
+                <td>${m.sistolik || '-'}</td>
+                <td>${m.diastolik || '-'}</td>
+                <td>${m.berat_badan_kg || '-'}</td>
+                <td>${m.bmi || '-'}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+    } else {
+      document.getElementById('jalan-measurements-container').innerHTML = `
+        <div class="empty-state">
+          <i class="fas fa-info-circle"></i>
+          <p>Belum ada riwayat pengukuran</p>
+        </div>
+      `;
+    }
+  } catch (err) {
+    console.error('❌ Error loading measurements:', err);
+  }
+}
+
+async function loadRawatJalanChart(emrNo) {
+  try {
+    const response = await fetch(`/api/patients/outpatient/${emrNo}/vitals/chart`);
+    const data = await response.json();
+    
+    if (data.success && data.vitals.length > 0) {
+      displayRawatJalanCharts(data.vitals);
+    } else {
+      document.getElementById('jalan-charts-container').innerHTML = `
+        <div class="empty-state">
+          <i class="fas fa-chart-line"></i>
+          <p>Tidak ada data untuk ditampilkan</p>
+        </div>
+      `;
+    }
+  } catch (err) {
+    console.error('❌ Chart error:', err);
+  }
+}
+
+function displayRawatJalanCharts(vitals) {
+  const container = document.getElementById('jalan-charts-container');
+  container.innerHTML = `
+    <div class="chart-card"><div class="chart-title">Heart Rate (bpm)</div><canvas id="jalan-hr-chart"></canvas></div>
+    <div class="chart-card"><div class="chart-title">Respiratory Rate (/min)</div><canvas id="jalan-resp-chart"></canvas></div>
+    <div class="chart-card"><div class="chart-title">Blood Pressure (mmHg)</div><canvas id="jalan-bp-chart"></canvas></div>
+    <div class="chart-card"><div class="chart-title">Glucose (mg/dL)</div><canvas id="jalan-glucose-chart"></canvas></div>
+  `;
+  
+  const labels = vitals.map(v => formatChartTime(v.waktu));
+  const opts = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: true, position: 'top', labels: { boxWidth: 12, padding: 10, font: { size: 11 } } },
+      tooltip: { backgroundColor: 'rgba(0, 0, 0, 0.8)', padding: 12, titleFont: { size: 13 }, bodyFont: { size: 12 } }
+    },
+    scales: {
+      y: { beginAtZero: true, grid: { color: 'rgba(0, 0, 0, 0.05)' }, ticks: { font: { size: 11 } } },
+      x: { grid: { display: false }, ticks: { font: { size: 10 }, maxRotation: 45, minRotation: 0 } }
+    }
+  };
+
+  // Heart Rate
+  chartsJalan.hr = new Chart(document.getElementById('jalan-hr-chart'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Heart Rate',
+        data: vitals.map(v => v.heart_rate),
+        borderColor: '#e74c3c',
+        backgroundColor: 'rgba(231, 76, 60, 0.1)',
+        tension: 0.4,
+        fill: true
+      }]
+    },
+    options: opts
+  });
+
+  // Respiratory
+  chartsJalan.resp = new Chart(document.getElementById('jalan-resp-chart'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Respirasi',
+        data: vitals.map(v => v.respirasi),
+        borderColor: '#3498db',
+        backgroundColor: 'rgba(52, 152, 219, 0.1)',
+        tension: 0.4,
+        fill: true
+      }]
+    },
+    options: opts
+  });
+
+  // Blood Pressure
+  chartsJalan.bp = new Chart(document.getElementById('jalan-bp-chart'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Sistolik',
+          data: vitals.map(v => v.sistolik),
+          borderColor: '#e74c3c',
+          tension: 0.4
+        },
+        {
+          label: 'Diastolik',
+          data: vitals.map(v => v.diastolik),
+          borderColor: '#3498db',
+          tension: 0.4
+        }
+      ]
+    },
+    options: opts
+  });
+
+  // Glucose
+  chartsJalan.glucose = new Chart(document.getElementById('jalan-glucose-chart'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Glukosa',
+        data: vitals.map(v => v.glukosa),
+        borderColor: '#f39c12',
+        backgroundColor: 'rgba(243, 156, 18, 0.1)',
+        tension: 0.4,
+        fill: true
+      }]
+    },
+    options: opts
+  });
+}
     // ============================================================
     // AUTO REFRESH
     // ============================================================

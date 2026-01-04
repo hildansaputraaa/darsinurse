@@ -1402,6 +1402,109 @@ app.get('/api/patients/inpatient/:emr_no/vitals/chart', requireAdminOrPerawat, a
     });
   }
 });
+
+// GET visit detail
+app.get('/api/visits/:visitId', requireAdminOrPerawat, async (req, res) => {
+  let conn;
+  try {
+    const { visitId } = req.params;
+    conn = await pool.getConnection();
+    
+    const [visit] = await conn.query(
+      'SELECT * FROM kunjungan WHERE id_kunjungan = ?',
+      [visitId]
+    );
+    
+    if (visit.length === 0) {
+      conn.release();
+      return res.status(404).json({ error: 'Visit not found' });
+    }
+    
+    const v = visit[0];
+    
+    const [patient] = await conn.query(
+      'SELECT * FROM pasien WHERE emr_no = ?',
+      [v.emr_no]
+    );
+    
+    const [perawat] = await conn.query(
+      'SELECT nama FROM perawat WHERE emr_perawat = ?',
+      [v.emr_perawat]
+    );
+    
+    const [dokter] = await conn.query(
+      'SELECT nama FROM dokter WHERE emr_dokter = ?',
+      [v.emr_dokter]
+    );
+    
+    const [vitals] = await conn.query(
+      'SELECT * FROM vitals WHERE emr_no = ? ORDER BY waktu DESC LIMIT 1',
+      [v.emr_no]
+    );
+    
+    conn.release();
+    
+    res.json({
+      success: true,
+      visit: v,
+      patient: patient[0],
+      perawat: perawat[0],
+      dokter: dokter[0],
+      vitals: vitals[0] || {}
+    });
+  } catch (err) {
+    if (conn) conn.release();
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET outpatient measurements
+app.get('/api/patients/outpatient/:emrNo/measurements', requireAdminOrPerawat, async (req, res) => {
+  let conn;
+  try {
+    const { emrNo } = req.params;
+    const emrStr = String(emrNo).padStart(11, '0');
+    
+    conn = await pool.getConnection();
+    
+    const [measurements] = await conn.query(
+      `SELECT * FROM vitals WHERE emr_no = ? 
+       ORDER BY waktu DESC LIMIT 100`,
+      [emrStr]
+    );
+    
+    conn.release();
+    res.json({ success: true, measurements });
+  } catch (err) {
+    if (conn) conn.release();
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET outpatient vitals chart
+app.get('/api/patients/outpatient/:emrNo/vitals/chart', requireAdminOrPerawat, async (req, res) => {
+  let conn;
+  try {
+    const { emrNo } = req.params;
+    const emrStr = String(emrNo).padStart(11, '0');
+    
+    conn = await pool.getConnection();
+    
+    const last24Hours = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    
+    const [vitals] = await conn.query(
+      `SELECT * FROM vitals WHERE emr_no = ? AND waktu >= ?
+       ORDER BY waktu ASC`,
+      [emrStr, last24Hours]
+    );
+    
+    conn.release();
+    res.json({ success: true, vitals });
+  } catch (err) {
+    if (conn) conn.release();
+    res.status(500).json({ error: err.message });
+  }
+});
 /* ============================================================
    SOCKET.IO SETUP
    ============================================================ */
