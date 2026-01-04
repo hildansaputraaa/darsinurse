@@ -706,14 +706,8 @@ app.get('/api/visits/today', requireAdminOrPerawat, async (req, res) => {
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
     
-    const whereClause = req.session.role === 'admin' 
-      ? '' 
-      : `AND k.emr_perawat = ${req.session.emr_perawat}`;
-    
-    // ✅ FIXED: Hapus JOIN ke pasien dokter yang salah
-    // Tambahkan JOIN ke perawat untuk nama dokter
-    const [visits] = await conn.query(
-      `SELECT 
+    let visitQuery = `
+      SELECT 
         k.id_kunjungan,
         k.emr_no as emr_pasien,
         k.keluhan,
@@ -728,11 +722,19 @@ app.get('/api/visits/today', requireAdminOrPerawat, async (req, res) => {
        JOIN perawat pr ON k.emr_perawat = pr.emr_perawat
        LEFT JOIN perawat dok ON k.emr_dokter = dok.emr_perawat
        LEFT JOIN vitals v ON k.id_kunjungan = v.id_kunjungan
-       WHERE k.tanggal_kunjungan >= ? AND k.tanggal_kunjungan < ? ${whereClause}
-       GROUP BY k.id_kunjungan
-       ORDER BY k.tanggal_kunjungan DESC`,
-      [today, tomorrow]
-    );
+       WHERE k.tanggal_kunjungan >= ? AND k.tanggal_kunjungan < ?
+    `;
+    
+    let params = [today, tomorrow];
+    
+    if (req.session.role !== 'admin') {
+      visitQuery += ` AND k.emr_perawat = ?`;
+      params.push(req.session.emr_perawat);
+    }
+    
+    visitQuery += ` GROUP BY k.id_kunjungan ORDER BY k.tanggal_kunjungan DESC`;
+    
+    const [visits] = await conn.query(visitQuery, params);
     
     conn.release();
     res.json({ success: true, visits });
@@ -751,13 +753,8 @@ app.get('/api/measurements/today', requireAdminOrPerawat, async (req, res) => {
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
     
-    const whereClause = req.session.role === 'admin' 
-      ? '' 
-      : `AND k.emr_perawat = ${req.session.emr_perawat}`;
-    
-    // ✅ FIXED: Ambil emr_perawat dari kunjungan (bukan vitals)
-    const [measurements] = await conn.query(
-      `SELECT 
+    let measurementQuery = `
+      SELECT 
         v.id, v.waktu as timestamp,
         v.heart_rate, v.sistolik, v.diastolik,
         v.respirasi, v.glukosa,
@@ -771,11 +768,19 @@ app.get('/api/measurements/today', requireAdminOrPerawat, async (req, res) => {
        JOIN pasien pas ON v.emr_no = pas.emr_no
        LEFT JOIN kunjungan k ON v.id_kunjungan = k.id_kunjungan
        LEFT JOIN perawat pr ON k.emr_perawat = pr.emr_perawat
-       WHERE v.waktu >= ? AND v.waktu < ? ${whereClause}
-       ORDER BY v.waktu DESC
-       LIMIT 100`,
-      [today, tomorrow]
-    );
+       WHERE v.waktu >= ? AND v.waktu < ?
+    `;
+    
+    let params = [today, tomorrow];
+    
+    if (req.session.role !== 'admin') {
+      measurementQuery += ` AND k.emr_perawat = ?`;
+      params.push(req.session.emr_perawat);
+    }
+    
+    measurementQuery += ` ORDER BY v.waktu DESC LIMIT 100`;
+    
+    const [measurements] = await conn.query(measurementQuery, params);
     
     const formattedMeasurements = measurements.map(m => {
       let tipe_device = [];
@@ -826,10 +831,8 @@ app.get('/api/fall-detection/latest', requireAdminOrPerawat, async (req, res) =>
   try {
     const conn = await pool.getConnection();
     
-    // Get falls from last 30 minutes
     const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
     
-    // ✅ FIXED: Tambahkan JOIN ke kunjungan
     const [falls] = await conn.query(`
       SELECT 
         v.id, v.emr_no, v.waktu, v.fall_detected,
@@ -838,11 +841,13 @@ app.get('/api/fall-detection/latest', requireAdminOrPerawat, async (req, res) =>
         rd.room_id, rd.device_id,
         k.id_kunjungan,
         k.emr_perawat,
-        k.emr_dokter
+        k.emr_dokter,
+        pr.nama as nama_perawat
       FROM vitals v
       LEFT JOIN pasien p ON v.emr_no = p.emr_no
       LEFT JOIN room_device rd ON v.emr_no = rd.emr_no
       LEFT JOIN kunjungan k ON v.id_kunjungan = k.id_kunjungan
+      LEFT JOIN perawat pr ON k.emr_perawat = pr.emr_perawat
       WHERE v.fall_detected = 1 AND v.waktu >= ?
       ORDER BY v.waktu DESC
       LIMIT 50
@@ -873,7 +878,7 @@ app.get('/api/fall-detection/latest', requireAdminOrPerawat, async (req, res) =>
       return true;
     });
     
-    console.log(`📊 API /latest: Total=${falls.length}, New=${newFalls.length}, Session=${sessionId.substring(0, 8)}`);
+    console.log(`📊 API /latest: Total=${falls.length}, New=${newFalls.length}`);
     
     res.json({ 
       success: true, 
@@ -1199,8 +1204,6 @@ app.get('/api/patients/inpatient/:emr_no/examinations', requireAdminOrPerawat, a
     
     conn = await pool.getConnection();
     
-    // Hapus emr_dokter dan emr_perawat dari SELECT vitals
-    // Tambahkan JOIN ke kunjungan jika perlu info perawat/dokter
     const [examinations] = await conn.query(`
       SELECT 
         v.id,
