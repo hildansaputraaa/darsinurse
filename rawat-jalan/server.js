@@ -73,7 +73,7 @@ async function initDatabase() {
     // Tabel PASIEN
     await conn.query(`
       CREATE TABLE IF NOT EXISTS pasien (
-        emr_no INT AUTO_INCREMENT PRIMARY KEY,
+        emr_no VARCHAR(11) PRIMARY KEY
         nama VARCHAR(100),
         tanggal_lahir DATE,
         jenis_kelamin ENUM('L','P'),
@@ -87,7 +87,7 @@ async function initDatabase() {
     await conn.query(`
       CREATE TABLE IF NOT EXISTS kunjungan (
         id_kunjungan INT AUTO_INCREMENT PRIMARY KEY,
-        emr_no INT,
+        emr_no VARCHAR(11),
         emr_perawat INT,
         tanggal_kunjungan TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         keluhan TEXT,
@@ -101,7 +101,7 @@ async function initDatabase() {
     await conn.query(`
       CREATE TABLE IF NOT EXISTS vitals (
         id INT AUTO_INCREMENT PRIMARY KEY,
-        emr_no INT NOT NULL,
+        emr_no VARCHAR(11) NOT NULL,,
         id_kunjungan INT,
         emr_perawat INT,
         waktu TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -162,12 +162,11 @@ async function initDatabase() {
     if (pasien[0].c === 0) {
       await conn.query(`
         INSERT INTO pasien (emr_no, nama, tanggal_lahir, jenis_kelamin, poli, alamat) VALUES
-        (101,'Budi Santoso','1980-05-15','L','Poli Umum','Jl. Merdeka No.10'),
-        (102,'Susi Handini','1975-08-22','P','Poli Gigi','Jl. Ahmad Yani No.25'),
-        (103,'Rudi Hermawan','1985-12-03','L','Poli Umum','Jl. Pemuda No.30'),
-        (104,'Ani Wijaya','1990-03-17','P','Poli Anak','Jl. Diponegoro No.15')
-      `);
-      
+        ('20251225001','Budi Santoso','1980-05-15','L','Poli Umum','Jl. Merdeka No.10'),
+        ('20251225002','Susi Handini','1975-08-22','P','Poli Gigi','Jl. Ahmad Yani No.25'),
+        ('20251225003','Rudi Hermawan','1985-12-03','L','Poli Umum','Jl. Pemuda No.30'),
+        ('20251225004','Ani Wijaya','1990-03-17','P','Poli Anak','Jl. Diponegoro No.15')
+      `);      
       console.log('✓ Default patients created');
     }
 
@@ -676,7 +675,7 @@ app.post('/simpan_data', requireLogin, async (req, res) => {
     }
     
     let vitalsData = {
-      emr_no: emrInt,
+      emr_no: emrStr,
       id_kunjungan: idInt,
       heart_rate: null,
       respirasi: null,
@@ -789,7 +788,7 @@ app.post('/simpan_data', requireLogin, async (req, res) => {
 
     const vitalsId = result.insertId;
 
-    console.log(`✓ Data vitals ID ${vitalsId} berhasil disimpan untuk EMR ${emrInt}`);
+    console.log(`✓ Data vitals ID ${vitalsId} berhasil disimpan untuk EMR ${emrStr}`);
 
     await checkAndBroadcastFall(vitalsId, emrInt);
     
@@ -856,9 +855,10 @@ app.get('/api/vitals/kunjungan/:id_kunjungan', requireLogin, async (req, res) =>
 });
 
 app.get('/api/vitals/pasien/:emr', requireLogin, async (req, res) => {
-  const emrInt = parseInt(req.params.emr);
-  if (isNaN(emrInt)) {
-    return res.status(400).json({ error: 'EMR tidak valid' });
+  const emrStr = String(req.params.emr);  // ✅ STRING
+
+  if (!emrStr || emrStr.length !== 11 || !/^\d{11}$/.test(emrStr)) {
+    return res.status(400).json({ error: 'EMR harus format 11 digit' });
   }
   
   try {
@@ -877,7 +877,7 @@ app.get('/api/vitals/pasien/:emr', requireLogin, async (req, res) => {
       WHERE v.emr_no = ?
     `;
     
-    const params = [emrInt];
+    const params = [emrStr];
     
     if (req.session.role !== 'admin') {
       query += ` AND (k.emr_perawat = ? OR v.emr_perawat = ?)`;
@@ -1089,10 +1089,11 @@ io.on('connection', (socket) => {
     
     try {
       const conn = await pool.getConnection();
-      
+      const emrStr = String(data.emr_no);  // ✅ Convert ke STRING
+
       // Insert to database
       const vitalsData = {
-        emr_no: data.emr_no,
+        emr_no: emrStr,
         id_kunjungan: data.id_kunjungan,
         waktu: new Date(),
         fall_detected: 1,
@@ -1125,7 +1126,7 @@ io.on('connection', (socket) => {
         LEFT JOIN room_device rd ON p.emr_no = rd.emr_no
         LEFT JOIN kunjungan k ON p.emr_no = k.emr_no AND k.status = 'aktif'
         WHERE p.emr_no = ?
-      `, [emrInt]);
+      `, [emrStr]);
       
       conn.release();
       
@@ -1242,16 +1243,20 @@ app.delete('/admin/api/users/:emr', requireAdmin, async (req, res) => {
    PATIENT ROUTES
    ============================================================ */
 app.get('/validasi_pasien/:emr', requireLogin, async (req, res) => {
-  const emrInt = parseInt(req.params.emr);
-  if (isNaN(emrInt)) {
-    return res.status(400).json({ valid: false, error: 'EMR tidak valid' });
+  const emrStr = String(req.params.emr);  // ✅ Langsung STRING, jangan parseInt
+  
+  if (!emrStr || emrStr.length !== 11 || !/^\d{11}$/.test(emrStr)) {
+    return res.status(400).json({ 
+      valid: false, 
+      error: 'EMR harus format 11 digit (YYYYMMDDNNN)' 
+    });
   }
   
   try {
     const conn = await pool.getConnection();
     const [rows] = await conn.query(
       'SELECT * FROM pasien WHERE emr_no = ?',
-      [emrInt]
+      [emrStr]  // ✅ Query dengan STRING
     );
     conn.release();
 
@@ -1380,10 +1385,10 @@ app.get('/api/patients/active', requireLogin, async (req, res) => {
 });
 
 app.get('/api/patients/:emr/info', requireLogin, async (req, res) => {
-  const emrInt = parseInt(req.params.emr);
+  const emrStr = String(req.params.emr);  // ✅ STRING
   
-  if (isNaN(emrInt)) {
-    return res.status(400).json({ error: 'EMR tidak valid' });
+  if (!emrStr || emrStr.length !== 11 || !/^\d{11}$/.test(emrStr)) {
+    return res.status(400).json({ error: 'EMR harus format 11 digit' });
   }
   
   try {
@@ -1399,7 +1404,7 @@ app.get('/api/patients/:emr/info', requireLogin, async (req, res) => {
         alamat
       FROM pasien 
       WHERE emr_no = ?`,
-      [emrInt]
+      [emrStr]
     );
     
     conn.release();
@@ -1421,9 +1426,10 @@ app.get('/api/patients/:emr/info', requireLogin, async (req, res) => {
    VISIT ROUTES
    ============================================================ */
 app.get('/api/patients/:emr/visits', requireLogin, async (req, res) => {
-  const emrInt = parseInt(req.params.emr);
-  if (isNaN(emrInt)) {
-    return res.status(400).json({ error: 'EMR tidak valid' });
+  const emrStr = String(req.params.emr);  // ✅ STRING
+
+  if (!emrStr || emrStr.length !== 11 || !/^\d{11}$/.test(emrStr)) {
+    return res.status(400).json({ error: 'EMR harus format 11 digit' });
   }
   
   try {
@@ -1436,7 +1442,7 @@ app.get('/api/patients/:emr/visits', requireLogin, async (req, res) => {
       WHERE k.emr_no = ?
     `;
     
-    const params = [emrInt];
+    const params = [emrStr];
     
     if (req.session.role !== 'admin') {
       query += ` AND k.emr_perawat = ?`;
@@ -1539,10 +1545,10 @@ app.put('/api/visits/:id_kunjungan/status', requireLogin, async (req, res) => {
 });
 
 app.get('/api/visits/by-patient/:emr', requireLogin, async (req, res) => {
-  const emrInt = parseInt(req.params.emr);
+  const emrStr = String(req.params.emr);  // ✅ STRING
   
-  if (isNaN(emrInt)) {
-    return res.status(400).json({ error: 'EMR tidak valid' });
+  if (!emrStr || emrStr.length !== 11 || !/^\d{11}$/.test(emrStr)) {
+    return res.status(400).json({ error: 'EMR harus format 11 digit' });
   }
   
   try {
@@ -1560,7 +1566,7 @@ app.get('/api/visits/by-patient/:emr', requireLogin, async (req, res) => {
       WHERE k.emr_no = ?
     `;
     
-    const params = [emrInt];
+    const params = [emrStr];
     
     if (req.session.role !== 'admin') {
       query += ` AND k.emr_perawat = ?`;

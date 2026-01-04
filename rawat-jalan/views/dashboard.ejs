@@ -1882,7 +1882,7 @@
       const scanBtn = document.getElementById(`btn-scan-${type}`);
       
       patientSelect.addEventListener('change', async function() {
-        const emr = parseInt(this.value);
+        const emr = String(this.value);  // ✅ Gunakan STRING
         
         if (emr && !isNaN(emr)) {
           await displayPatientInfo(emr, type);
