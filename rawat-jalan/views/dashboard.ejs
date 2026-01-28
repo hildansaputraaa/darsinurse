@@ -2259,6 +2259,7 @@ document.addEventListener('DOMContentLoaded', function() {
         showKelolaKunjungan();
       } else if (action === 'mcu') {
         showMCU();
+        setTimeout(() => setMCUTime(), 100);
       } else if (action === 'print-mcu') {
         showPrintMCU();
       } else {
@@ -2734,13 +2735,6 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('mcu-weight')?.addEventListener('input', calculateMCUBMI);
     document.getElementById('mcu-height')?.addEventListener('input', calculateMCUBMI);
 
-    // Set waktu default ke sekarang
-    function setMCUTime() {
-      const now = new Date();
-      const datetime = now.toISOString().slice(0, 16);
-      document.getElementById('mcu-waktu').value = datetime;
-    }
-
     // Form MCU Submit
     document.getElementById('form-mcu')?.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -2796,6 +2790,13 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     });
 
+        // Set waktu default ke sekarang
+    function setMCUTime() {
+      const now = new Date();
+      const datetime = now.toISOString().slice(0, 16);
+      document.getElementById('mcu-waktu').value = datetime;
+    }
+    
     // Show MCU Form
     function showMCU() {
       document.getElementById('selection-menu').style.display = 'none';

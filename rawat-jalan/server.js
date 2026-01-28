@@ -1115,7 +1115,7 @@ app.get('/api/mcu/print/:id', requireLogin, async (req, res) => {
   }
 });
 
-// ✅ Function untuk generate HTML MCU
+// ✅ Function untuk generate HTML MCU PROFESIONAL
 function generateMCUHTML(data) {
   const birthDate = new Date(data.tanggal_lahir);
   const today = new Date();
@@ -1127,12 +1127,23 @@ function generateMCUHTML(data) {
   
   const gender = data.jenis_kelamin === 'L' ? 'Laki-laki' : 'Perempuan';
   
-  // ✅ Helper function untuk format tanggal
+  // Format tanggal
   const formatDate = (dateStr) => {
     if (!dateStr) return '-';
     const d = new Date(dateStr);
     return d.toLocaleDateString('id-ID', {
-      day: '2-digit',
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    });
+  };
+  
+  const formatDateShort = (dateStr) => {
+    if (!dateStr) return '-';
+    const d = new Date(dateStr);
+    return d.toLocaleDateString('id-ID', {
+      day: 'numeric',
       month: 'long',
       year: 'numeric'
     });
@@ -1141,260 +1152,650 @@ function generateMCUHTML(data) {
   const formatDateTime = (dateStr) => {
     if (!dateStr) return '-';
     const d = new Date(dateStr);
-    return d.toLocaleString('id-ID', {
-      day: '2-digit',
+    const date = d.toLocaleDateString('id-ID', {
+      weekday: 'long',
+      day: 'numeric',
       month: 'long',
-      year: 'numeric',
+      year: 'numeric'
+    });
+    const time = d.toLocaleTimeString('id-ID', {
       hour: '2-digit',
       minute: '2-digit'
     });
+    return `${date}, Pukul ${time} WIB`;
   };
   
+  // Interpretasi BMI
+  let bmiStatus = '';
+  const bmiValue = parseFloat(data.bmi || 0);
+  if (bmiValue < 18.5) bmiStatus = 'Underweight';
+  else if (bmiValue < 25) bmiStatus = 'Normal';
+  else if (bmiValue < 30) bmiStatus = 'Overweight';
+  else if (bmiValue > 0) bmiStatus = 'Obesitas';
+  
+  // Helper untuk status kelas
+  const getStatusClass = (value, min, max) => {
+    if (!value) return '';
+    const val = parseFloat(value);
+    if (val < min || val > max) return 'status-warning';
+    return 'status-normal';
+  };
+  
+  const getBMIClass = (bmi) => {
+    if (!bmi) return '';
+    const val = parseFloat(bmi);
+    if (val < 18.5 || val >= 30) return 'status-danger';
+    if (val >= 25) return 'status-warning';
+    return 'status-normal';
+  };
+  
+  const getUricAcidClass = (value, gender) => {
+    if (!value) return '';
+    const val = parseFloat(value);
+    if (gender === 'L') {
+      return (val < 3.4 || val > 7.0) ? 'status-warning' : 'status-normal';
+    } else {
+      return (val < 2.4 || val > 6.0) ? 'status-warning' : 'status-normal';
+    }
+  };
+  
+  // Generate kesimpulan
+  const issues = [];
+  if (data.heart_rate && (data.heart_rate < 60 || data.heart_rate > 100)) {
+    issues.push('detak jantung di luar batas normal');
+  }
+  if (data.sistolik && data.sistolik > 120) {
+    issues.push('tekanan darah sistolik tinggi');
+  }
+  if (data.glukosa && data.glukosa > 100) {
+    issues.push('glukosa darah tinggi');
+  }
+  if (data.kolesterol && data.kolesterol > 200) {
+    issues.push('kolesterol tinggi');
+  }
+  if (bmiValue < 18.5 && bmiValue > 0) issues.push('berat badan kurang (underweight)');
+  else if (bmiValue >= 30) issues.push('obesitas');
+  else if (bmiValue >= 25) issues.push('berat badan berlebih (overweight)');
+  
+  const conclusion = issues.length === 0
+    ? 'Hasil pemeriksaan menunjukkan kondisi kesehatan dalam batas normal. Pertahankan pola hidup sehat dengan olahraga teratur dan konsumsi makanan bergizi seimbang.'
+    : `Hasil pemeriksaan menunjukkan beberapa parameter yang perlu diperhatikan: ${issues.join(', ')}. Disarankan untuk berkonsultasi dengan dokter untuk pemeriksaan lebih lanjut dan mendapatkan penanganan yang tepat. Terapkan pola hidup sehat, olahraga teratur, dan kontrol rutin.`;
+  
   return `
-    <!DOCTYPE html>
-    <html lang="id">
-    <head>
-      <meta charset="UTF-8">
-      <title>Surat Keterangan MCU - ${data.nama}</title>
-      <style>
-        @media print {
-          body { margin: 0; }
-          .no-print { display: none; }
-        }
-        
-        body { 
-          font-family: 'Arial', sans-serif;
-          padding: 30px;
-          max-width: 800px;
-          margin: 0 auto;
-          background: #fff;
-          color: #333;
-        }
-        
-        .header { 
-          text-align: center;
-          margin-bottom: 40px;
-          border-bottom: 3px solid #0056b3;
-          padding-bottom: 20px;
-        }
-        
-        .header h1 {
-          color: #0056b3;
-          margin: 10px 0;
-          font-size: 24px;
-          text-transform: uppercase;
-          letter-spacing: 1px;
-        }
-        
-        .header p {
-          margin: 5px 0;
-          color: #666;
-          font-size: 14px;
-        }
-        
-        .section-title {
-          background: #0056b3;
-          color: white;
-          padding: 10px 15px;
-          margin: 30px 0 15px 0;
-          font-weight: bold;
-          font-size: 16px;
-          border-radius: 4px;
-        }
-        
-        table { 
-          width: 100%;
-          border-collapse: collapse;
-          margin-bottom: 20px;
-        }
-        
-        td { 
-          padding: 10px 8px;
-          border-bottom: 1px solid #e0e0e0;
-        }
-        
-        .label { 
-          font-weight: bold;
-          width: 220px;
-          color: #555;
-        }
-        
-        .value {
-          color: #000;
-        }
-        
-        .signature { 
-          margin-top: 60px;
-          text-align: right;
-        }
-        
-        .signature-box {
-          display: inline-block;
-          text-align: center;
-          min-width: 250px;
-        }
-        
-        .signature-line {
-          margin-top: 80px;
-          border-top: 2px solid #000;
-          padding-top: 5px;
-          font-weight: bold;
-        }
-        
-        .print-btn {
-          position: fixed;
-          top: 20px;
-          right: 20px;
-          padding: 12px 24px;
-          background: #0056b3;
-          color: white;
-          border: none;
-          border-radius: 5px;
-          cursor: pointer;
-          font-size: 14px;
-          font-weight: bold;
-          box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-        }
-        
-        .print-btn:hover {
-          background: #003d7a;
-        }
-        
-        .normal-range {
-          color: #28a745;
-          font-size: 12px;
-          font-style: italic;
-        }
-        
-        .warning {
-          color: #dc3545;
-          font-weight: bold;
-        }
-      </style>
-    </head>
-    <body>
-      <button class="print-btn no-print" onclick="window.print()">
-        🖨️ Cetak
-      </button>
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Surat Keterangan Medical Check Up - ${data.nama}</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 0;
+    }
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Times New Roman', Times, serif;
+      font-size: 11pt;
+      line-height: 1.5;
+      color: #000;
+      background: #fff;
+      padding: 2cm 2.5cm;
+    }
+    
+    .container {
+      width: 100%;
+      max-width: 21cm;
+      margin: 0 auto;
+      position: relative;
+    }
+    
+    /* Header dengan Logo */
+    .header {
+      display: flex;
+      align-items: center;
+      border-bottom: 3px solid #00695c;
+      padding-bottom: 12px;
+      margin-bottom: 8px;
+      position: relative;
+    }
+    
+    .logo-rsi {
+      width: 75px;
+      height: 75px;
+      margin-right: 15px;
+      object-fit: contain;
+    }
+    
+    .header-info {
+      flex: 1;
+      text-align: center;
+    }
+    
+    .header-info h1 {
+      font-size: 18pt;
+      font-weight: bold;
+      color: #00695c;
+      margin-bottom: 3px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    
+    .header-info p {
+      font-size: 9pt;
+      margin: 1px 0;
+      color: #333;
+    }
+    
+    .header-line {
+      border-bottom: 1px solid #00695c;
+      margin-top: 4px;
+    }
+    
+    /* Logo Sponsor di Pojok Kanan Atas */
+    .sponsors {
+      position: absolute;
+      top: -5px;
+      right: 0;
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      max-width: 220px;
+      justify-content: flex-end;
+    }
+    
+    .sponsor-logo {
+      width: 42px;
+      height: 42px;
+      object-fit: contain;
+      opacity: 0.85;
+    }
+    
+    /* Nomor Surat */
+    .letter-number {
+      text-align: center;
+      margin: 10px 0;
+      font-size: 10pt;
+      font-weight: bold;
+    }
+    
+    /* Judul Dokumen */
+    .document-title {
+      text-align: center;
+      margin: 15px 0;
+      padding: 8px;
+      background: linear-gradient(135deg, #00695c 0%, #004d40 100%);
+      color: white;
+      border-radius: 4px;
+    }
+    
+    .document-title h2 {
+      font-size: 14pt;
+      font-weight: bold;
+      letter-spacing: 1.5px;
+    }
+    
+    /* Pembuka Surat */
+    .opening {
+      text-align: justify;
+      margin: 15px 0;
+      text-indent: 50px;
+    }
+    
+    /* Section */
+    .section {
+      margin: 15px 0;
+    }
+    
+    .section-title {
+      font-size: 12pt;
+      font-weight: bold;
+      color: #00695c;
+      border-bottom: 2px solid #00695c;
+      padding-bottom: 4px;
+      margin-bottom: 8px;
+    }
+    
+    /* Data Pasien */
+    .patient-info {
+      display: table;
+      width: 100%;
+      margin: 8px 0;
+    }
+    
+    .patient-row {
+      display: table-row;
+    }
+    
+    .patient-label {
+      display: table-cell;
+      width: 180px;
+      padding: 3px 0;
+      font-weight: bold;
+    }
+    
+    .patient-colon {
+      display: table-cell;
+      width: 20px;
+      padding: 3px 0;
+    }
+    
+    .patient-value {
+      display: table-cell;
+      padding: 3px 0;
+    }
+    
+    /* Tabel Hasil */
+    .results-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 12px 0;
+      font-size: 10pt;
+    }
+    
+    .results-table thead {
+      background: #00695c;
+      color: white;
+    }
+    
+    .results-table th,
+    .results-table td {
+      border: 1px solid #333;
+      padding: 8px;
+      text-align: left;
+    }
+    
+    .results-table th {
+      font-weight: bold;
+      text-align: center;
+      font-size: 10pt;
+    }
+    
+    .results-table tbody tr:nth-child(even) {
+      background: #f9f9f9;
+    }
+    
+    .results-table .param-name {
+      font-weight: bold;
+    }
+    
+    .results-table .result-value {
+      text-align: center;
+      font-weight: bold;
+      font-size: 11pt;
+    }
+    
+    .results-table .unit {
+      text-align: center;
+      color: #666;
+      font-size: 9pt;
+    }
+    
+    .results-table .normal-range {
+      text-align: center;
+      font-size: 9pt;
+      color: #555;
+    }
+    
+    .results-table .category-header {
+      background: #e0f2f1 !important;
+      font-weight: bold;
+      text-align: center;
+      color: #00695c;
+      font-size: 10pt;
+    }
+    
+    /* Status Colors */
+    .status-normal {
+      color: #2e7d32;
+      font-weight: bold;
+    }
+    
+    .status-warning {
+      color: #f57c00;
+      font-weight: bold;
+    }
+    
+    .status-danger {
+      color: #c62828;
+      font-weight: bold;
+    }
+    
+    /* Kesimpulan */
+    .conclusion {
+      background: #e8f5e9;
+      padding: 12px;
+      border-left: 4px solid #4caf50;
+      margin: 15px 0;
+      border-radius: 4px;
+      text-align: justify;
+    }
+    
+    .conclusion h3 {
+      color: #2e7d32;
+      margin-bottom: 8px;
+      font-size: 11pt;
+    }
+    
+    .conclusion p {
+      font-size: 10pt;
+    }
+    
+    /* Penutup */
+    .closing {
+      margin: 15px 0;
+      text-align: justify;
+    }
+    
+    /* Footer */
+    .footer {
+      margin-top: 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+    
+    .signature {
+      text-align: center;
+      min-width: 180px;
+    }
+    
+    .signature-line {
+      margin-top: 50px;
+      border-top: 1px solid #000;
+      padding-top: 5px;
+      font-weight: bold;
+    }
+    
+    .print-info {
+      font-size: 8pt;
+      color: #999;
+      text-align: center;
+      margin-top: 25px;
+      border-top: 1px solid #ddd;
+      padding-top: 8px;
+    }
+    
+    /* Print Button */
+    .print-button {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 12px 25px;
+      background: #00695c;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      font-size: 13pt;
+      cursor: pointer;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+      z-index: 1000;
+      font-family: Arial, sans-serif;
+    }
+    
+    .print-button:hover {
+      background: #004d40;
+    }
+    
+    /* Print Styles */
+    @media print {
+      body {
+        padding: 0;
+      }
       
-      <div class="header">
-        <h1>Surat Keterangan Medical Check Up</h1>
-        <p><strong>Rumah Sakit Islam</strong></p>
-        <p>Jl. Ahmad Yani No. 2-4, Surabaya 60231</p>
-        <p>Telp: (031) 8284505 | Email: rsi@surabaya.go.id</p>
+      .print-button {
+        display: none !important;
+      }
+      
+      .container {
+        page-break-after: avoid;
+      }
+      
+      .header {
+        page-break-after: avoid;
+      }
+      
+      .section {
+        page-break-inside: avoid;
+      }
+      
+      .results-table {
+        page-break-inside: auto;
+      }
+      
+      .results-table tr {
+        page-break-inside: avoid;
+        page-break-after: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+  <button class="print-button" onclick="window.print()">
+    🖨️ Cetak / Print
+  </button>
+  
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <img src="https://rsisurabaya.com/wp-content/uploads/2018/10/logo-web-rsi.png" 
+           alt="Logo RSI" class="logo-rsi" onerror="this.style.display='none'">
+      
+      <div class="header-info">
+        <h1>Rumah Sakit Islam Surabaya</h1>
+        <p>Jl. Jemursari No.51-57, Surabaya 60237</p>
+        <p>Telp: (031) 8284505 | Fax: (031) 8284506</p>
+        <p>Email: info@rsisurabaya.com | Website: www.rsisurabaya.com</p>
+        <div class="header-line"></div>
       </div>
       
-      <div class="section-title">📋 Data Pasien</div>
-      <table>
-        <tr>
-          <td class="label">Nama</td>
-          <td class="value">: ${data.nama}</td>
-        </tr>
-        <tr>
-          <td class="label">Nomor EMR</td>
-          <td class="value">: ${data.emr_no}</td>
-        </tr>
-        <tr>
-          <td class="label">Tanggal Lahir</td>
-          <td class="value">: ${formatDate(data.tanggal_lahir)} <strong>(${age} tahun)</strong></td>
-        </tr>
-        <tr>
-          <td class="label">Jenis Kelamin</td>
-          <td class="value">: ${gender}</td>
-        </tr>
-        <tr>
-          <td class="label">Alamat</td>
-          <td class="value">: ${data.alamat || '-'}</td>
-        </tr>
-        <tr>
-          <td class="label">Poli</td>
-          <td class="value">: ${data.poli || '-'}</td>
-        </tr>
-      </table>
+      <!-- Logo Sponsor Pojok Kanan -->
+      <div class="sponsors">
+        <img src="https://logo.uajy.ac.id/wp-content/uploads/2025/05/Logo-Tersier-Diktisaintek-Berdampak-1.png" 
+             alt="Diktisaintek" class="sponsor-logo" onerror="this.style.display='none'">
+        <img src="https://ksti2025.kemdiktisaintek.go.id/assets/images/hiliriset.jpg" 
+             alt="Hiliriset" class="sponsor-logo" onerror="this.style.display='none'">
+        <img src="https://unesa.ac.id/images/gallery/3/507c4e3879ed77a3e14d0937a73b149e.jpg" 
+             alt="Unesa" class="sponsor-logo" onerror="this.style.display='none'">
+        <img src="https://upload.wikimedia.org/wikipedia/id/4/44/Logo_PENS.png" 
+             alt="PENS" class="sponsor-logo" onerror="this.style.display='none'">
+      </div>
+    </div>
+    
+    <!-- Nomor Surat -->
+    <div class="letter-number">
+      No: ${String(data.id).padStart(4, '0')}/MCU/RSI-SBY/${new Date().getFullYear()}
+    </div>
+    
+    <!-- Judul Dokumen -->
+    <div class="document-title">
+      <h2>SURAT KETERANGAN MEDICAL CHECK UP</h2>
+    </div>
+    
+    <!-- Pembuka -->
+    <div class="opening">
+      Yang bertanda tangan di bawah ini, dokter/petugas medis pada Rumah Sakit Islam Surabaya, 
+      menerangkan bahwa telah dilakukan pemeriksaan kesehatan (Medical Check Up) terhadap:
+    </div>
+    
+    <!-- Data Pasien -->
+    <div class="section">
+      <div class="section-title">📋 IDENTITAS PASIEN</div>
+      <div class="patient-info">
+        <div class="patient-row">
+          <div class="patient-label">Nama Lengkap</div>
+          <div class="patient-colon">:</div>
+          <div class="patient-value">${data.nama || '-'}</div>
+        </div>
+        <div class="patient-row">
+          <div class="patient-label">Nomor Rekam Medis (EMR)</div>
+          <div class="patient-colon">:</div>
+          <div class="patient-value">${data.emr_no || '-'}</div>
+        </div>
+        <div class="patient-row">
+          <div class="patient-label">Tanggal Lahir</div>
+          <div class="patient-colon">:</div>
+          <div class="patient-value">${formatDateShort(data.tanggal_lahir)} (${age} tahun)</div>
+        </div>
+        <div class="patient-row">
+          <div class="patient-label">Jenis Kelamin</div>
+          <div class="patient-colon">:</div>
+          <div class="patient-value">${gender}</div>
+        </div>
+        <div class="patient-row">
+          <div class="patient-label">Alamat</div>
+          <div class="patient-colon">:</div>
+          <div class="patient-value">${data.alamat || '-'}</div>
+        </div>
+        <div class="patient-row">
+          <div class="patient-label">Poli</div>
+          <div class="patient-colon">:</div>
+          <div class="patient-value">${data.poli || '-'}</div>
+        </div>
+        <div class="patient-row">
+          <div class="patient-label">Tanggal Pemeriksaan</div>
+          <div class="patient-colon">:</div>
+          <div class="patient-value">${formatDateTime(data.waktu)}</div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Hasil Pemeriksaan -->
+    <div class="section">
+      <div class="section-title">🔬 HASIL PEMERIKSAAN</div>
       
-      <div class="section-title">🩺 Hasil Pemeriksaan</div>
-      <table>
-        <tr>
-          <td class="label">Tanggal Pemeriksaan</td>
-          <td class="value">: ${formatDateTime(data.waktu)}</td>
-        </tr>
-        <tr>
-          <td class="label">Tinggi Badan</td>
-          <td class="value">: ${data.tinggi_badan_cm || '-'} cm</td>
-        </tr>
-        <tr>
-          <td class="label">Berat Badan</td>
-          <td class="value">: ${data.berat_badan_kg || '-'} kg</td>
-        </tr>
-        <tr>
-          <td class="label">BMI (Body Mass Index)</td>
-          <td class="value">
-            : ${data.bmi || '-'} kg/m²
-            ${data.bmi ? `<br><span class="normal-range">Normal: 18.5 - 24.9</span>` : ''}
-          </td>
-        </tr>
-        <tr>
-          <td class="label">Tekanan Darah</td>
-          <td class="value">
-            : ${data.sistolik || '-'}/${data.diastolik || '-'} mmHg
-            ${data.sistolik ? `<br><span class="normal-range">Normal: 120/80 mmHg</span>` : ''}
-          </td>
-        </tr>
-        <tr>
-          <td class="label">Heart Rate</td>
-          <td class="value">
-            : ${data.heart_rate || '-'} bpm
-            ${data.heart_rate ? `<br><span class="normal-range">Normal: 60-100 bpm</span>` : ''}
-          </td>
-        </tr>
-        <tr>
-          <td class="label">Respirasi</td>
-          <td class="value">
-            : ${data.respirasi || '-'} per menit
-            ${data.respirasi ? `<br><span class="normal-range">Normal: 12-20 per menit</span>` : ''}
-          </td>
-        </tr>
-        <tr>
-          <td class="label">Glukosa Darah</td>
-          <td class="value">
-            : ${data.glukosa || '-'} mg/dL
-            ${data.glukosa ? `<br><span class="normal-range">Normal (puasa): 70-100 mg/dL</span>` : ''}
-          </td>
-        </tr>
-        <tr>
-          <td class="label">Kolesterol Total</td>
-          <td class="value">
-            : ${data.kolesterol || '-'} mg/dL
-            ${data.kolesterol ? `<br><span class="normal-range">Normal: < 200 mg/dL</span>` : ''}
-          </td>
-        </tr>
-        <tr>
-          <td class="label">Asam Urat</td>
-          <td class="value">
-            : ${data.asam_urat || '-'} mg/dL
-            ${data.asam_urat ? `<br><span class="normal-range">Normal (L): 3.4-7.0 | (P): 2.4-6.0 mg/dL</span>` : ''}
-          </td>
-        </tr>
+      <table class="results-table">
+        <thead>
+          <tr>
+            <th style="width: 38%;">Parameter Pemeriksaan</th>
+            <th style="width: 18%;">Hasil</th>
+            <th style="width: 14%;">Satuan</th>
+            <th style="width: 30%;">Nilai Normal</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Vital Signs -->
+          <tr>
+            <td colspan="4" class="category-header">💓 PEMERIKSAAN VITAL SIGNS</td>
+          </tr>
+          <tr>
+            <td class="param-name">Heart Rate (Detak Jantung)</td>
+            <td class="result-value ${getStatusClass(data.heart_rate, 60, 100)}">${data.heart_rate || '-'}</td>
+            <td class="unit">bpm</td>
+            <td class="normal-range">60 - 100 bpm</td>
+          </tr>
+          <tr>
+            <td class="param-name">Respiratory Rate (Pernapasan)</td>
+            <td class="result-value ${getStatusClass(data.respirasi, 12, 20)}">${data.respirasi || '-'}</td>
+            <td class="unit">x/menit</td>
+            <td class="normal-range">12 - 20 x/menit</td>
+          </tr>
+          <tr>
+            <td class="param-name">Tekanan Darah Sistolik</td>
+            <td class="result-value ${getStatusClass(data.sistolik, 90, 120)}">${data.sistolik || '-'}</td>
+            <td class="unit">mmHg</td>
+            <td class="normal-range">90 - 120 mmHg</td>
+          </tr>
+          <tr>
+            <td class="param-name">Tekanan Darah Diastolik</td>
+            <td class="result-value ${getStatusClass(data.diastolik, 60, 80)}">${data.diastolik || '-'}</td>
+            <td class="unit">mmHg</td>
+            <td class="normal-range">60 - 80 mmHg</td>
+          </tr>
+          
+          <!-- Antropometri -->
+          <tr>
+            <td colspan="4" class="category-header">📏 PEMERIKSAAN ANTROPOMETRI</td>
+          </tr>
+          <tr>
+            <td class="param-name">Berat Badan</td>
+            <td class="result-value">${data.berat_badan_kg || '-'}</td>
+            <td class="unit">kg</td>
+            <td class="normal-range">Sesuai tinggi badan</td>
+          </tr>
+          <tr>
+            <td class="param-name">Tinggi Badan</td>
+            <td class="result-value">${data.tinggi_badan_cm || '-'}</td>
+            <td class="unit">cm</td>
+            <td class="normal-range">-</td>
+          </tr>
+          <tr>
+            <td class="param-name">Body Mass Index (BMI)</td>
+            <td class="result-value ${getBMIClass(data.bmi)}">${data.bmi || '-'}</td>
+            <td class="unit">kg/m²</td>
+            <td class="normal-range">18.5 - 24.9${bmiStatus ? ` (${bmiStatus})` : ''}</td>
+          </tr>
+          
+          <!-- Lab -->
+          <tr>
+            <td colspan="4" class="category-header">🧪 PEMERIKSAAN LABORATORIUM</td>
+          </tr>
+          <tr>
+            <td class="param-name">Glukosa Darah Sewaktu</td>
+            <td class="result-value ${getStatusClass(data.glukosa, 70, 140)}">${data.glukosa || '-'}</td>
+            <td class="unit">mg/dL</td>
+            <td class="normal-range">70 - 140 mg/dL</td>
+          </tr>
+          <tr>
+            <td class="param-name">Kolesterol Total</td>
+            <td class="result-value ${data.kolesterol > 200 ? 'status-warning' : 'status-normal'}">${data.kolesterol || '-'}</td>
+            <td class="unit">mg/dL</td>
+            <td class="normal-range">&lt; 200 mg/dL</td>
+          </tr>
+          <tr>
+            <td class="param-name">Asam Urat</td>
+            <td class="result-value ${getUricAcidClass(data.asam_urat, data.jenis_kelamin)}">${data.asam_urat || '-'}</td>
+            <td class="unit">mg/dL</td>
+            <td class="normal-range">${data.jenis_kelamin === 'L' ? 'L: 3.4 - 7.0' : 'P: 2.4 - 6.0'} mg/dL</td>
+          </tr>
+        </tbody>
       </table>
-      
+    </div>
+    
+    <!-- Kesimpulan -->
+    <div class="conclusion">
+      <h3>📝 KESIMPULAN & REKOMENDASI</h3>
+      <p>${conclusion}</p>
+    </div>
+    
+    <!-- Penutup -->
+    <div class="closing">
+      Demikian surat keterangan ini dibuat dengan sebenarnya untuk dapat dipergunakan sebagaimana mestinya.
+    </div>
+    
+    <!-- Footer -->
+    <div class="footer">
       <div class="signature">
-        <div class="signature-box">
-          <p>Surabaya, ${formatDate(new Date())}</p>
-          <p><strong>Dokter Pemeriksa</strong></p>
-          <div class="signature-line">
-            ( _________________________ )
-          </div>
+        <p>Pasien/Wali</p>
+        <div class="signature-line">
+          ${data.nama}
         </div>
       </div>
       
-      <script>
-        // Auto print saat halaman dimuat (opsional)
-        // window.onload = function() {
-        //   setTimeout(function() { window.print(); }, 500);
-        // }
-      </script>
-    </body>
-    </html>
+      <div class="signature">
+        <p>Surabaya, ${formatDateShort(new Date())}</p>
+        <p>Petugas Medis</p>
+        <div class="signature-line">
+          (.................................)
+        </div>
+      </div>
+    </div>
+    
+    <!-- Print Info -->
+    <div class="print-info">
+      <p>Dokumen ini dicetak secara elektronik melalui sistem Darsinurse Gateway</p>
+      <p>Dicetak pada: ${new Date().toLocaleString('id-ID')} WIB</p>
+      <p>© 2025 Rumah Sakit Islam Surabaya | Powered by Hint-Lab Team</p>
+    </div>
+  </div>
+</body>
+</html>
   `;
 }
 
