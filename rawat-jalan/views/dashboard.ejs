@@ -1252,7 +1252,15 @@
                 <!-- Waktu -->
                 <div class="mb-3">
                   <label class="form-label">Waktu Pemeriksaan</label>
-                  <input type="datetime-local" class="form-control" id="mcu-waktu" required>
+                  <input type="datetime-local" 
+                        class="form-control" 
+                        id="mcu-waktu" 
+                        required 
+                        readonly 
+                        style="background-color: #e9ecef; cursor: not-allowed;">
+                  <small class="text-muted">
+                    <i class="fas fa-clock"></i> Otomatis terisi dengan waktu sekarang
+                  </small>
                 </div>
 
                 <hr>
@@ -1769,6 +1777,10 @@
         }
       });
       
+      // ✅ TAMBAHKAN INI:
+      // Stop MCU time update
+      stopMCUTimeUpdate();
+      
       addLog('Kembali ke menu pilihan', 'info');
     }
 
@@ -2259,7 +2271,6 @@ document.addEventListener('DOMContentLoaded', function() {
         showKelolaKunjungan();
       } else if (action === 'mcu') {
         showMCU();
-        setTimeout(() => setMCUTime(), 100);
       } else if (action === 'print-mcu') {
         showPrintMCU();
       } else {
@@ -2790,12 +2801,46 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     });
 
-        // Set waktu default ke sekarang
-    function setMCUTime() {
-      const now = new Date();
-      const datetime = now.toISOString().slice(0, 16);
-      document.getElementById('mcu-waktu').value = datetime;
+
+
+    let mcuTimeInterval = null;
+
+    function startMCUTimeUpdate() {
+      // Clear interval sebelumnya jika ada
+      if (mcuTimeInterval) {
+        clearInterval(mcuTimeInterval);
+      }
+      
+      // Set waktu pertama kali
+      setMCUTime();
+      
+      // Update setiap 1 detik
+      mcuTimeInterval = setInterval(() => {
+        setMCUTime();
+      }, 1000);
     }
+
+    function stopMCUTimeUpdate() {
+      if (mcuTimeInterval) {
+        clearInterval(mcuTimeInterval);
+        mcuTimeInterval = null;
+      }
+    }
+   
+    // Set waktu default ke sekarang
+    function showMCU() {
+      document.getElementById('selection-menu').style.display = 'none';
+      document.querySelectorAll('.measurement-card, .kunjungan-card').forEach(card => {
+        card.classList.remove('active');
+      });
+      document.getElementById('card-mcu').classList.add('active');
+      
+      // Start auto-update waktu
+      startMCUTimeUpdate();
+      
+      addLog('Form MCU dibuka - waktu otomatis update', 'success');
+    }
+
     
     // Show MCU Form
     function showMCU() {

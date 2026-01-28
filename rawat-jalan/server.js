@@ -1256,64 +1256,91 @@ function generateMCUHTML(data) {
       position: relative;
     }
     
-    /* Header dengan Logo */
+    /* Header dengan Logo - IMPROVED */
     .header {
+      margin-bottom: 20px;
+    }
+
+    .header-top {
       display: flex;
       align-items: center;
-      border-bottom: 3px solid #00695c;
-      padding-bottom: 12px;
-      margin-bottom: 8px;
-      position: relative;
+      justify-content: space-between;
+      margin-bottom: 12px;
+      padding: 0 10px;
     }
-    
+
     .logo-rsi {
-      width: 75px;
-      height: 75px;
-      margin-right: 15px;
+      width: 95px;
+      height: 95px;
       object-fit: contain;
     }
-    
-    .header-info {
+
+    .header-center {
       flex: 1;
       text-align: center;
+      padding: 0 20px;
     }
-    
-    .header-info h1 {
-      font-size: 18pt;
+
+    .header-center h1 {
+      font-size: 20pt;
       font-weight: bold;
       color: #00695c;
-      margin-bottom: 3px;
+      margin-bottom: 5px;
       text-transform: uppercase;
-      letter-spacing: 1px;
+      letter-spacing: 1.5px;
     }
-    
-    .header-info p {
-      font-size: 9pt;
-      margin: 1px 0;
+
+    .header-center .subtitle {
+      font-size: 11pt;
+      color: #004d40;
+      font-weight: 600;
+      margin-bottom: 8px;
+      font-style: italic;
+    }
+
+    .header-center .address {
+      font-size: 10pt;
       color: #333;
+      margin: 2px 0;
+      line-height: 1.4;
     }
-    
-    .header-line {
-      border-bottom: 1px solid #00695c;
+
+    .header-center .contact {
+      font-size: 9pt;
+      color: #555;
       margin-top: 4px;
     }
-    
+
+    .logo-placeholder-right {
+      width: 95px;
+      height: 95px;
+      visibility: hidden; /* For symmetry */
+    }
+
+    .header-line {
+      border-bottom: 3px solid #00695c;
+      margin-bottom: 5px;
+    }
+
+    .header-line-thin {
+      border-bottom: 1px solid #00695c;
+    }    
     /* Judul Dokumen */
     .document-title {
       text-align: center;
-      margin: 15px 0;
-      padding: 8px;
+      margin: 20px 0 15px 0;
+      padding: 10px;
       background: linear-gradient(135deg, #00695c 0%, #004d40 100%);
       color: white;
       border-radius: 4px;
     }
-    
+
     .document-title h2 {
       font-size: 14pt;
       font-weight: bold;
-      letter-spacing: 1.5px;
+      letter-spacing: 2px;
     }
-    
+
     /* Pembuka Surat */
     .opening {
       text-align: justify;
@@ -1555,19 +1582,35 @@ function generateMCUHTML(data) {
   </button>
   
   <div class="container">
-    <!-- Header -->
+    <!-- Header with Logo Above Line -->
     <div class="header">
-      <img src="https://rsisurabaya.com/wp-content/uploads/2018/10/logo-web-rsi.png" 
-           alt="Logo RSI" class="logo-rsi" onerror="this.style.display='none'">
-      
-      <div class="header-info">
-        <h1>Rumah Sakit Islam Surabaya</h1>
-        <p>Jl. Jemursari No.51-57, Surabaya 60237</p>
-        <p>Telp: (031) 8284505 | Fax: (031) 8284506</p>
-        <p>Email: info@rsisurabaya.com | Website: www.rsisurabaya.com</p>
-        <div class="header-line"></div>
+      <div class="header-top">
+        <!-- Logo Kiri -->
+        <img src="https://rsisurabaya.com/wp-content/uploads/2018/10/logo-web-rsi.png" 
+            alt="Logo RSI" 
+            class="logo-rsi" 
+            onerror="this.style.display='none'">
+        
+        <!-- Info Tengah -->
+        <div class="header-center">
+          <h1>Rumah Sakit Islam Surabaya</h1>
+          <div class="subtitle">Ahmad Yani Islamic Hospital</div>
+          <div class="address">
+            Jl. Jemursari No.51-57, Surabaya 60237, Jawa Timur, Indonesia
+          </div>
+          <div class="contact">
+            Telp: (031) 8284505 | Fax: (031) 8284506 | Email: info@rsisurabaya.com | www.rsisurabaya.com
+          </div>
+        </div>
+        
+        <!-- Placeholder kanan untuk simetri (bisa diisi logo akreditasi) -->
+        <div class="logo-placeholder-right"></div>
       </div>
-    
+      
+      <!-- Garis Double -->
+      <div class="header-line"></div>
+      <div class="header-line-thin"></div>
+    </div>
     <!-- Judul Dokumen -->
     <div class="document-title">
       <h2>SURAT KETERANGAN MEDICAL CHECK UP</h2>
