@@ -2826,7 +2826,29 @@ document.addEventListener('DOMContentLoaded', function() {
         mcuTimeInterval = null;
       }
     }
-   
+
+    // ============================================
+    // MCU TIME FUNCTIONS
+    // ============================================
+
+    function setMCUTime() {
+      const now = new Date();
+      
+      // Format: YYYY-MM-DDTHH:mm
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      const hours = String(now.getHours()).padStart(2, '0');
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      
+      const formattedTime = `${year}-${month}-${day}T${hours}:${minutes}`;
+      
+      const mcuWaktuInput = document.getElementById('mcu-waktu');
+      if (mcuWaktuInput) {
+        mcuWaktuInput.value = formattedTime;
+      }
+    }
+
     // Set waktu default ke sekarang
     function showMCU() {
       document.getElementById('selection-menu').style.display = 'none';
@@ -2841,17 +2863,6 @@ document.addEventListener('DOMContentLoaded', function() {
       addLog('Form MCU dibuka - waktu otomatis update', 'success');
     }
 
-    
-    // Show MCU Form
-    function showMCU() {
-      document.getElementById('selection-menu').style.display = 'none';
-      document.querySelectorAll('.measurement-card, .kunjungan-card').forEach(card => {
-        card.classList.remove('active');
-      });
-      document.getElementById('card-mcu').classList.add('active');
-      setMCUTime();
-      addLog('Form MCU dibuka', 'success');
-    }
 
     // Show Print MCU
     async function showPrintMCU() {
