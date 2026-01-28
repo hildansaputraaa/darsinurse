@@ -654,11 +654,16 @@ app.post('/simpan_data', requireLogin, async (req, res) => {
   const idInt = parseInt(id_kunjungan);
   
   // ✅ Format EMR sebagai VARCHAR(11)
-  const emrStr = String(emr_no).padStart(11, '0');
+  // const emrStr = String(emr_no).padStart(11, '0');
 
-  if (isNaN(idInt) || !emrStr || !tipe_device || !data) {
-    return res.status(400).json({ error: 'Data tidak lengkap atau tidak valid' });
+  // if (isNaN(idInt) || !emrStr || !tipe_device || !data) {
+  //   return res.status(400).json({ error: 'Data tidak lengkap atau tidak valid' });
+  // }
+  const emrStr = String(emr_no);
+  if (!emrStr || emrStr.trim() === '') {
+    return res.status(400).json({ error: 'EMR tidak boleh kosong' });
   }
+
 
   let conn;
   try {
@@ -854,11 +859,10 @@ app.get('/api/vitals/kunjungan/:id_kunjungan', requireLogin, async (req, res) =>
 });
 
 app.get('/api/vitals/pasien/:emr', requireLogin, async (req, res) => {
-  const emrStr = String(req.params.emr);  // ✅ STRING
-
-  if (!emrStr || emrStr.length !== 11 || !/^\d{11}$/.test(emrStr)) {
-    return res.status(400).json({ error: 'EMR harus format 11 digit' });
-  }
+const emrStr = String(req.params.emr).trim();
+if (!emrStr) {
+  return res.status(400).json({ error: 'EMR tidak boleh kosong' });
+}
   
   try {
     const conn = await pool.getConnection();
@@ -893,6 +897,501 @@ app.get('/api/vitals/pasien/:emr', requireLogin, async (req, res) => {
     res.status(500).json({ error: 'Database error: ' + err.message });
   }
 });
+
+/* ============================================================
+   MCU (MEDICAL CHECK UP) ROUTES
+   ============================================================ */
+
+// POST /api/mcu/save - Simpan data MCU lengkap
+app.post('/api/mcu/save', requireLogin, async (req, res) => {
+  const { 
+    emr_no, id_kunjungan, waktu, heart_rate, respirasi, glukosa, 
+    berat_badan_kg, tinggi_badan_cm, bmi, sistolik, diastolik, 
+    kolesterol, asam_urat 
+  } = req.body;
+  
+  // ✅ Validasi EMR (terima angka bebas, tidak harus 11 digit)
+  const emrStr = String(emr_no).trim();
+  if (!emrStr) {
+    return res.status(400).json({ 
+      success: false, 
+      error: 'EMR tidak boleh kosong' 
+    });
+  }
+  
+  // ✅ Validasi ID Kunjungan
+  const idKunjunganInt = parseInt(id_kunjungan);
+  if (!id_kunjungan || isNaN(idKunjunganInt)) {
+    return res.status(400).json({ 
+      success: false, 
+      error: 'ID Kunjungan tidak valid' 
+    });
+  }
+  
+  let conn;
+  try {
+    conn = await pool.getConnection();
+    
+    // ✅ Verifikasi kunjungan exists
+    const [kunjunganCheck] = await conn.query(
+      'SELECT id_kunjungan FROM kunjungan WHERE id_kunjungan = ? AND emr_no = ?',
+      [idKunjunganInt, emrStr]
+    );
+    
+    if (kunjunganCheck.length === 0) {
+      conn.release();
+      return res.status(404).json({ 
+        success: false, 
+        error: 'Kunjungan tidak ditemukan atau EMR tidak sesuai' 
+      });
+    }
+    
+    // ✅ Insert data MCU ke tabel vitals
+    const [result] = await conn.query(`
+      INSERT INTO vitals (
+        emr_no, 
+        id_kunjungan,
+        waktu, 
+        heart_rate, 
+        respirasi, 
+        glukosa, 
+        berat_badan_kg, 
+        tinggi_badan_cm, 
+        bmi, 
+        sistolik, 
+        diastolik, 
+        kolesterol, 
+        asam_urat
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `, [
+      emrStr,
+      idKunjunganInt,
+      waktu || new Date(),
+      heart_rate ? parseInt(heart_rate) : null,
+      respirasi ? parseInt(respirasi) : null,
+      glukosa ? parseInt(glukosa) : null,
+      berat_badan_kg ? parseFloat(berat_badan_kg) : null,
+      tinggi_badan_cm ? parseInt(tinggi_badan_cm) : null,
+      bmi ? parseFloat(bmi) : null,
+      sistolik ? parseInt(sistolik) : null,
+      diastolik ? parseInt(diastolik) : null,
+      kolesterol ? parseInt(kolesterol) : null,
+      asam_urat ? parseFloat(asam_urat) : null
+    ]);
+    
+    conn.release();
+    
+    console.log(`✓ MCU data saved: ID ${result.insertId}, EMR ${emrStr}`);
+    
+    res.json({ 
+      success: true, 
+      id: result.insertId,
+      message: 'Data MCU berhasil disimpan'
+    });
+  } catch (err) {
+    if (conn) conn.release();
+    console.error('❌ MCU save error:', err.message);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Database error: ' + err.message 
+    });
+  }
+});
+
+// GET /api/mcu/patients - Dapatkan daftar pasien yang memiliki data MCU
+app.get('/api/mcu/patients', requireLogin, async (req, res) => {
+  let conn;
+  try {
+    conn = await pool.getConnection();
+    
+    const [patients] = await conn.query(`
+      SELECT DISTINCT p.* 
+      FROM pasien p 
+      INNER JOIN vitals v ON p.emr_no = v.emr_no
+      WHERE v.bmi IS NOT NULL 
+        OR v.kolesterol IS NOT NULL 
+        OR v.asam_urat IS NOT NULL
+      ORDER BY p.nama ASC
+    `);
+    
+    conn.release();
+    
+    res.json({ 
+      success: true, 
+      patients: patients 
+    });
+  } catch (err) {
+    if (conn) conn.release();
+    res.status(500).json({ 
+      success: false, 
+      error: err.message 
+    });
+  }
+});
+
+// GET /api/mcu/by-patient/:emr - Dapatkan semua data MCU untuk pasien tertentu
+app.get('/api/mcu/by-patient/:emr', requireLogin, async (req, res) => {
+  const emrStr = String(req.params.emr).trim();
+  
+  // ✅ Hanya validasi tidak boleh kosong (tidak ada validasi format)
+  if (!emrStr) {
+    return res.status(400).json({ 
+      success: false, 
+      error: 'EMR tidak boleh kosong' 
+    });
+  }
+  
+  let conn;
+  try {
+    conn = await pool.getConnection();
+    
+    const [data] = await conn.query(`
+      SELECT * FROM vitals 
+      WHERE emr_no = ? 
+        AND (bmi IS NOT NULL 
+          OR kolesterol IS NOT NULL 
+          OR asam_urat IS NOT NULL)
+      ORDER BY waktu DESC
+    `, [emrStr]);
+    
+    conn.release();
+    
+    res.json({ 
+      success: true, 
+      data: data 
+    });
+  } catch (err) {
+    if (conn) conn.release();
+    res.status(500).json({ 
+      success: false, 
+      error: err.message 
+    });
+  }
+});
+
+// GET /api/mcu/print/:id - Generate HTML untuk print MCU
+app.get('/api/mcu/print/:id', requireLogin, async (req, res) => {
+  const vitalId = parseInt(req.params.id);
+  
+  if (isNaN(vitalId)) {
+    return res.send('ID tidak valid');
+  }
+  
+  let conn;
+  try {
+    conn = await pool.getConnection();
+    
+    const [results] = await conn.query(`
+      SELECT 
+        v.*, 
+        p.nama, 
+        p.tanggal_lahir, 
+        p.jenis_kelamin, 
+        p.alamat, 
+        p.poli
+      FROM vitals v
+      INNER JOIN pasien p ON v.emr_no = p.emr_no
+      WHERE v.id = ?
+    `, [vitalId]);
+    
+    conn.release();
+    
+    if (results.length === 0) {
+      return res.send('Data tidak ditemukan');
+    }
+    
+    const data = results[0];
+    
+    // ✅ Generate HTML untuk print
+    const html = generateMCUHTML(data);
+    res.send(html);
+  } catch (err) {
+    res.send('Error: ' + err.message);
+  }
+});
+
+// ✅ Function untuk generate HTML MCU
+function generateMCUHTML(data) {
+  const birthDate = new Date(data.tanggal_lahir);
+  const today = new Date();
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const monthDiff = today.getMonth() - birthDate.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+    age--;
+  }
+  
+  const gender = data.jenis_kelamin === 'L' ? 'Laki-laki' : 'Perempuan';
+  
+  // ✅ Helper function untuk format tanggal
+  const formatDate = (dateStr) => {
+    if (!dateStr) return '-';
+    const d = new Date(dateStr);
+    return d.toLocaleDateString('id-ID', {
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric'
+    });
+  };
+  
+  const formatDateTime = (dateStr) => {
+    if (!dateStr) return '-';
+    const d = new Date(dateStr);
+    return d.toLocaleString('id-ID', {
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+  
+  return `
+    <!DOCTYPE html>
+    <html lang="id">
+    <head>
+      <meta charset="UTF-8">
+      <title>Surat Keterangan MCU - ${data.nama}</title>
+      <style>
+        @media print {
+          body { margin: 0; }
+          .no-print { display: none; }
+        }
+        
+        body { 
+          font-family: 'Arial', sans-serif;
+          padding: 30px;
+          max-width: 800px;
+          margin: 0 auto;
+          background: #fff;
+          color: #333;
+        }
+        
+        .header { 
+          text-align: center;
+          margin-bottom: 40px;
+          border-bottom: 3px solid #0056b3;
+          padding-bottom: 20px;
+        }
+        
+        .header h1 {
+          color: #0056b3;
+          margin: 10px 0;
+          font-size: 24px;
+          text-transform: uppercase;
+          letter-spacing: 1px;
+        }
+        
+        .header p {
+          margin: 5px 0;
+          color: #666;
+          font-size: 14px;
+        }
+        
+        .section-title {
+          background: #0056b3;
+          color: white;
+          padding: 10px 15px;
+          margin: 30px 0 15px 0;
+          font-weight: bold;
+          font-size: 16px;
+          border-radius: 4px;
+        }
+        
+        table { 
+          width: 100%;
+          border-collapse: collapse;
+          margin-bottom: 20px;
+        }
+        
+        td { 
+          padding: 10px 8px;
+          border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .label { 
+          font-weight: bold;
+          width: 220px;
+          color: #555;
+        }
+        
+        .value {
+          color: #000;
+        }
+        
+        .signature { 
+          margin-top: 60px;
+          text-align: right;
+        }
+        
+        .signature-box {
+          display: inline-block;
+          text-align: center;
+          min-width: 250px;
+        }
+        
+        .signature-line {
+          margin-top: 80px;
+          border-top: 2px solid #000;
+          padding-top: 5px;
+          font-weight: bold;
+        }
+        
+        .print-btn {
+          position: fixed;
+          top: 20px;
+          right: 20px;
+          padding: 12px 24px;
+          background: #0056b3;
+          color: white;
+          border: none;
+          border-radius: 5px;
+          cursor: pointer;
+          font-size: 14px;
+          font-weight: bold;
+          box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        
+        .print-btn:hover {
+          background: #003d7a;
+        }
+        
+        .normal-range {
+          color: #28a745;
+          font-size: 12px;
+          font-style: italic;
+        }
+        
+        .warning {
+          color: #dc3545;
+          font-weight: bold;
+        }
+      </style>
+    </head>
+    <body>
+      <button class="print-btn no-print" onclick="window.print()">
+        🖨️ Cetak
+      </button>
+      
+      <div class="header">
+        <h1>Surat Keterangan Medical Check Up</h1>
+        <p><strong>Rumah Sakit Islam</strong></p>
+        <p>Jl. Ahmad Yani No. 2-4, Surabaya 60231</p>
+        <p>Telp: (031) 8284505 | Email: rsi@surabaya.go.id</p>
+      </div>
+      
+      <div class="section-title">📋 Data Pasien</div>
+      <table>
+        <tr>
+          <td class="label">Nama</td>
+          <td class="value">: ${data.nama}</td>
+        </tr>
+        <tr>
+          <td class="label">Nomor EMR</td>
+          <td class="value">: ${data.emr_no}</td>
+        </tr>
+        <tr>
+          <td class="label">Tanggal Lahir</td>
+          <td class="value">: ${formatDate(data.tanggal_lahir)} <strong>(${age} tahun)</strong></td>
+        </tr>
+        <tr>
+          <td class="label">Jenis Kelamin</td>
+          <td class="value">: ${gender}</td>
+        </tr>
+        <tr>
+          <td class="label">Alamat</td>
+          <td class="value">: ${data.alamat || '-'}</td>
+        </tr>
+        <tr>
+          <td class="label">Poli</td>
+          <td class="value">: ${data.poli || '-'}</td>
+        </tr>
+      </table>
+      
+      <div class="section-title">🩺 Hasil Pemeriksaan</div>
+      <table>
+        <tr>
+          <td class="label">Tanggal Pemeriksaan</td>
+          <td class="value">: ${formatDateTime(data.waktu)}</td>
+        </tr>
+        <tr>
+          <td class="label">Tinggi Badan</td>
+          <td class="value">: ${data.tinggi_badan_cm || '-'} cm</td>
+        </tr>
+        <tr>
+          <td class="label">Berat Badan</td>
+          <td class="value">: ${data.berat_badan_kg || '-'} kg</td>
+        </tr>
+        <tr>
+          <td class="label">BMI (Body Mass Index)</td>
+          <td class="value">
+            : ${data.bmi || '-'} kg/m²
+            ${data.bmi ? `<br><span class="normal-range">Normal: 18.5 - 24.9</span>` : ''}
+          </td>
+        </tr>
+        <tr>
+          <td class="label">Tekanan Darah</td>
+          <td class="value">
+            : ${data.sistolik || '-'}/${data.diastolik || '-'} mmHg
+            ${data.sistolik ? `<br><span class="normal-range">Normal: 120/80 mmHg</span>` : ''}
+          </td>
+        </tr>
+        <tr>
+          <td class="label">Heart Rate</td>
+          <td class="value">
+            : ${data.heart_rate || '-'} bpm
+            ${data.heart_rate ? `<br><span class="normal-range">Normal: 60-100 bpm</span>` : ''}
+          </td>
+        </tr>
+        <tr>
+          <td class="label">Respirasi</td>
+          <td class="value">
+            : ${data.respirasi || '-'} per menit
+            ${data.respirasi ? `<br><span class="normal-range">Normal: 12-20 per menit</span>` : ''}
+          </td>
+        </tr>
+        <tr>
+          <td class="label">Glukosa Darah</td>
+          <td class="value">
+            : ${data.glukosa || '-'} mg/dL
+            ${data.glukosa ? `<br><span class="normal-range">Normal (puasa): 70-100 mg/dL</span>` : ''}
+          </td>
+        </tr>
+        <tr>
+          <td class="label">Kolesterol Total</td>
+          <td class="value">
+            : ${data.kolesterol || '-'} mg/dL
+            ${data.kolesterol ? `<br><span class="normal-range">Normal: < 200 mg/dL</span>` : ''}
+          </td>
+        </tr>
+        <tr>
+          <td class="label">Asam Urat</td>
+          <td class="value">
+            : ${data.asam_urat || '-'} mg/dL
+            ${data.asam_urat ? `<br><span class="normal-range">Normal (L): 3.4-7.0 | (P): 2.4-6.0 mg/dL</span>` : ''}
+          </td>
+        </tr>
+      </table>
+      
+      <div class="signature">
+        <div class="signature-box">
+          <p>Surabaya, ${formatDate(new Date())}</p>
+          <p><strong>Dokter Pemeriksa</strong></p>
+          <div class="signature-line">
+            ( _________________________ )
+          </div>
+        </div>
+      </div>
+      
+      <script>
+        // Auto print saat halaman dimuat (opsional)
+        // window.onload = function() {
+        //   setTimeout(function() { window.print(); }, 500);
+        // }
+      </script>
+    </body>
+    </html>
+  `;
+}
 
 /* ============================================================
    FALL DETECTION ROUTES
@@ -1241,13 +1740,39 @@ app.delete('/admin/api/users/:emr', requireAdmin, async (req, res) => {
 /* ============================================================
    PATIENT ROUTES
    ============================================================ */
-app.get('/validasi_pasien/:emr', requireLogin, async (req, res) => {
-  const emrStr = String(req.params.emr);  // ✅ Langsung STRING, jangan parseInt
+// app.get('/validasi_pasien/:emr', requireLogin, async (req, res) => {
+//   const emrStr = String(req.params.emr);  // ✅ Langsung STRING, jangan parseInt
   
-  if (!emrStr || emrStr.length !== 11 || !/^\d{11}$/.test(emrStr)) {
+//   if (!emrStr || emrStr.length !== 11 || !/^\d{11}$/.test(emrStr)) {
+//     return res.status(400).json({ 
+//       valid: false, 
+//       error: 'EMR harus format 11 digit (YYYYMMDDNNN)' 
+//     });
+//   }
+  
+//   try {
+//     const conn = await pool.getConnection();
+//     const [rows] = await conn.query(
+//       'SELECT * FROM pasien WHERE emr_no = ?',
+//       [emrStr]  // ✅ Query dengan STRING
+//     );
+//     conn.release();
+
+//     res.json({ valid: rows.length > 0, pasien: rows[0] || null });
+//   } catch (err) {
+//     res.status(500).json({ error: 'Database error: ' + err.message });
+//   }
+// });
+
+// SESUDAH (✅ PERBAIKAN):
+app.get('/validasi_pasien/:emr', requireLogin, async (req, res) => {
+  const emrStr = String(req.params.emr).trim();
+  
+  // ✅ Hanya validasi EMR tidak boleh kosong
+  if (!emrStr) {
     return res.status(400).json({ 
       valid: false, 
-      error: 'EMR harus format 11 digit (YYYYMMDDNNN)' 
+      error: 'EMR tidak boleh kosong' 
     });
   }
   
@@ -1255,7 +1780,7 @@ app.get('/validasi_pasien/:emr', requireLogin, async (req, res) => {
     const conn = await pool.getConnection();
     const [rows] = await conn.query(
       'SELECT * FROM pasien WHERE emr_no = ?',
-      [emrStr]  // ✅ Query dengan STRING
+      [emrStr]
     );
     conn.release();
 
@@ -1265,13 +1790,106 @@ app.get('/validasi_pasien/:emr', requireLogin, async (req, res) => {
   }
 });
 
-app.post('/api/patients/register', requireLogin, async (req, res) => {
-  const { nama, tanggal_lahir, jenis_kelamin, poli, alamat } = req.body;
+// app.post('/api/patients/register', requireLogin, async (req, res) => {
+//   const { nama, tanggal_lahir, jenis_kelamin, poli, alamat } = req.body;
   
-  if (!nama || !tanggal_lahir || !jenis_kelamin || !poli) {
+//   if (!nama || !tanggal_lahir || !jenis_kelamin || !poli) {
+//     return res.status(400).json({ 
+//       success: false,
+//       error: 'Nama, Tanggal Lahir, Jenis Kelamin, dan Poli harus diisi' 
+//     });
+//   }
+
+//   if (!['L', 'P'].includes(jenis_kelamin)) {
+//     return res.status(400).json({ 
+//       success: false,
+//       error: 'Jenis Kelamin harus L atau P' 
+//     });
+//   }
+
+//   let conn;
+//   try {
+//     conn = await pool.getConnection();
+    
+//     // ✅ Generate EMR dengan format YYYYMMDDNNN
+//     const today = new Date();
+//     const year = today.getFullYear();
+//     const month = String(today.getMonth() + 1).padStart(2, '0');
+//     const day = String(today.getDate()).padStart(2, '0');
+//     const datePrefix = `${year}${month}${day}`;  // Contoh: 20251225
+    
+//     // Cari EMR terbaru untuk hari ini
+//     const [lastEmrToday] = await conn.query(`
+//       SELECT emr_no 
+//       FROM pasien 
+//       WHERE emr_no LIKE ? 
+//       ORDER BY emr_no DESC 
+//       LIMIT 1
+//     `, [`${datePrefix}%`]);
+    
+//     // Tentukan nomor urut (NNN)
+//     let nextNumber = 1;
+//     if (lastEmrToday.length > 0) {
+//       const lastEmr = lastEmrToday[0].emr_no;
+//       const lastNumber = parseInt(lastEmr.substring(8));  // Ambil 3 digit terakhir
+//       nextNumber = lastNumber + 1;
+//     }
+    
+//     const numberStr = String(nextNumber).padStart(3, '0');
+//     const emrNo = `${datePrefix}${numberStr}`;  // Contoh: 20251225001
+    
+//     // Insert pasien dengan EMR yang sudah di-generate
+//     const [result] = await conn.query(
+//       'INSERT INTO pasien (emr_no, nama, tanggal_lahir, jenis_kelamin, poli, alamat) VALUES (?, ?, ?, ?, ?, ?)',
+//       [emrNo, nama, tanggal_lahir, jenis_kelamin, poli, alamat || '']
+//     );
+    
+//     conn.release();
+    
+//     console.log(`✓ Patient registered: EMR ${emrNo}, Name: ${nama}`);
+    
+//     res.json({ 
+//       success: true, 
+//       message: 'Pasien berhasil didaftarkan',
+//       emr_no: emrNo
+//     });
+//   } catch (err) {
+//     if (conn) conn.release();
+    
+//     console.error('❌ Register error:', err.message, err.code);
+    
+//     if (err.code === 'ER_DUP_ENTRY') {
+//       return res.status(400).json({ 
+//         success: false,
+//         error: 'EMR sudah terdaftar' 
+//       });
+//     }
+    
+//     res.status(500).json({ 
+//       success: false,
+//       error: 'Database error: ' + err.message 
+//     });
+//   }
+// });
+
+// SESUDAH (✅ PERBAIKAN):
+app.post('/api/patients/register', requireLogin, async (req, res) => {
+  const { emr_no, nama, tanggal_lahir, jenis_kelamin, poli, alamat } = req.body;
+  
+  // ✅ EMR wajib diisi dari frontend
+  if (!emr_no || !nama || !tanggal_lahir || !jenis_kelamin || !poli) {
     return res.status(400).json({ 
       success: false,
-      error: 'Nama, Tanggal Lahir, Jenis Kelamin, dan Poli harus diisi' 
+      error: 'EMR, Nama, Tanggal Lahir, Jenis Kelamin, dan Poli harus diisi' 
+    });
+  }
+
+  const emrStr = String(emr_no).trim();
+  
+  if (!emrStr) {
+    return res.status(400).json({ 
+      success: false,
+      error: 'EMR tidak boleh kosong' 
     });
   }
 
@@ -1286,47 +1904,20 @@ app.post('/api/patients/register', requireLogin, async (req, res) => {
   try {
     conn = await pool.getConnection();
     
-    // ✅ Generate EMR dengan format YYYYMMDDNNN
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = String(today.getMonth() + 1).padStart(2, '0');
-    const day = String(today.getDate()).padStart(2, '0');
-    const datePrefix = `${year}${month}${day}`;  // Contoh: 20251225
-    
-    // Cari EMR terbaru untuk hari ini
-    const [lastEmrToday] = await conn.query(`
-      SELECT emr_no 
-      FROM pasien 
-      WHERE emr_no LIKE ? 
-      ORDER BY emr_no DESC 
-      LIMIT 1
-    `, [`${datePrefix}%`]);
-    
-    // Tentukan nomor urut (NNN)
-    let nextNumber = 1;
-    if (lastEmrToday.length > 0) {
-      const lastEmr = lastEmrToday[0].emr_no;
-      const lastNumber = parseInt(lastEmr.substring(8));  // Ambil 3 digit terakhir
-      nextNumber = lastNumber + 1;
-    }
-    
-    const numberStr = String(nextNumber).padStart(3, '0');
-    const emrNo = `${datePrefix}${numberStr}`;  // Contoh: 20251225001
-    
-    // Insert pasien dengan EMR yang sudah di-generate
+    // ✅ Langsung insert dengan EMR yang diberikan user
     const [result] = await conn.query(
       'INSERT INTO pasien (emr_no, nama, tanggal_lahir, jenis_kelamin, poli, alamat) VALUES (?, ?, ?, ?, ?, ?)',
-      [emrNo, nama, tanggal_lahir, jenis_kelamin, poli, alamat || '']
+      [emrStr, nama, tanggal_lahir, jenis_kelamin, poli, alamat || '']
     );
     
     conn.release();
     
-    console.log(`✓ Patient registered: EMR ${emrNo}, Name: ${nama}`);
+    console.log(`✓ Patient registered: EMR ${emrStr}, Name: ${nama}`);
     
     res.json({ 
       success: true, 
       message: 'Pasien berhasil didaftarkan',
-      emr_no: emrNo
+      emr_no: emrStr
     });
   } catch (err) {
     if (conn) conn.release();
@@ -1384,11 +1975,10 @@ app.get('/api/patients/active', requireLogin, async (req, res) => {
 });
 
 app.get('/api/patients/:emr/info', requireLogin, async (req, res) => {
-  const emrStr = String(req.params.emr);  // ✅ STRING
-  
-  if (!emrStr || emrStr.length !== 11 || !/^\d{11}$/.test(emrStr)) {
-    return res.status(400).json({ error: 'EMR harus format 11 digit' });
-  }
+const emrStr = String(req.params.emr).trim();
+if (!emrStr) {
+  return res.status(400).json({ error: 'EMR tidak boleh kosong' });
+}
   
   try {
     const conn = await pool.getConnection();
@@ -1425,11 +2015,10 @@ app.get('/api/patients/:emr/info', requireLogin, async (req, res) => {
    VISIT ROUTES
    ============================================================ */
 app.get('/api/patients/:emr/visits', requireLogin, async (req, res) => {
-  const emrStr = String(req.params.emr);  // ✅ STRING
-
-  if (!emrStr || emrStr.length !== 11 || !/^\d{11}$/.test(emrStr)) {
-    return res.status(400).json({ error: 'EMR harus format 11 digit' });
-  }
+const emrStr = String(req.params.emr).trim();
+if (!emrStr) {
+  return res.status(400).json({ error: 'EMR tidak boleh kosong' });
+}
   
   try {
     const conn = await pool.getConnection();
@@ -1544,11 +2133,10 @@ app.put('/api/visits/:id_kunjungan/status', requireLogin, async (req, res) => {
 });
 
 app.get('/api/visits/by-patient/:emr', requireLogin, async (req, res) => {
-  const emrStr = String(req.params.emr);  // ✅ STRING
-  
-  if (!emrStr || emrStr.length !== 11 || !/^\d{11}$/.test(emrStr)) {
-    return res.status(400).json({ error: 'EMR harus format 11 digit' });
-  }
+  const emrStr = String(req.params.emr).trim();
+if (!emrStr) {
+  return res.status(400).json({ error: 'EMR tidak boleh kosong' });
+}
   
   try {
     const conn = await pool.getConnection();

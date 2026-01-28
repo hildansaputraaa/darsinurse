@@ -791,6 +791,25 @@
                 </div>
               </div>
             </div>
+            <div class="col-md-6 col-lg-3 mb-3">
+              <div class="card selection-card" data-action="mcu">
+                <div class="card-body">
+                  <i class="fas fa-notes-medical"></i>
+                  <h5>MCU</h5>
+                  <small class="text-muted">Medical Check Up</small>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-md-6 col-lg-3 mb-3">
+              <div class="card selection-card" data-action="print-mcu">
+                <div class="card-body">
+                  <i class="fas fa-print"></i>
+                  <h5>Print MCU</h5>
+                  <small class="text-muted">Cetak Hasil</small>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -852,7 +871,7 @@
               <form id="form-kunjungan">
                 <div class="mb-3">
                   <label class="form-label">EMR Pasien (Angka)</label>
-                  <input type="number" class="form-control" id="new-emr-pasien" placeholder="Contoh: 101" required>
+                  <input type="text" class="form-control" id="new-emr-pasien" placeholder="Contoh: 101" required>
                   <div id="kunjungan-patient-info"></div>
                 </div>
                 <div class="mb-3">
@@ -888,9 +907,15 @@
             </div>
             <div class="card-body">
               <div class="alert alert-info">
-                <i class="fas fa-info-circle"></i> EMR akan di-generate otomatis dengan format <strong>YYYYMMDDNNN</strong>
+                <!-- <i class="fas fa-info-circle"></i> EMR akan di-generate otomatis dengan format <strong>YYYYMMDDNNN</strong> -->
+                <i class="fas fa-info-circle"></i> Masukkan nomor EMR pasien
               </div>
               <form id="form-pasien-baru">
+                <div class="mb-3">
+                  <label class="form-label">EMR Pasien</label>
+                  <input type="text" class="form-control" id="pasien-baru-emr" placeholder="Contoh: 123" required>
+                  <small class="text-muted">Bisa angka apa saja</small>
+                </div>
                 <div class="mb-3">
                   <label class="form-label">Nama Lengkap</label>
                   <input type="text" class="form-control" id="pasien-baru-nama" placeholder="Nama lengkap pasien" required>
@@ -911,6 +936,7 @@
                   <label class="form-label">Poli</label>
                   <select class="form-control" id="pasien-baru-poli" required>
                     <option value="">-- Pilih Poli --</option>
+                    <option value="MCU">MCU</option>
                     <option value="Poli Umum">Poli Umum</option>
                     <option value="Poli Gigi">Poli Gigi</option>
                     <option value="Poli Anak">Poli Anak</option>
@@ -936,11 +962,7 @@
           </div>
         </div>
 
-        <!-- ============================================================
-            GANTI FORM GLUCOSE dengan kode ini (dan form lainnya serupa)
-            ============================================================ -->
-
-        <!-- GLUCOSE MEASUREMENT -->
+        <!-- GLUCOSE MEASUREMENT - VERSI MANUAL SEDERHANA -->
         <div id="card-glucose" class="measurement-card">
           <div class="card">
             <div class="card-header">
@@ -967,28 +989,24 @@
                   <small class="text-muted">Pilih kunjungan yang aktif</small>
                 </div>
 
-                <div class="mb-3">
-                  <label class="form-label">Keluhan Pasien</label>
-                  <textarea class="form-control" id="new-keluhan" rows="3"></textarea>
-                </div>
-
+                <!-- INPUT MANUAL GLUKOSA -->
                 <div class="mb-3">
                   <label class="form-label">Nilai Glukosa (mg/dL)</label>
-                  <div class="measurement-display">
-                    <small>Nilai Glukosa</small>
-                    <h3 id="glucose-value">-</h3>
-                    <small>mg/dL</small>
-                  </div>
+                  <input 
+                    type="number" 
+                    class="form-control" 
+                    id="glucose-input" 
+                    placeholder="Contoh: 95" 
+                    min="0" 
+                    max="600" 
+                    step="1" 
+                    required>
+                  <small class="text-muted">Masukkan nilai glukosa dalam satuan mg/dL</small>
                 </div>
+                
                 <div class="d-grid gap-2">
-                  <button type="button" class="btn btn-primary" id="btn-scan-glucose" disabled>
-                    <i class="fa-brands fa-bluetooth"></i> Scan Glukometer
-                  </button>
-                  <button type="submit" class="btn btn-success" id="btn-save-glucose" disabled>
+                  <button type="submit" class="btn btn-success">
                     <i class="fas fa-save"></i> Simpan Data Glukosa
-                  </button>
-                  <button type="button" class="btn btn-danger btn-sm" id="btn-stop-glucose" disabled>
-                    <i class="fas fa-stop"></i> Stop Koneksi
                   </button>
                   <button type="button" class="btn btn-back" data-back-menu>
                     <i class="fas fa-arrow-left"></i> Kembali ke Menu
@@ -1161,6 +1179,192 @@
             </div>
           </div>
         </div>
+
+        <!-- MCU FORM -->
+        <div id="card-mcu" class="measurement-card">
+          <div class="card">
+            <div class="card-header">
+              <i class="fas fa-notes-medical"></i> Medical Check Up (MCU)
+            </div>
+            <div class="card-body">
+              <form id="form-mcu">
+                <!-- Input EMR Pasien -->
+                <div class="mb-3">
+                  <label class="form-label">EMR Pasien</label>
+                  <input type="text" class="form-control" id="mcu-emr-pasien" placeholder="Masukkan EMR" required>
+                  <div id="mcu-patient-info"></div>
+                </div>
+
+                <!-- Pilih Kunjungan -->
+                <div class="mb-3">
+                  <label class="form-label">Pilih Kunjungan</label>
+                  <select class="form-control" id="mcu-id-kunjungan" required disabled>
+                    <option value="">-- Pilih kunjungan --</option>
+                  </select>
+                </div>
+
+                <!-- Waktu -->
+                <div class="mb-3">
+                  <label class="form-label">Waktu Pemeriksaan</label>
+                  <input type="datetime-local" class="form-control" id="mcu-waktu" required>
+                </div>
+
+                <hr>
+                <h6 class="mb-3"><i class="fas fa-heartbeat"></i> Vital Signs</h6>
+
+                <!-- Heart Rate -->
+                <div class="row mb-3">
+                  <div class="col-md-8">
+                    <label class="form-label">Heart Rate (bpm)</label>
+                    <input type="number" class="form-control" id="mcu-heart-rate" placeholder="Contoh: 75">
+                    <small id="mcu-hr-source" class="text-success" style="display:none;">
+                      <i class="fas fa-check-circle"></i> Data dari Bluetooth
+                    </small>
+                  </div>
+                  <div class="col-md-4 d-grid align-items-end">
+                    <button type="button" class="btn btn-primary btn-sm" id="btn-scan-mcu-hr">
+                      <i class="fa-brands fa-bluetooth"></i> Scan
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Respirasi -->
+                <div class="mb-3">
+                  <label class="form-label">Respirasi (per menit)</label>
+                  <input type="number" class="form-control" id="mcu-respirasi" placeholder="Contoh: 18" required>
+                </div>
+
+                <!-- Glukosa -->
+                <div class="row mb-3">
+                  <div class="col-md-8">
+                    <label class="form-label">Glukosa (mg/dL)</label>
+                    <input type="number" class="form-control" id="mcu-glucose" placeholder="Contoh: 95">
+                    <small id="mcu-glucose-source" class="text-success" style="display:none;">
+                      <i class="fas fa-check-circle"></i> Data dari Bluetooth
+                    </small>
+                  </div>
+                  <div class="col-md-4 d-grid align-items-end">
+                    <button type="button" class="btn btn-primary btn-sm" id="btn-scan-mcu-glucose">
+                      <i class="fa-brands fa-bluetooth"></i> Scan
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Berat Badan -->
+                <div class="row mb-3">
+                  <div class="col-md-8">
+                    <label class="form-label">Berat Badan (kg)</label>
+                    <input type="number" step="0.1" class="form-control" id="mcu-weight" placeholder="Contoh: 65">
+                    <small id="mcu-weight-source" class="text-success" style="display:none;">
+                      <i class="fas fa-check-circle"></i> Data dari Bluetooth
+                    </small>
+                  </div>
+                  <div class="col-md-4 d-grid align-items-end">
+                    <button type="button" class="btn btn-primary btn-sm" id="btn-scan-mcu-weight">
+                      <i class="fa-brands fa-bluetooth"></i> Scan
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Tinggi Badan -->
+                <div class="mb-3">
+                  <label class="form-label">Tinggi Badan (cm)</label>
+                  <input type="number" class="form-control" id="mcu-height" placeholder="Contoh: 170" required>
+                </div>
+
+                <!-- BMI (Auto Calculate) -->
+                <div class="mb-3">
+                  <label class="form-label">BMI (kg/m²)</label>
+                  <input type="text" class="form-control" id="mcu-bmi" disabled placeholder="Otomatis terhitung..." style="background-color: #e9ecef; font-weight: bold;">
+                </div>
+
+                <!-- Tekanan Darah -->
+                <div class="row mb-3">
+                  <div class="col-md-4">
+                    <label class="form-label">Sistolik (mmHg)</label>
+                    <input type="number" class="form-control" id="mcu-sistolik" placeholder="120">
+                    <small id="mcu-bp-source" class="text-success" style="display:none;">
+                      <i class="fas fa-check-circle"></i> Bluetooth
+                    </small>
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label">Diastolik (mmHg)</label>
+                    <input type="number" class="form-control" id="mcu-diastolik" placeholder="80">
+                  </div>
+                  <div class="col-md-4 d-grid align-items-end">
+                    <button type="button" class="btn btn-primary btn-sm" id="btn-scan-mcu-bp">
+                      <i class="fa-brands fa-bluetooth"></i> Scan
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Kolesterol -->
+                <div class="mb-3">
+                  <label class="form-label">Kolesterol (mg/dL)</label>
+                  <input type="number" class="form-control" id="mcu-cholesterol" placeholder="Contoh: 200" required>
+                </div>
+
+                <!-- Asam Urat -->
+                <div class="mb-3">
+                  <label class="form-label">Asam Urat (mg/dL)</label>
+                  <input type="number" step="0.1" class="form-control" id="mcu-asam-urat" placeholder="Contoh: 5.5" required>
+                </div>
+
+                <!-- Buttons -->
+                <div class="d-grid gap-2">
+                  <button type="submit" class="btn btn-success">
+                    <i class="fas fa-save"></i> Simpan Data MCU
+                  </button>
+                  <button type="button" class="btn btn-back" data-back-menu>
+                    <i class="fas fa-arrow-left"></i> Kembali ke Menu
+                  </button>
+                </div>
+                <div id="mcu-status" class="mt-3"></div>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <!-- PRINT MCU -->
+        <div id="card-print-mcu" class="measurement-card">
+          <div class="card">
+            <div class="card-header">
+              <i class="fas fa-print"></i> Cetak Hasil MCU
+            </div>
+            <div class="card-body">
+              <form id="form-print-mcu">
+                <div class="mb-3">
+                  <label class="form-label">Pilih EMR Pasien</label>
+                  <select class="form-control" id="print-mcu-emr" required>
+                    <option value="">-- Pilih Pasien --</option>
+                  </select>
+                </div>
+
+                <div class="mb-3">
+                  <label class="form-label">Pilih Data MCU</label>
+                  <select class="form-control" id="print-mcu-data" required disabled>
+                    <option value="">-- Pilih EMR terlebih dahulu --</option>
+                  </select>
+                </div>
+
+                <div id="print-mcu-preview" class="alert alert-info" style="display:none;">
+                  <strong>Preview Data:</strong>
+                  <div id="print-mcu-detail"></div>
+                </div>
+
+                <div class="d-grid gap-2">
+                  <button type="button" class="btn btn-primary" id="btn-print-mcu">
+                    <i class="fas fa-print"></i> Cetak Surat MCU
+                  </button>
+                  <button type="button" class="btn btn-back" data-back-menu>
+                    <i class="fas fa-arrow-left"></i> Kembali ke Menu
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+
       </div>
       <!-- KOLOM KANAN: LOG AKTIVITAS -->
       <div class="col-lg-4">
@@ -1628,7 +1832,7 @@
     function showFormPasienBaru(emr) {
       document.getElementById('card-kunjungan').classList.remove('active');
       document.getElementById('card-pasien-baru').classList.add('active');
-      document.getElementById('new-patient-emr-display').textContent = emr;
+      document.getElementById('pasien-baru-emr').value = emr; 
       addLog(`Form pendaftaran pasien baru dibuka untuk EMR: ${emr}`, 'info');
     }
 
@@ -1644,29 +1848,29 @@
       return mantissa * Math.pow(10, exp);
     }
 
-    function handleGlucose(event) {
-      try {
-        const value = event.target.value;
-        const bytes = new Uint8Array(value.buffer);
-        let glucoseValue = null;
+    // function handleGlucose(event) {
+    //   try {
+    //     const value = event.target.value;
+    //     const bytes = new Uint8Array(value.buffer);
+    //     let glucoseValue = null;
 
-        if (bytes.length >= 4) {
-          const glucoseBytes = [bytes[1], bytes[2], bytes[3]];
-          glucoseValue = parseSFLOAT(glucoseBytes);
-        }
+    //     if (bytes.length >= 4) {
+    //       const glucoseBytes = [bytes[1], bytes[2], bytes[3]];
+    //       glucoseValue = parseSFLOAT(glucoseBytes);
+    //     }
 
-        if (glucoseValue !== null) {
-          glucoseValue = Math.round(glucoseValue * 10) / 10;
-          measurementData.glucose = glucoseValue;
-          document.getElementById('glucose-value').textContent = glucoseValue.toFixed(0);
-          document.getElementById('btn-save-glucose').disabled = false;
-          addLog(`Glukosa terukur: ${glucoseValue} mg/dL`, 'success');
-          showStatus('glucose', `✓ Glukosa terukur: ${glucoseValue} mg/dL`, 'success');
-        }
-      } catch (err) {
-        addLog(`Error parsing glukosa: ${err.message}`, 'error');
-      }
-    }
+    //     if (glucoseValue !== null) {
+    //       glucoseValue = Math.round(glucoseValue * 10) / 10;
+    //       measurementData.glucose = glucoseValue;
+    //       document.getElementById('glucose-value').textContent = glucoseValue.toFixed(0);
+    //       document.getElementById('btn-save-glucose').disabled = false;
+    //       addLog(`Glukosa terukur: ${glucoseValue} mg/dL`, 'success');
+    //       showStatus('glucose', `✓ Glukosa terukur: ${glucoseValue} mg/dL`, 'success');
+    //     }
+    //   } catch (err) {
+    //     addLog(`Error parsing glukosa: ${err.message}`, 'error');
+    //   }
+    // }
 
     function handleBP(event) {
       try {
@@ -1879,7 +2083,9 @@
     function setupDropdowns(type) {
       const patientSelect = document.getElementById(`${type}-emr-pasien`);
       const visitSelect = document.getElementById(`${type}-id-kunjungan`);
-      const scanBtn = document.getElementById(`btn-scan-${type}`);
+      const scanBtn = type === 'glucose' 
+        ? null 
+        : document.getElementById(`btn-scan-${type}`);
       
       patientSelect.addEventListener('change', async function() {
         const emr = String(this.value);  // ✅ Gunakan STRING
@@ -1981,6 +2187,10 @@ document.addEventListener('DOMContentLoaded', function() {
         showKunjungan();
       } else if (action === 'kelola-kunjungan') {
         showKelolaKunjungan();
+      } else if (action === 'mcu') {
+        showMCU();
+      } else if (action === 'print-mcu') {
+        showPrintMCU();
       } else {
         showMeasurement(action);
       }
@@ -2002,10 +2212,6 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 
   // ============ 5. SCAN BUTTONS ============
-  document.getElementById('btn-scan-glucose')?.addEventListener('click', () => {
-    scanBLE('glucose', GLUCOSE_SERVICE, GLUCOSE_MEASUREMENT_CHAR, handleGlucose);
-  });
-  
   document.getElementById('btn-scan-bp')?.addEventListener('click', () => {
     scanBLE('bp', BLOOD_PRESSURE_SERVICE, BP_MEASUREMENT_CHAR, handleBP);
   });
@@ -2019,7 +2225,7 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 
   // ============ 6. STOP BUTTONS ============
-  ['glucose', 'bp', 'hr', 'weight'].forEach(type => {
+  ['bp', 'hr', 'weight'].forEach(type => {
     document.getElementById(`btn-stop-${type}`)?.addEventListener('click', () => {
       stopConnection(type);
     });
@@ -2030,7 +2236,10 @@ document.addEventListener('DOMContentLoaded', function() {
   if (formGlucose) {
     formGlucose.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const value = measurementData.glucose;
+      
+      // ✅ UBAH: Ambil dari input, bukan dari measurementData
+      const glucoseInput = document.getElementById('glucose-input');
+      const value = parseFloat(glucoseInput.value);
       const emrPasien = currentPatients.glucose;
       const idKunjungan = currentVisits.glucose;
 
@@ -2040,9 +2249,7 @@ document.addEventListener('DOMContentLoaded', function() {
           alert('✓ Data Glukosa berhasil disimpan!');
           setTimeout(() => {
             backToMenu();
-            document.getElementById('glucose-value').textContent = '-';
-            document.getElementById('btn-save-glucose').disabled = true;
-            stopConnection('glucose');
+            formGlucose.reset(); // Reset form
           }, 500);
         }
       } else {
@@ -2204,14 +2411,20 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Auto-validate patient saat blur
+    // document.getElementById('new-emr-pasien').addEventListener('blur', async function() {
+    //   const emr = this.value.trim();
+    //   if (emr) {
+    //     if (!/^\d{11}$/.test(emr)) {
+    //       document.getElementById('kunjungan-patient-info').innerHTML = 
+    //         `<div class="alert alert-danger mt-2">✗ EMR harus format 11 digit (YYYYMMDDNNN)</div>`;
+    //       return;
+    //     }
+    //     await validatePatient(emr, 'kunjungan');
+    //   }
     document.getElementById('new-emr-pasien').addEventListener('blur', async function() {
       const emr = this.value.trim();
       if (emr) {
-        if (!/^\d{11}$/.test(emr)) {
-          document.getElementById('kunjungan-patient-info').innerHTML = 
-            `<div class="alert alert-danger mt-2">✗ EMR harus format 11 digit (YYYYMMDDNNN)</div>`;
-          return;
-        }
+        // ✅ HAPUS validasi format 11 digit
         await validatePatient(emr, 'kunjungan');
       }
     });
@@ -2224,13 +2437,14 @@ document.addEventListener('DOMContentLoaded', function() {
   if (formPasienBaru) {
     formPasienBaru.addEventListener('submit', async (e) => {
       e.preventDefault();
+      const emr = document.getElementById('pasien-baru-emr').value.trim();
       const nama = document.getElementById('pasien-baru-nama').value.trim();
       const tglLahir = document.getElementById('pasien-baru-tgl-lahir').value;
       const jk = document.getElementById('pasien-baru-jk').value;
       const poli = document.getElementById('pasien-baru-poli').value;
       const alamat = document.getElementById('pasien-baru-alamat').value.trim();
       
-      if (!nama || !tglLahir || !jk || !poli) {
+      if (!emr || !nama || !tglLahir || !jk || !poli) {
         showStatus('pasien-baru', '✗ Semua field wajib harus diisi', 'danger');
         return;
       }
@@ -2241,6 +2455,7 @@ document.addEventListener('DOMContentLoaded', function() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
+            emr_no: emr,
             nama: nama,
             tanggal_lahir: tglLahir,
             jenis_kelamin: jk,
@@ -2404,6 +2619,174 @@ document.addEventListener('DOMContentLoaded', function() {
       
       addLog('Menu Kelola Kunjungan dibuka', 'success');
     }
+
+    // ============================================
+    // MCU HANDLERS
+    // ============================================
+
+    // Auto-search pasien saat input EMR
+    document.getElementById('mcu-emr-pasien')?.addEventListener('input', async function() {
+      const emr = this.value.trim();
+      if (emr.length >= 3) {
+        await displayPatientInfo(emr, 'mcu');
+        await loadVisitsByPatient(emr, 'mcu');
+      }
+    });
+
+    // Auto-calculate BMI
+    function calculateMCUBMI() {
+      const weight = parseFloat(document.getElementById('mcu-weight').value);
+      const height = parseFloat(document.getElementById('mcu-height').value);
+      
+      if (weight > 0 && height > 0) {
+        const heightM = height / 100;
+        const bmi = (weight / (heightM * heightM)).toFixed(1);
+        document.getElementById('mcu-bmi').value = bmi;
+      }
+    }
+
+    document.getElementById('mcu-weight')?.addEventListener('input', calculateMCUBMI);
+    document.getElementById('mcu-height')?.addEventListener('input', calculateMCUBMI);
+
+    // Set waktu default ke sekarang
+    function setMCUTime() {
+      const now = new Date();
+      const datetime = now.toISOString().slice(0, 16);
+      document.getElementById('mcu-waktu').value = datetime;
+    }
+
+    // Form MCU Submit
+    document.getElementById('form-mcu')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const data = {
+        emr_no: document.getElementById('mcu-emr-pasien').value.trim(),
+        id_kunjungan: document.getElementById('mcu-id-kunjungan').value,
+        waktu: document.getElementById('mcu-waktu').value,
+        heart_rate: document.getElementById('mcu-heart-rate').value,
+        respirasi: document.getElementById('mcu-respirasi').value,
+        glukosa: document.getElementById('mcu-glucose').value,
+        berat_badan_kg: document.getElementById('mcu-weight').value,
+        tinggi_badan_cm: document.getElementById('mcu-height').value,
+        bmi: document.getElementById('mcu-bmi').value,
+        sistolik: document.getElementById('mcu-sistolik').value,
+        diastolik: document.getElementById('mcu-diastolik').value,
+        kolesterol: document.getElementById('mcu-cholesterol').value,
+        asam_urat: document.getElementById('mcu-asam-urat').value
+      };
+      
+      try {
+        showStatus('mcu', '⏳ Menyimpan data MCU...', 'info');
+        const response = await fetch('/api/mcu/save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+          alert('✓ Data MCU berhasil disimpan!');
+          showStatus('mcu', `✓ Data MCU berhasil disimpan! ID: ${result.id}`, 'success');
+          addLog(`MCU saved for EMR ${data.emr_no}`, 'success');
+          setTimeout(() => {
+            backToMenu();
+            document.getElementById('form-mcu').reset();
+          }, 1500);
+        } else {
+          showStatus('mcu', `✗ Error: ${result.error}`, 'danger');
+        }
+      } catch (err) {
+        showStatus('mcu', `✗ Network Error: ${err.message}`, 'danger');
+      }
+    });
+
+    // Show MCU Form
+    function showMCU() {
+      document.getElementById('selection-menu').style.display = 'none';
+      document.querySelectorAll('.measurement-card, .kunjungan-card').forEach(card => {
+        card.classList.remove('active');
+      });
+      document.getElementById('card-mcu').classList.add('active');
+      setMCUTime();
+      addLog('Form MCU dibuka', 'success');
+    }
+
+    // Show Print MCU
+    async function showPrintMCU() {
+      document.getElementById('selection-menu').style.display = 'none';
+      document.querySelectorAll('.measurement-card, .kunjungan-card').forEach(card => {
+        card.classList.remove('active');
+      });
+      document.getElementById('card-print-mcu').classList.add('active');
+      
+      // Load pasien dengan data MCU
+      await loadPatientsWithMCU();
+      addLog('Form Print MCU dibuka', 'success');
+    }
+
+    async function loadPatientsWithMCU() {
+      try {
+        const response = await fetch('/api/mcu/patients');
+        const result = await response.json();
+        
+        if (result.success) {
+          const select = document.getElementById('print-mcu-emr');
+          select.innerHTML = '<option value="">-- Pilih Pasien --</option>';
+          
+          result.patients.forEach(patient => {
+            const option = document.createElement('option');
+            option.value = patient.emr_no;
+            option.textContent = `${patient.nama} (EMR: ${patient.emr_no})`;
+            select.appendChild(option);
+          });
+        }
+      } catch (err) {
+        addLog(`Error loading MCU patients: ${err.message}`, 'error');
+      }
+    }
+
+    // Load MCU data by EMR
+    document.getElementById('print-mcu-emr')?.addEventListener('change', async function() {
+      const emr = this.value;
+      if (!emr) return;
+      
+      try {
+        const response = await fetch(`/api/mcu/by-patient/${emr}`);
+        const result = await response.json();
+        
+        const select = document.getElementById('print-mcu-data');
+        select.innerHTML = '<option value="">-- Pilih Data MCU --</option>';
+        
+        if (result.success && result.data.length > 0) {
+          result.data.forEach(mcu => {
+            const date = new Date(mcu.waktu);
+            const dateStr = date.toLocaleDateString('id-ID');
+            const option = document.createElement('option');
+            option.value = mcu.id;
+            option.textContent = `MCU ${dateStr} - BMI: ${mcu.bmi}`;
+            select.appendChild(option);
+          });
+          select.disabled = false;
+        } else {
+          select.innerHTML = '<option value="">-- Tidak ada data MCU --</option>';
+        }
+      } catch (err) {
+        addLog(`Error loading MCU data: ${err.message}`, 'error');
+      }
+    });
+
+    // Print MCU button
+    document.getElementById('btn-print-mcu')?.addEventListener('click', function() {
+      const mcuId = document.getElementById('print-mcu-data').value;
+      if (!mcuId) {
+        alert('Pilih data MCU terlebih dahulu!');
+        return;
+      }
+      
+      // Open print window
+      window.open(`/api/mcu/print/${mcuId}`, '_blank');
+      addLog(`Printing MCU ID: ${mcuId}`, 'success');
+    });
   </script>
 </body>
 </html>
