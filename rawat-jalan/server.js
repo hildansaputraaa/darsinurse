@@ -1298,33 +1298,6 @@ function generateMCUHTML(data) {
       margin-top: 4px;
     }
     
-    /* Logo Sponsor di Pojok Kanan Atas */
-    .sponsors {
-      position: absolute;
-      top: -5px;
-      right: 0;
-      display: flex;
-      gap: 6px;
-      flex-wrap: wrap;
-      max-width: 220px;
-      justify-content: flex-end;
-    }
-    
-    .sponsor-logo {
-      width: 42px;
-      height: 42px;
-      object-fit: contain;
-      opacity: 0.85;
-    }
-    
-    /* Nomor Surat */
-    .letter-number {
-      text-align: center;
-      margin: 10px 0;
-      font-size: 10pt;
-      font-weight: bold;
-    }
-    
     /* Judul Dokumen */
     .document-title {
       text-align: center;
@@ -1594,24 +1567,6 @@ function generateMCUHTML(data) {
         <p>Email: info@rsisurabaya.com | Website: www.rsisurabaya.com</p>
         <div class="header-line"></div>
       </div>
-      
-      <!-- Logo Sponsor Pojok Kanan -->
-      <div class="sponsors">
-        <img src="https://logo.uajy.ac.id/wp-content/uploads/2025/05/Logo-Tersier-Diktisaintek-Berdampak-1.png" 
-             alt="Diktisaintek" class="sponsor-logo" onerror="this.style.display='none'">
-        <img src="https://ksti2025.kemdiktisaintek.go.id/assets/images/hiliriset.jpg" 
-             alt="Hiliriset" class="sponsor-logo" onerror="this.style.display='none'">
-        <img src="https://unesa.ac.id/images/gallery/3/507c4e3879ed77a3e14d0937a73b149e.jpg" 
-             alt="Unesa" class="sponsor-logo" onerror="this.style.display='none'">
-        <img src="https://upload.wikimedia.org/wikipedia/id/4/44/Logo_PENS.png" 
-             alt="PENS" class="sponsor-logo" onerror="this.style.display='none'">
-      </div>
-    </div>
-    
-    <!-- Nomor Surat -->
-    <div class="letter-number">
-      No: ${String(data.id).padStart(4, '0')}/MCU/RSI-SBY/${new Date().getFullYear()}
-    </div>
     
     <!-- Judul Dokumen -->
     <div class="document-title">
@@ -1682,7 +1637,7 @@ function generateMCUHTML(data) {
         <tbody>
           <!-- Vital Signs -->
           <tr>
-            <td colspan="4" class="category-header">💓 PEMERIKSAAN VITAL SIGNS</td>
+            <td colspan="4" class="category-header">PEMERIKSAAN VITAL SIGNS</td>
           </tr>
           <tr>
             <td class="param-name">Heart Rate (Detak Jantung)</td>
@@ -1693,8 +1648,8 @@ function generateMCUHTML(data) {
           <tr>
             <td class="param-name">Respiratory Rate (Pernapasan)</td>
             <td class="result-value ${getStatusClass(data.respirasi, 12, 20)}">${data.respirasi || '-'}</td>
-            <td class="unit">x/menit</td>
-            <td class="normal-range">12 - 20 x/menit</td>
+            <td class="unit">breaths/minutes</td>
+            <td class="normal-range">12 - 20 breaths/minutes</td>
           </tr>
           <tr>
             <td class="param-name">Tekanan Darah Sistolik</td>
@@ -1711,7 +1666,7 @@ function generateMCUHTML(data) {
           
           <!-- Antropometri -->
           <tr>
-            <td colspan="4" class="category-header">📏 PEMERIKSAAN ANTROPOMETRI</td>
+            <td colspan="4" class="category-header">PEMERIKSAAN ANTROPOMETRI</td>
           </tr>
           <tr>
             <td class="param-name">Berat Badan</td>
@@ -1734,7 +1689,7 @@ function generateMCUHTML(data) {
           
           <!-- Lab -->
           <tr>
-            <td colspan="4" class="category-header">🧪 PEMERIKSAAN LABORATORIUM</td>
+            <td colspan="4" class="category-header">PEMERIKSAAN LABORATORIUM</td>
           </tr>
           <tr>
             <td class="param-name">Glukosa Darah Sewaktu</td>
