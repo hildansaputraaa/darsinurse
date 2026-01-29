@@ -1325,6 +1325,244 @@ app.get('/api/mcu/by-patient/:emr', requireLogin, async (req, res) => {
   }
 });
 
+// ============================================
+// ✅ PUBLIC API - GET DATA BY NOMOR LAYANAN
+// ============================================
+app.post('/api/external/get-layanan', async (req, res) => {
+  const { no_layanan, api_key } = req.body;
+  
+  // Optional: Validasi API Key jika ada
+  const EXTERNAL_API_KEY = process.env.EXTERNAL_API_KEY || 'darsinurse-default-key';
+  
+  if (!no_layanan) {
+    return res.status(400).json({
+      success: false,
+      error: 'Nomor layanan harus diisi',
+      timestamp: new Date().toISOString()
+    });
+  }
+  
+  // Jika ada API_KEY requirement, uncomment baris di bawah
+  // if (api_key !== EXTERNAL_API_KEY) {
+  //   return res.status(401).json({
+  //     success: false,
+  //     error: 'API Key tidak valid'
+  //   });
+  // }
+  
+  let conn;
+  try {
+    conn = await pool.getConnection();
+    
+    // ✅ Query: Cari kunjungan berdasarkan nomor layanan
+    // Nomor layanan disimpan di table kunjungan (kolom nomor_layanan/id_kunjungan)
+    const [kunjunganResults] = await conn.query(`
+      SELECT 
+        k.id_kunjungan,
+        k.emr_no,
+        k.emr_perawat,
+        k.tanggal_kunjungan,
+        k.keluhan,
+        k.status,
+        p.nama AS nama_pasien,
+        p.tanggal_lahir,
+        p.jenis_kelamin,
+        p.poli,
+        p.alamat,
+        pr.nama AS nama_perawat
+      FROM kunjungan k
+      LEFT JOIN pasien p ON k.emr_no = p.emr_no
+      LEFT JOIN perawat pr ON k.emr_perawat = pr.emr_perawat
+      WHERE k.id_kunjungan = ? OR CAST(k.id_kunjungan AS CHAR) = ?
+      LIMIT 1
+    `, [parseInt(no_layanan) || 0, String(no_layanan)]);
+    
+    if (kunjunganResults.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Data layanan tidak ditemukan',
+        no_layanan: no_layanan,
+        timestamp: new Date().toISOString()
+      });
+    }
+    
+    const kunjungan = kunjunganResults[0];
+    
+    // ✅ Query: Ambil semua measurement/vital data untuk kunjungan ini
+    const [vitalsResults] = await conn.query(`
+      SELECT *
+      FROM vitals
+      WHERE id_kunjungan = ?
+      ORDER BY waktu DESC
+    `, [kunjungan.id_kunjungan]);
+    
+    // ✅ Query: Ambil data measurement lainnya (glukosa, bp, etc)
+    const [measurementResults] = await conn.query(`
+      SELECT *
+      FROM measurement_data
+      WHERE id_kunjungan = ?
+      ORDER BY waktu DESC
+    `, [kunjungan.id_kunjungan]);
+    
+    conn.release();
+    
+    // ✅ Format response
+    const age = new Date().getFullYear() - new Date(kunjungan.tanggal_lahir).getFullYear();
+    const latestVital = vitalsResults.length > 0 ? vitalsResults[0] : null;
+    
+    res.json({
+      success: true,
+      timestamp: new Date().toISOString(),
+      data: {
+        // Data Layanan/Kunjungan
+        layanan: {
+          id_kunjungan: kunjungan.id_kunjungan,
+          no_layanan: kunjungan.id_kunjungan,
+          tanggal_kunjungan: kunjungan.tanggal_kunjungan,
+          keluhan: kunjungan.keluhan,
+          status: kunjungan.status
+        },
+        
+        // Data Pasien
+        pasien: {
+          emr_no: kunjungan.emr_no,
+          nama: kunjungan.nama_pasien,
+          tanggal_lahir: kunjungan.tanggal_lahir,
+          umur: age,
+          jenis_kelamin: kunjungan.jenis_kelamin,
+          poli: kunjungan.poli,
+          alamat: kunjungan.alamat
+        },
+        
+        // Data Perawat
+        perawat: {
+          emr_perawat: kunjungan.emr_perawat,
+          nama: kunjungan.nama_perawat
+        },
+        
+        // Data Vital Signs (Latest)
+        vital_terbaru: latestVital ? {
+          waktu: latestVital.waktu,
+          heart_rate: latestVital.heart_rate,
+          sistolik: latestVital.sistolik,
+          diastolik: latestVital.diastolik,
+          respirasi: latestVital.respirasi,
+          glukosa: latestVital.glukosa,
+          berat_badan_kg: latestVital.berat_badan_kg,
+          tinggi_badan_cm: latestVital.tinggi_badan_cm,
+          bmi: latestVital.bmi
+        } : null,
+        
+        // Riwayat Vital Signs
+        riwayat_vitals: vitalsResults,
+        
+        // Measurement data lainnya
+        measurement_data: measurementResults
+      },
+      meta: {
+        total_vitals: vitalsResults.length,
+        total_measurements: measurementResults.length
+      }
+    });
+    
+  } catch (err) {
+    console.error('❌ External API Error:', err.message);
+    
+    if (conn) conn.release();
+    
+    res.status(500).json({
+      success: false,
+      error: 'Gagal mengambil data: ' + err.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// ============================================
+// ✅ ALTERNATIVE: GET DATA BY EMR (Nomor Rekam Medis)
+// ============================================
+app.post('/api/external/get-by-emr', async (req, res) => {
+  const { emr_no, api_key } = req.body;
+  
+  if (!emr_no) {
+    return res.status(400).json({
+      success: false,
+      error: 'EMR (nomor rekam medis) harus diisi',
+      timestamp: new Date().toISOString()
+    });
+  }
+  
+  let conn;
+  try {
+    conn = await pool.getConnection();
+    
+    // ✅ Query: Ambil data pasien
+    const [pasienResults] = await conn.query(`
+      SELECT * FROM pasien WHERE emr_no = ?
+    `, [String(emr_no)]);
+    
+    if (pasienResults.length === 0) {
+      conn.release();
+      return res.status(404).json({
+        success: false,
+        error: 'Pasien tidak ditemukan',
+        emr_no: emr_no,
+        timestamp: new Date().toISOString()
+      });
+    }
+    
+    const pasien = pasienResults[0];
+    
+    // ✅ Query: Ambil semua kunjungan pasien
+    const [kunjunganResults] = await conn.query(`
+      SELECT * FROM kunjungan WHERE emr_no = ? ORDER BY tanggal_kunjungan DESC
+    `, [String(emr_no)]);
+    
+    // ✅ Query: Ambil semua vital data pasien
+    const [vitalsResults] = await conn.query(`
+      SELECT * FROM vitals WHERE emr_no = ? ORDER BY waktu DESC
+    `, [String(emr_no)]);
+    
+    conn.release();
+    
+    const age = new Date().getFullYear() - new Date(pasien.tanggal_lahir).getFullYear();
+    
+    res.json({
+      success: true,
+      timestamp: new Date().toISOString(),
+      data: {
+        pasien: {
+          emr_no: pasien.emr_no,
+          nama: pasien.nama,
+          tanggal_lahir: pasien.tanggal_lahir,
+          umur: age,
+          jenis_kelamin: pasien.jenis_kelamin,
+          poli: pasien.poli,
+          alamat: pasien.alamat,
+          created_at: pasien.created_at
+        },
+        kunjungan: kunjunganResults,
+        riwayat_vitals: vitalsResults
+      },
+      meta: {
+        total_kunjungan: kunjunganResults.length,
+        total_vitals: vitalsResults.length
+      }
+    });
+    
+  } catch (err) {
+    console.error('❌ External API Error:', err.message);
+    
+    if (conn) conn.release();
+    
+    res.status(500).json({
+      success: false,
+      error: 'Gagal mengambil data: ' + err.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
 // GET /api/mcu/print/:id - Generate HTML untuk print MCU
 app.get('/api/mcu/print/:id', requireLogin, async (req, res) => {
   const vitalId = parseInt(req.params.id);
@@ -1604,6 +1842,13 @@ function generateMCUHTML(data) {
       font-size: 9.5pt;
     }
     
+    .results-table .reference {
+      text-align: center;
+      color: #666;
+      font-size: 8.5pt;
+      font-style: italic;
+    }
+    
     .results-table tbody tr:nth-child(even) {
       background: #f9f9f9;
     }
@@ -1785,80 +2030,92 @@ function generateMCUHTML(data) {
       <table class="results-table">
         <thead>
           <tr>
-            <th style="width: 50%;">Parameter Pemeriksaan</th>
-            <th style="width: 25%;">Hasil</th>
-            <th style="width: 25%;">Satuan</th>
+            <th style="width: 40%;">Parameter Pemeriksaan</th>
+            <th style="width: 20%;">Hasil</th>
+            <th style="width: 15%;">Satuan</th>
+            <th style="width: 25%;">Nilai Normal/Referensi</th>
           </tr>
         </thead>
         <tbody>
           <!-- Antropometri -->
           <tr>
-            <td colspan="3" class="category-header">ANTROPOMETRI</td>
+            <td colspan="4" class="category-header">ANTROPOMETRI</td>
           </tr>
           <tr>
             <td class="param-name">Tinggi Badan</td>
             <td class="result-value">${data.tinggi_badan_cm || '-'}</td>
             <td class="unit">cm</td>
+            <td class="reference">-</td>
           </tr>
           <tr>
             <td class="param-name">Berat Badan</td>
             <td class="result-value">${data.berat_badan_kg || '-'}</td>
             <td class="unit">kg</td>
+            <td class="reference">-</td>
           </tr>
           <tr>
-            <td class="param-name">Body Mass Index (BMI)</td>
+            <td class="param-name">IMT (indeks massa tubuh)</td>
             <td class="result-value">${data.bmi || '-'}</td>
             <td class="unit">kg/m²</td>
+            <td class="reference">18,5 - 24,9</td>
           </tr>
           
           <!-- Vital Signs -->
           <tr>
-            <td colspan="3" class="category-header">VITAL SIGNS</td>
+            <td colspan="4" class="category-header">VITAL SIGNS</td>
           </tr>
           <tr>
             <td class="param-name">Tekanan Darah</td>
             <td class="result-value">${data.sistolik || '-'}/${data.diastolik || '-'}</td>
             <td class="unit">mmHg</td>
+            <td class="reference">&lt;120/&lt;80</td>
           </tr>
           <tr>
             <td class="param-name">Heart Rate</td>
             <td class="result-value">${data.heart_rate || '-'}</td>
             <td class="unit">bpm</td>
+            <td class="reference">60-100</td>
           </tr>
           <tr>
             <td class="param-name">Respiratory Rate</td>
             <td class="result-value">${data.respirasi || '-'}</td>
             <td class="unit">per menit</td>
+            <td class="reference">12-20</td>
           </tr>
           <tr>
             <td class="param-name">Suhu Tubuh</td>
             <td class="result-value">${data.suhu || '-'}</td>
             <td class="unit">°C</td>
+            <td class="reference">36,5 - 37,5</td>
           </tr>
           <tr>
             <td class="param-name">Saturasi Oksigen (SpO2)</td>
             <td class="result-value">${data.spo2 || '-'}</td>
             <td class="unit">%</td>
+            <td class="reference">95 - 100</td>
           </tr>
           
           <!-- Laboratorium -->
           <tr>
-            <td colspan="3" class="category-header">PEMERIKSAAN LABORATORIUM</td>
+            <td colspan="4" class="category-header">PEMERIKSAAN LABORATORIUM</td>
           </tr>
           <tr>
-            <td class="param-name">Glukosa Darah</td>
+            <td class="param-name">Glukosa Darah (Puasa)</td>
             <td class="result-value">${data.glukosa || '-'}</td>
             <td class="unit">mg/dL</td>
+            <td class="reference">70 - 100</td>
           </tr>
           <tr>
             <td class="param-name">Asam Urat</td>
             <td class="result-value">${data.asam_urat || '-'}</td>
             <td class="unit">mg/dL</td>
+            <td class="reference">Pria: 3,5-7,2<br/>Wanita: 2,6-6,0</td>
           </tr>
           <tr>
             <td class="param-name">Kolesterol Total</td>
             <td class="result-value">${data.kolesterol || '-'}</td>
             <td class="unit">mg/dL</td>
+            <td class="reference">&lt;200</td>
           </tr>
         </tbody>
       </table>
@@ -1867,24 +2124,6 @@ function generateMCUHTML(data) {
     <!-- Penutup -->
     <div class="closing">
       Demikian surat keterangan ini dibuat dengan sebenarnya untuk dapat dipergunakan sebagaimana mestinya.
-    </div>
-    
-    <!-- Signature -->
-    <div class="signature-section">
-      <div class="signature-box">
-        <p>Pasien/Wali</p>
-        <div class="signature-line">
-          ${data.nama}
-        </div>
-      </div>
-      
-      <div class="signature-box">
-        <p>Surabaya, ${formatDateShort(new Date())}</p>
-        <p>Petugas Medis</p>
-        <div class="signature-line">
-          (.................................)
-        </div>
-      </div>
     </div>
     
     <!-- Footer -->
