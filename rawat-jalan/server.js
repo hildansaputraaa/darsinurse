@@ -922,9 +922,18 @@ if (!emrStr) {
 // POST /api/mcu/save - Simpan data MCU lengkap
 app.post('/api/mcu/save', requireLogin, async (req, res) => {
   const { 
-    emr_no, waktu, heart_rate, respirasi, glukosa, 
-    berat_badan_kg, tinggi_badan_cm, bmi, sistolik, diastolik, 
-    kolesterol, asam_urat 
+    emr_no, waktu, 
+    tinggi_badan_cm,        // 1. TB
+    berat_badan_kg,         // 2. BB
+    bmi,                    // 3. BMI
+    sistolik, diastolik,    // 4. Tensi
+    heart_rate,             // 5. HR
+    respirasi,              // 6. RR
+    suhu,                   // 7. Suhu ← TAMBAH INI
+    spo2,                   // 8. SpO2 ← TAMBAH INI
+    glukosa,                // 9. Glukosa
+    asam_urat,              // 10. Asam Urat
+    kolesterol              // 11. Kolesterol
   } = req.body;
   
   const emrStr = String(emr_no).trim();
@@ -953,35 +962,39 @@ app.post('/api/mcu/save', requireLogin, async (req, res) => {
       });
     }
     
-    // Insert data MCU ke tabel vitals (TANPA id_kunjungan)
+    // ✅ INSERT dengan urutan yang benar
     const [result] = await conn.query(`
       INSERT INTO vitals (
         emr_no, 
-        waktu, 
-        heart_rate, 
-        respirasi, 
-        glukosa, 
-        berat_badan_kg, 
-        tinggi_badan_cm, 
-        bmi, 
-        sistolik, 
-        diastolik, 
-        kolesterol, 
-        asam_urat
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        waktu,
+        tinggi_badan_cm,
+        berat_badan_kg,
+        bmi,
+        sistolik,
+        diastolik,
+        heart_rate,
+        respirasi,
+        suhu,
+        spo2,
+        glukosa,
+        asam_urat,
+        kolesterol
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `, [
       emrStr,
       waktu || new Date(),
-      heart_rate ? parseInt(heart_rate) : null,
-      respirasi ? parseInt(respirasi) : null,
-      glukosa ? parseInt(glukosa) : null,
-      berat_badan_kg ? parseFloat(berat_badan_kg) : null,
       tinggi_badan_cm ? parseInt(tinggi_badan_cm) : null,
+      berat_badan_kg ? parseFloat(berat_badan_kg) : null,
       bmi ? parseFloat(bmi) : null,
       sistolik ? parseInt(sistolik) : null,
       diastolik ? parseInt(diastolik) : null,
-      kolesterol ? parseInt(kolesterol) : null,
-      asam_urat ? parseFloat(asam_urat) : null
+      heart_rate ? parseInt(heart_rate) : null,
+      respirasi ? parseInt(respirasi) : null,
+      suhu ? parseFloat(suhu) : null,           // ← TAMBAH INI
+      spo2 ? parseInt(spo2) : null,             // ← TAMBAH INI
+      glukosa ? parseInt(glukosa) : null,
+      asam_urat ? parseFloat(asam_urat) : null,
+      kolesterol ? parseInt(kolesterol) : null
     ]);
     
     conn.release();
@@ -1713,7 +1726,48 @@ function generateMCUHTML(data) {
 </html>
   `;
 }
-
+// ✅ TAMBAHKAN route baru untuk preview
+app.get('/api/mcu/detail/:id', requireLogin, async (req, res) => {
+  const vitalId = parseInt(req.params.id);
+  
+  if (isNaN(vitalId)) {
+    return res.status(400).json({ 
+      success: false, 
+      error: 'ID tidak valid' 
+    });
+  }
+  
+  let conn;
+  try {
+    conn = await pool.getConnection();
+    const [results] = await conn.query(`
+      SELECT v.*, p.nama, p.tanggal_lahir, p.jenis_kelamin, p.alamat
+      FROM vitals v
+      INNER JOIN pasien p ON v.emr_no = p.emr_no
+      WHERE v.id = ?
+    `, [vitalId]);
+    
+    conn.release();
+    
+    if (results.length === 0) {
+      return res.status(404).json({ 
+        success: false, 
+        error: 'Data tidak ditemukan' 
+      });
+    }
+    
+    res.json({ 
+      success: true, 
+      data: results[0] 
+    });
+  } catch (err) {
+    if (conn) conn.release();
+    res.status(500).json({ 
+      success: false, 
+      error: err.message 
+    });
+  }
+});
 /* ============================================================
    FALL DETECTION ROUTES
    ============================================================ */
