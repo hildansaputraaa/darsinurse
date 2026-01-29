@@ -1367,6 +1367,7 @@ app.get('/api/mcu/print/:id', requireLogin, async (req, res) => {
 });
 
 // ✅ Function untuk generate HTML MCU PROFESIONAL
+// ✅ Function untuk generate HTML MCU PROFESIONAL - A4 PERFECT
 function generateMCUHTML(data) {
   const birthDate = new Date(data.tanggal_lahir);
   const today = new Date();
@@ -1379,17 +1380,6 @@ function generateMCUHTML(data) {
   const gender = data.jenis_kelamin === 'L' ? 'Laki-laki' : 'Perempuan';
   
   // Format tanggal
-  const formatDate = (dateStr) => {
-    if (!dateStr) return '-';
-    const d = new Date(dateStr);
-    return d.toLocaleDateString('id-ID', {
-      weekday: 'long',
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric'
-    });
-  };
-  
   const formatDateShort = (dateStr) => {
     if (!dateStr) return '-';
     const d = new Date(dateStr);
@@ -1416,62 +1406,6 @@ function generateMCUHTML(data) {
     return `${date}, Pukul ${time} WIB`;
   };
   
-  // Interpretasi BMI
-  let bmiStatus = '';
-  const bmiValue = parseFloat(data.bmi || 0);
-  if (bmiValue < 18.5) bmiStatus = 'Underweight';
-  else if (bmiValue < 25) bmiStatus = 'Normal';
-  else if (bmiValue < 30) bmiStatus = 'Overweight';
-  else if (bmiValue > 0) bmiStatus = 'Obesitas';
-  
-  // Helper untuk status kelas
-  const getStatusClass = (value, min, max) => {
-    if (!value) return '';
-    const val = parseFloat(value);
-    if (val < min || val > max) return 'status-warning';
-    return 'status-normal';
-  };
-  
-  const getBMIClass = (bmi) => {
-    if (!bmi) return '';
-    const val = parseFloat(bmi);
-    if (val < 18.5 || val >= 30) return 'status-danger';
-    if (val >= 25) return 'status-warning';
-    return 'status-normal';
-  };
-  
-  const getUricAcidClass = (value, gender) => {
-    if (!value) return '';
-    const val = parseFloat(value);
-    if (gender === 'L') {
-      return (val < 3.4 || val > 7.0) ? 'status-warning' : 'status-normal';
-    } else {
-      return (val < 2.4 || val > 6.0) ? 'status-warning' : 'status-normal';
-    }
-  };
-  
-  // Generate kesimpulan
-  const issues = [];
-  if (data.heart_rate && (data.heart_rate < 60 || data.heart_rate > 100)) {
-    issues.push('detak jantung di luar batas normal');
-  }
-  if (data.sistolik && data.sistolik > 120) {
-    issues.push('tekanan darah sistolik tinggi');
-  }
-  if (data.glukosa && data.glukosa > 100) {
-    issues.push('glukosa darah tinggi');
-  }
-  if (data.kolesterol && data.kolesterol > 200) {
-    issues.push('kolesterol tinggi');
-  }
-  if (bmiValue < 18.5 && bmiValue > 0) issues.push('berat badan kurang (underweight)');
-  else if (bmiValue >= 30) issues.push('obesitas');
-  else if (bmiValue >= 25) issues.push('berat badan berlebih (overweight)');
-  
-  const conclusion = issues.length === 0
-    ? 'Hasil pemeriksaan menunjukkan kondisi kesehatan dalam batas normal. Pertahankan pola hidup sehat dengan olahraga teratur dan konsumsi makanan bergizi seimbang.'
-    : `Hasil pemeriksaan menunjukkan beberapa parameter yang perlu diperhatikan: ${issues.join(', ')}. Disarankan untuk berkonsultasi dengan dokter untuk pemeriksaan lebih lanjut dan mendapatkan penanganan yang tepat. Terapkan pola hidup sehat, olahraga teratur, dan kontrol rutin.`;
-  
   return `
 <!DOCTYPE html>
 <html lang="id">
@@ -1482,7 +1416,7 @@ function generateMCUHTML(data) {
   <style>
     @page {
       size: A4;
-      margin: 0;
+      margin: 15mm;
     }
     
     * {
@@ -1494,161 +1428,162 @@ function generateMCUHTML(data) {
     body {
       font-family: 'Times New Roman', Times, serif;
       font-size: 11pt;
-      line-height: 1.5;
+      line-height: 1.4;
       color: #000;
       background: #fff;
-      padding: 2cm 2.5cm;
+      width: 210mm;
+      margin: 0 auto;
+      padding: 10mm;
     }
     
     .container {
       width: 100%;
-      max-width: 21cm;
+      max-width: 190mm;
       margin: 0 auto;
-      position: relative;
     }
     
-    /* Header dengan Logo */
+    /* Header */
     .header {
-      margin-bottom: 20px;
+      margin-bottom: 15px;
     }
 
     .header-top {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 12px;
-      padding: 0 10px;
+      display: table;
+      width: 100%;
+      margin-bottom: 10px;
+    }
+
+    .logo-left,
+    .header-center,
+    .logo-right {
+      display: table-cell;
+      vertical-align: middle;
+    }
+
+    .logo-left,
+    .logo-right {
+      width: 80px;
+      text-align: center;
     }
 
     .logo-rsi {
-      width: 95px;
-      height: 95px;
+      width: 75px;
+      height: 75px;
       object-fit: contain;
     }
 
     .header-center {
-      flex: 1;
       text-align: center;
-      padding: 0 20px;
+      padding: 0 15px;
     }
 
     .header-center h1 {
-      font-size: 20pt;
+      font-size: 18pt;
       font-weight: bold;
       color: #00695c;
-      margin-bottom: 5px;
+      margin-bottom: 4px;
       text-transform: uppercase;
-      letter-spacing: 1.5px;
+      letter-spacing: 1px;
     }
 
     .header-center .subtitle {
-      font-size: 11pt;
+      font-size: 10pt;
       color: #004d40;
       font-weight: 600;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
       font-style: italic;
     }
 
     .header-center .address {
-      font-size: 10pt;
+      font-size: 9pt;
       color: #333;
-      margin: 2px 0;
-      line-height: 1.4;
+      margin: 1px 0;
+      line-height: 1.3;
     }
 
     .header-center .contact {
-      font-size: 9pt;
+      font-size: 8pt;
       color: #555;
-      margin-top: 4px;
-    }
-
-    .logo-placeholder-right {
-      width: 95px;
-      height: 95px;
-      visibility: hidden;
+      margin-top: 3px;
     }
 
     .header-line {
-      border-bottom: 3px solid #00695c;
-      margin-bottom: 5px;
+      border-bottom: 2.5px solid #00695c;
+      margin-bottom: 3px;
     }
 
     .header-line-thin {
       border-bottom: 1px solid #00695c;
-    }    
+      margin-bottom: 15px;
+    }
     
     /* Judul Dokumen */
     .document-title {
       text-align: center;
-      margin: 20px 0 15px 0;
-      padding: 10px;
-      background: linear-gradient(135deg, #00695c 0%, #004d40 100%);
+      margin: 12px 0;
+      padding: 8px;
+      background: #00695c;
       color: white;
-      border-radius: 4px;
+      border-radius: 3px;
     }
 
     .document-title h2 {
-      font-size: 14pt;
+      font-size: 13pt;
       font-weight: bold;
-      letter-spacing: 2px;
+      letter-spacing: 1.5px;
     }
 
-    /* Pembuka Surat */
+    /* Pembuka */
     .opening {
       text-align: justify;
-      margin: 15px 0;
-      text-indent: 50px;
+      margin: 12px 0;
+      text-indent: 40px;
+      font-size: 10.5pt;
     }
     
     /* Section */
     .section {
-      margin: 15px 0;
+      margin: 10px 0;
     }
     
     .section-title {
-      font-size: 12pt;
+      font-size: 11pt;
       font-weight: bold;
       color: #00695c;
-      border-bottom: 2px solid #00695c;
-      padding-bottom: 4px;
-      margin-bottom: 8px;
+      border-bottom: 1.5px solid #00695c;
+      padding-bottom: 3px;
+      margin-bottom: 6px;
     }
     
-    /* Data Pasien */
+    /* Data Pasien Table */
     .patient-info {
-      display: table;
       width: 100%;
-      margin: 8px 0;
+      margin: 6px 0;
+      border-collapse: collapse;
     }
     
-    .patient-row {
-      display: table-row;
-    }
-    
-    .patient-label {
-      display: table-cell;
-      width: 180px;
+    .patient-info td {
       padding: 3px 0;
+      font-size: 10pt;
+      vertical-align: top;
+    }
+    
+    .patient-info td:first-child {
+      width: 140px;
       font-weight: bold;
     }
     
-    .patient-colon {
-      display: table-cell;
-      width: 20px;
-      padding: 3px 0;
+    .patient-info td:nth-child(2) {
+      width: 15px;
+      text-align: center;
     }
     
-    .patient-value {
-      display: table-cell;
-      padding: 3px 0;
-    }
-    
-    /* Tabel Hasil */
+    /* Results Table */
     .results-table {
       width: 100%;
       border-collapse: collapse;
-      margin: 12px 0;
-      font-size: 10pt;
+      margin: 8px 0;
+      font-size: 9.5pt;
     }
     
     .results-table thead {
@@ -1659,14 +1594,14 @@ function generateMCUHTML(data) {
     .results-table th,
     .results-table td {
       border: 1px solid #333;
-      padding: 8px;
+      padding: 5px 8px;
       text-align: left;
     }
     
     .results-table th {
       font-weight: bold;
       text-align: center;
-      font-size: 10pt;
+      font-size: 9.5pt;
     }
     
     .results-table tbody tr:nth-child(even) {
@@ -1680,7 +1615,7 @@ function generateMCUHTML(data) {
     .results-table .result-value {
       text-align: center;
       font-weight: bold;
-      font-size: 11pt;
+      font-size: 10pt;
     }
     
     .results-table .unit {
@@ -1694,69 +1629,79 @@ function generateMCUHTML(data) {
       font-weight: bold;
       text-align: center;
       color: #00695c;
-      font-size: 10pt;
+      font-size: 9.5pt;
     }
     
     /* Penutup */
     .closing {
-      margin: 15px 0;
+      margin: 12px 0;
       text-align: justify;
+      font-size: 10.5pt;
     }
     
-    /* Footer */
-    .footer {
-      margin-top: 30px;
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
+    /* Signature */
+    .signature-section {
+      margin-top: 25px;
+      display: table;
+      width: 100%;
     }
     
-    .signature {
+    .signature-box {
+      display: table-cell;
+      width: 50%;
       text-align: center;
-      min-width: 180px;
+      vertical-align: top;
+      font-size: 10pt;
     }
     
     .signature-line {
-      margin-top: 50px;
+      margin-top: 60px;
       border-top: 1px solid #000;
-      padding-top: 5px;
+      padding-top: 4px;
       font-weight: bold;
+      display: inline-block;
+      min-width: 150px;
     }
     
+    /* Footer */
     .print-info {
       font-size: 8pt;
       color: #999;
       text-align: center;
-      margin-top: 25px;
+      margin-top: 20px;
       border-top: 1px solid #ddd;
       padding-top: 8px;
+    }
+    
+    .print-info p {
+      margin: 2px 0;
     }
     
     /* Print Styles */
     @media print {
       body {
-        padding: 0;
+        width: 210mm;
+        height: 297mm;
+        margin: 0;
+        padding: 15mm;
       }
       
       .container {
-        page-break-after: avoid;
-      }
-      
-      .header {
-        page-break-after: avoid;
-      }
-      
-      .section {
         page-break-inside: avoid;
       }
       
       .results-table {
-        page-break-inside: auto;
+        page-break-inside: avoid;
       }
       
-      .results-table tr {
+      .signature-section {
         page-break-inside: avoid;
-        page-break-after: auto;
+      }
+      
+      /* Force exact colors */
+      * {
+        print-color-adjust: exact;
+        -webkit-print-color-adjust: exact;
       }
     }
   </style>
@@ -1767,23 +1712,27 @@ function generateMCUHTML(data) {
     <div class="header">
       <div class="header-top">
         <!-- Logo Kiri -->
-        <img src="https://rsisurabaya.com/wp-content/uploads/2018/10/logo-web-rsi.png" 
-            alt="Logo RSI" 
-            class="logo-rsi" 
-            onerror="this.style.display='none'">
+        <div class="logo-left">
+          <img src="https://rsisurabaya.com/wp-content/uploads/2018/10/logo-web-rsi.png" 
+              alt="Logo RSI" 
+              class="logo-rsi" 
+              onerror="this.style.display='none'">
+        </div>
+        
         <!-- Info Tengah -->
         <div class="header-center">
           <h1>RS Islam Surabaya A. Yani</h1>
           <div class="subtitle">Kesembuhan datang dari Allah, keselamatan dan kepuasan pasien tanggung jawab kami</div>
-          <div class="address">
-            Jl. Achmad Yani No.2-4, Wonokromo
-          </div>
+          <div class="address">Jl. Achmad Yani No.2-4, Wonokromo</div>
           <div class="contact">
-            Telp: 031 – 8284505-07  | Fax: 031 – 8284486 | Email: rsiayani@yahoo.co.id | www.rsisurabaya.com
+            Telp: 031-8284505-07 | Fax: 031-8284486 | Email: rsiayani@yahoo.co.id
           </div>
-        </div>        
-        <!-- Placeholder kanan untuk simetri -->
-        <div class="logo-placeholder-right"></div>
+        </div>
+        
+        <!-- Logo Kanan (placeholder untuk simetri) -->
+        <div class="logo-right">
+          <!-- Kosong atau logo tambahan -->
+        </div>
       </div>
       
       <!-- Garis Double -->
@@ -1805,43 +1754,38 @@ function generateMCUHTML(data) {
     <!-- Data Pasien -->
     <div class="section">
       <div class="section-title">📋 IDENTITAS PASIEN</div>
-      <div class="patient-info">
-        <div class="patient-row">
-          <div class="patient-label">Nama Lengkap</div>
-          <div class="patient-colon">:</div>
-          <div class="patient-value">${data.nama || '-'}</div>
-        </div>
-        <div class="patient-row">
-          <div class="patient-label">Nomor Rekam Medis (EMR)</div>
-          <div class="patient-colon">:</div>
-          <div class="patient-value">${data.emr_no || '-'}</div>
-        </div>
-        <div class="patient-row">
-          <div class="patient-label">Tanggal Lahir</div>
-          <div class="patient-colon">:</div>
-          <div class="patient-value">${formatDateShort(data.tanggal_lahir)} (${age} tahun)</div>
-        </div>
-        <div class="patient-row">
-          <div class="patient-label">Jenis Kelamin</div>
-          <div class="patient-colon">:</div>
-          <div class="patient-value">${gender}</div>
-        </div>
-        <div class="patient-row">
-          <div class="patient-label">Alamat</div>
-          <div class="patient-colon">:</div>
-          <div class="patient-value">${data.alamat || '-'}</div>
-        </div>
-        <div class="patient-row">
-          <div class="patient-label">Poli</div>
-          <div class="patient-colon">:</div>
-          <div class="patient-value">${data.poli || '-'}</div>
-        </div>
-        <div class="patient-row">
-          <div class="patient-label">Tanggal Pemeriksaan</div>
-          <div class="patient-colon">:</div>
-          <div class="patient-value">${formatDateTime(data.waktu)}</div>
-        </div>
-      </div>
+      <table class="patient-info">
+        <tr>
+          <td>Nama Lengkap</td>
+          <td>:</td>
+          <td>${data.nama || '-'}</td>
+        </tr>
+        <tr>
+          <td>Nomor Rekam Medis</td>
+          <td>:</td>
+          <td>${data.emr_no || '-'}</td>
+        </tr>
+        <tr>
+          <td>Tanggal Lahir</td>
+          <td>:</td>
+          <td>${formatDateShort(data.tanggal_lahir)} (${age} tahun)</td>
+        </tr>
+        <tr>
+          <td>Jenis Kelamin</td>
+          <td>:</td>
+          <td>${gender}</td>
+        </tr>
+        <tr>
+          <td>Alamat</td>
+          <td>:</td>
+          <td>${data.alamat || '-'}</td>
+        </tr>
+        <tr>
+          <td>Tanggal Pemeriksaan</td>
+          <td>:</td>
+          <td>${formatDateTime(data.waktu)}</td>
+        </tr>
+      </table>
     </div>
     
     <!-- Hasil Pemeriksaan -->
@@ -1859,7 +1803,7 @@ function generateMCUHTML(data) {
         <tbody>
           <!-- Antropometri -->
           <tr>
-            <td colspan="3" class="category-header">PEMERIKSAAN ANTROPOMETRI</td>
+            <td colspan="3" class="category-header">ANTROPOMETRI</td>
           </tr>
           <tr>
             <td class="param-name">Tinggi Badan</td>
@@ -1872,29 +1816,29 @@ function generateMCUHTML(data) {
             <td class="unit">kg</td>
           </tr>
           <tr>
-            <td class="param-name">Body Mass Index (BMI/IMT)</td>
+            <td class="param-name">Body Mass Index (BMI)</td>
             <td class="result-value">${data.bmi || '-'}</td>
             <td class="unit">kg/m²</td>
           </tr>
           
           <!-- Vital Signs -->
           <tr>
-            <td colspan="3" class="category-header">PEMERIKSAAN VITAL SIGNS</td>
+            <td colspan="3" class="category-header">VITAL SIGNS</td>
           </tr>
           <tr>
-            <td class="param-name">Tekanan Darah (Tensi)</td>
+            <td class="param-name">Tekanan Darah</td>
             <td class="result-value">${data.sistolik || '-'}/${data.diastolik || '-'}</td>
             <td class="unit">mmHg</td>
           </tr>
           <tr>
-            <td class="param-name">Heart Rate (Detak Jantung)</td>
+            <td class="param-name">Heart Rate</td>
             <td class="result-value">${data.heart_rate || '-'}</td>
             <td class="unit">bpm</td>
           </tr>
           <tr>
-            <td class="param-name">Respiratory Rate (Pernapasan)</td>
+            <td class="param-name">Respiratory Rate</td>
             <td class="result-value">${data.respirasi || '-'}</td>
-            <td class="unit">breaths/min</td>
+            <td class="unit">per menit</td>
           </tr>
           <tr>
             <td class="param-name">Suhu Tubuh</td>
@@ -1907,7 +1851,7 @@ function generateMCUHTML(data) {
             <td class="unit">%</td>
           </tr>
           
-          <!-- Lab -->
+          <!-- Laboratorium -->
           <tr>
             <td colspan="3" class="category-header">PEMERIKSAAN LABORATORIUM</td>
           </tr>
@@ -1935,16 +1879,16 @@ function generateMCUHTML(data) {
       Demikian surat keterangan ini dibuat dengan sebenarnya untuk dapat dipergunakan sebagaimana mestinya.
     </div>
     
-    <!-- Footer -->
-    <div class="footer">
-      <div class="signature">
+    <!-- Signature -->
+    <div class="signature-section">
+      <div class="signature-box">
         <p>Pasien/Wali</p>
         <div class="signature-line">
           ${data.nama}
         </div>
       </div>
       
-      <div class="signature">
+      <div class="signature-box">
         <p>Surabaya, ${formatDateShort(new Date())}</p>
         <p>Petugas Medis</p>
         <div class="signature-line">
@@ -1953,13 +1897,20 @@ function generateMCUHTML(data) {
       </div>
     </div>
     
-    <!-- Print Info -->
+    <!-- Footer -->
     <div class="print-info">
-      <p>Dokumen ini dicetak secara elektronik melalui sistem Darsinurse Gateway</p>
+      <p>Dokumen dicetak melalui sistem Darsinurse Gateway</p>
       <p>Dicetak pada: ${new Date().toLocaleString('id-ID')} WIB</p>
-      <p>© 2025 Rumah Sakit Islam Surabaya | Powered by Hint-Lab Team</p>
+      <p>© 2025 RS Islam Surabaya | Powered by Hint-Lab Team</p>
     </div>
   </div>
+  
+  <script>
+    // Auto-print saat load (optional)
+    window.onload = function() {
+      setTimeout(() => window.print(), 500);
+    };
+  </script>
 </body>
 </html>
   `;

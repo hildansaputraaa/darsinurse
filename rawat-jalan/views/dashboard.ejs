@@ -1411,11 +1411,20 @@
                   <!-- Respirasi -->
                   <div class="col-md-6 mb-3">
                     <label class="form-label">Respirasi (per menit) *</label>
-                    <input type="number" 
-                          class="form-control" 
-                          id="mcu-respirasi" 
-                          placeholder="18" 
-                          required>
+                    <div class="input-group">
+                      <input type="number" 
+                            class="form-control" 
+                            id="mcu-respirasi" 
+                            placeholder="18" 
+                            required>
+                      <button type="button" 
+                              class="btn btn-sm btn-primary" 
+                              id="btn-scan-mcu-rr"
+                              title="Scan Respiratory Rate via Bluetooth">
+                        <i class="fa-brands fa-bluetooth"></i>
+                      </button>
+                    </div>
+                    <small id="mcu-rr-status" class="text-muted">Klik tombol Bluetooth untuk mengukur</small>
                   </div>
 
                   <!-- Suhu -->
@@ -1663,11 +1672,13 @@
     const HEART_RATE_SERVICE = 0x180D;
     const WEIGHT_SCALE_SERVICE = 0x181D;
     const GLUCOSE_SERVICE = 0x1808;
+    const RESPIRATORY_RATE_SERVICE = 0x1840;  
 
     const BP_MEASUREMENT_CHAR = 0x2A35;
     const HR_MEASUREMENT_CHAR = 0x2A37;
     const WEIGHT_MEASUREMENT_CHAR = 0x2A9D;
     const GLUCOSE_MEASUREMENT_CHAR = 0x2A18;
+    const RR_MEASUREMENT_CHAR = 0x2A37;  
 
     // ============================================
     // AUDIO FUNCTIONS
@@ -1884,13 +1895,11 @@
         }
       });
       
-      // ✅ TAMBAHKAN INI:
       // Stop MCU time update
       stopMCUTimeUpdate();
       
       addLog('Kembali ke menu pilihan', 'info');
     }
-
     // ============================================
     // DROPDOWN FUNCTIONS
     // ============================================
@@ -2691,6 +2700,9 @@ document.addEventListener('DOMContentLoaded', function() {
   document.getElementById('btn-scan-mcu-hr')?.addEventListener('click', () => {
     scanMCUBLE('hr', HEART_RATE_SERVICE, HR_MEASUREMENT_CHAR, handleMCUHeartRate);
   });
+  document.getElementById('btn-scan-mcu-rr')?.addEventListener('click', () => {
+    scanMCUBLE('rr', RESPIRATORY_RATE_SERVICE, RR_MEASUREMENT_CHAR, handleMCURespiratoryRate);
+  });
 
   document.getElementById('btn-scan-mcu-glucose')?.addEventListener('click', () => {
     scanMCUBLE('glucose', GLUCOSE_SERVICE, GLUCOSE_MEASUREMENT_CHAR, handleMCUGlucose);
@@ -3117,7 +3129,8 @@ let mcuDevices = {
   hr: null,
   glucose: null,
   bp: null,
-  weight: null
+  weight: null,
+  rr: null
 };
 
 // MCU Heart Rate Handler
@@ -3143,6 +3156,36 @@ function handleMCUHeartRate(event) {
     }
   } catch (err) {
     addLog(`Error parsing MCU heart rate: ${err.message}`, 'error');
+  }
+}
+function handleMCURespiratoryRate(event) {
+  try {
+    const value = event.target.value;
+    const bytes = new Uint8Array(value.buffer);
+    let rrValue = null;
+    const flags = bytes[0];
+
+    // Parse menggunakan format yang sama dengan Heart Rate
+    if ((flags & 0x01) === 0) {
+      // Format 8-bit
+      rrValue = bytes[1];
+    } else {
+      // Format 16-bit
+      rrValue = bytes[1] | (bytes[2] << 8);
+    }
+
+    if (rrValue !== null && rrValue > 0 && rrValue < 100) {  // Valid range: 1-99
+      document.getElementById('mcu-respirasi').value = rrValue;
+      document.getElementById('mcu-rr-status').innerHTML = 
+        '<span class="text-success"><i class="fas fa-check-circle"></i> Respirasi terukur: ' + rrValue + ' per menit</span>';
+      addLog(`MCU Respirasi terukur: ${rrValue} per menit`, 'success');
+    } else {
+      addLog(`RR value out of range: ${rrValue}`, 'error');
+    }
+  } catch (err) {
+    addLog(`Error parsing MCU respiratory rate: ${err.message}`, 'error');
+    document.getElementById('mcu-rr-status').innerHTML = 
+      '<span class="text-danger"><i class="fas fa-times-circle"></i> Error: ' + err.message + '</span>';
   }
 }
 
