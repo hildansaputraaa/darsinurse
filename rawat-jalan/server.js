@@ -1459,136 +1459,157 @@ app.post('/api/external/get-mcu-data', async (req, res) => {
 // ✅ PUBLIC API - GET DATA BY NOMOR LAYANAN
 // ============================================
 app.post('/api/external/get-layanan', async (req, res) => {
-  const { no_layanan, api_key } = req.body;
+  const { no_layanan, pelayanan_id } = req.body;
   
-  // Optional: Validasi API Key jika ada
-  const EXTERNAL_API_KEY = process.env.EXTERNAL_API_KEY || 'darsinurse-default-key';
+  // Accept both parameter names
+  const searchId = no_layanan || pelayanan_id;
   
-  if (!no_layanan) {
+  if (!searchId) {
     return res.status(400).json({
       success: false,
-      error: 'Nomor layanan harus diisi',
+      error: 'no_layanan atau pelayanan_id harus diisi',
       timestamp: new Date().toISOString()
     });
   }
-  
-  // Jika ada API_KEY requirement, uncomment baris di bawah
-  // if (api_key !== EXTERNAL_API_KEY) {
-  //   return res.status(401).json({
-  //     success: false,
-  //     error: 'API Key tidak valid'
-  //   });
-  // }
   
   let conn;
   try {
     conn = await pool.getConnection();
     
-    // ✅ Query: Cari kunjungan berdasarkan nomor layanan
-    // Nomor layanan disimpan di table kunjungan (kolom nomor_layanan/id_kunjungan)
-    const [kunjunganResults] = await conn.query(`
-      SELECT 
-        k.id_kunjungan,
-        k.emr_no,
-        k.emr_perawat,
-        k.tanggal_kunjungan,
-        k.keluhan,
-        k.status,
-        p.nama AS nama_pasien,
-        p.tanggal_lahir,
-        p.jenis_kelamin,
-        p.poli,
-        p.alamat,
-        pr.nama AS nama_perawat
-      FROM kunjungan k
-      LEFT JOIN pasien p ON k.emr_no = p.emr_no
-      LEFT JOIN perawat pr ON k.emr_perawat = pr.emr_perawat
-      WHERE k.id_kunjungan = ? OR CAST(k.id_kunjungan AS CHAR) = ?
-      LIMIT 1
-    `, [parseInt(no_layanan) || 0, String(no_layanan)]);
+    console.log(`🔍 Searching pelayanan_rsi for pelayanan_id: ${searchId}`);
     
-    if (kunjunganResults.length === 0) {
+    // ✅ Step 1: Cari data di table pelayanan_rsi
+    const [pelayananResults] = await conn.query(`
+      SELECT *
+      FROM pelayanan_rsi
+      WHERE pelayanan_id = ? OR CAST(pelayanan_id AS CHAR) = ?
+      LIMIT 1
+    `, [parseInt(searchId) || 0, String(searchId)]);
+    
+    console.log(`📊 Pelayanan results: ${pelayananResults.length}`);
+    
+    if (pelayananResults.length === 0) {
+      conn.release();
       return res.status(404).json({
         success: false,
-        error: 'Data layanan tidak ditemukan',
-        no_layanan: no_layanan,
+        error: 'Data pelayanan tidak ditemukan untuk ID: ' + searchId,
+        pelayanan_id: searchId,
         timestamp: new Date().toISOString()
       });
     }
     
-    const kunjungan = kunjunganResults[0];
+    const pelayanan = pelayananResults[0];
+    console.log(`✓ Found pelayanan:`, pelayanan);
     
-    // ✅ Query: Ambil semua measurement/vital data untuk kunjungan ini
-    const [vitalsResults] = await conn.query(`
+    // ✅ Step 2: Ambil data MCU dari table vitals berdasarkan pelayanan_id
+    const [mcuResults] = await conn.query(`
       SELECT *
       FROM vitals
-      WHERE id_kunjungan = ?
+      WHERE pelayanan_id = ? OR CAST(pelayanan_id AS CHAR) = ?
       ORDER BY waktu DESC
-    `, [kunjungan.id_kunjungan]);
+      LIMIT 1
+    `, [parseInt(searchId) || 0, String(searchId)]);
     
-    // ✅ Query: Ambil data measurement lainnya (glukosa, bp, etc) - jika ada
-    let measurementResults = [];
-    try {
-      const [results] = await conn.query(`
-        SELECT *
-        FROM measurement_data
-        WHERE id_kunjungan = ?
-        ORDER BY waktu DESC
-      `, [kunjungan.id_kunjungan]);
-      measurementResults = results;
-    } catch (e) {
-      // Table measurement_data mungkin tidak ada, skip
-      console.warn('⚠ measurement_data table tidak ditemukan:', e.message);
+    console.log(`📊 MCU/Vitals results: ${mcuResults.length}`);
+    
+    // ✅ Step 3: Ambil data pasien jika ada
+    let patientData = null;
+    if (pelayanan.emr_no) {
+      const [patientResults] = await conn.query(`
+        SELECT nama, tanggal_lahir, jenis_kelamin, poli, alamat
+        FROM pasien
+        WHERE emr_no = ?
+        LIMIT 1
+      `, [pelayanan.emr_no]);
+      
+      if (patientResults.length > 0) {
+        patientData = patientResults[0];
+      }
     }
     
     conn.release();
     
-    // ✅ Format response
-    const birthDate = kunjungan.tanggal_lahir ? new Date(kunjungan.tanggal_lahir).getFullYear() : null;
-    const age = birthDate ? new Date().getFullYear() - birthDate : null;
-    const latestVital = vitalsResults.length > 0 ? vitalsResults[0] : null;
+    // ✅ Hitung umur
+    let age = null;
+    if (patientData && patientData.tanggal_lahir) {
+      const birthDate = new Date(patientData.tanggal_lahir).getFullYear();
+      age = new Date().getFullYear() - birthDate;
+    }
     
+    const mcu = mcuResults.length > 0 ? mcuResults[0] : null;
+    
+    // ✅ Format response
     res.json({
       success: true,
       timestamp: new Date().toISOString(),
       data: {
-        // Data Layanan/Kunjungan
-        layanan: {
-          id_kunjungan: kunjungan.id_kunjungan,
-          no_layanan: kunjungan.id_kunjungan,
-          tanggal_kunjungan: kunjungan.tanggal_kunjungan,
-          keluhan: kunjungan.keluhan,
-          status: kunjungan.status
+        // Data dari pelayanan_rsi
+        pelayanan: {
+          id: pelayanan.id,
+          pelayanan_id: pelayanan.pelayanan_id,
+          emr_no: pelayanan.emr_no,
+          nama_pasien: pelayanan.nama_pasien,
+          tanggal_pelayanan: pelayanan.tanggal_pelayanan,
+          unit: pelayanan.unit
         },
         
-        // Data Pasien
+        // Data pasien (dari tabel pasien)
         pasien: {
-          emr_no: kunjungan.emr_no,
-          nama: kunjungan.nama_pasien,
-          tanggal_lahir: kunjungan.tanggal_lahir,
+          emr_no: pelayanan.emr_no,
+          nama: patientData?.nama || pelayanan.nama_pasien || '-',
+          tanggal_lahir: patientData?.tanggal_lahir || null,
           umur: age,
-          jenis_kelamin: kunjungan.jenis_kelamin,
-          poli: kunjungan.poli,
-          alamat: kunjungan.alamat
+          jenis_kelamin: patientData?.jenis_kelamin || '-',
+          poli: patientData?.poli || '-',
+          alamat: patientData?.alamat || '-'
         },
         
-        // Data Perawat
-        perawat: {
-          emr_perawat: kunjungan.emr_perawat,
-          nama: kunjungan.nama_perawat
-        },
-        
-        // Data Vital Signs (Latest)
-        vital_terbaru: latestVital ? {
-          waktu: latestVital.waktu,
-          heart_rate: latestVital.heart_rate,
-          sistolik: latestVital.sistolik,
-          diastolik: latestVital.diastolik,
-          respirasi: latestVital.respirasi,
-          glukosa: latestVital.glukosa,
-          berat_badan_kg: latestVital.berat_badan_kg,
-          tinggi_badan_cm: latestVital.tinggi_badan_cm,
-          bmi: latestVital.bmi
+        // Data MCU (dari tabel vitals) - jika ada
+        mcu: mcu ? {
+          id_vital: mcu.id,
+          waktu_pemeriksaan: mcu.waktu,
+          
+          antropometri: {
+            tinggi_badan_cm: mcu.tinggi_badan_cm,
+            berat_badan_kg: mcu.berat_badan_kg,
+            bmi: mcu.bmi
+          },
+          
+          vital_signs: {
+            sistolik: mcu.sistolik,
+            diastolik: mcu.diastolik,
+            heart_rate: mcu.heart_rate,
+            respirasi: mcu.respirasi,
+            suhu: mcu.suhu,
+            spo2: mcu.spo2
+          },
+          
+          laboratorium: {
+            glukosa: mcu.glukosa,
+            asam_urat: mcu.asam_urat,
+            kolesterol: mcu.kolesterol
+          }
+        } : null
+      }
+    });
+    
+  } catch (err) {
+    console.error('❌ External API Error:', err);
+    
+    if (conn) conn.release();
+    
+    res.status(500).json({
+      success: false,
+      error: 'Gagal mengambil data: ' + err.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// ============================================
+// ✅ PUBLIC API - GET MCU DATA ONLY (BY PELAYANAN ID)
+// ============================================
+app.post('/api/external/get-mcu-data', async (req, res) => {
         } : null,
         
         // Riwayat Vital Signs
