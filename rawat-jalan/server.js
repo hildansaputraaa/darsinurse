@@ -389,7 +389,6 @@ async function migratePelayananRSI() {
   try {
     console.log('🔧 Checking pelayanan_rsi table...');
     
-    // ✅ 1. Check if table already exists
     const [tables] = await conn.query(`
       SELECT TABLE_NAME 
       FROM INFORMATION_SCHEMA.TABLES 
@@ -400,74 +399,48 @@ async function migratePelayananRSI() {
     if (tables.length === 0) {
       console.log('➕ Creating pelayanan_rsi table...');
       
-      // ✅ 2. Create table with foreign key
+      // ✅ PERBAIKAN: Pisahkan CREATE TABLE dan ADD CONSTRAINT
       await conn.query(`
         CREATE TABLE pelayanan_rsi (
           id INT AUTO_INCREMENT PRIMARY KEY,
-          
           pelayanan_id INT NOT NULL,
           emr_no VARCHAR(11) NOT NULL,
           nama_pasien VARCHAR(100),
           tanggal_pelayanan DATE,
           unit VARCHAR(50),
-          
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-          
-          CONSTRAINT pelayanan_rsi_ibfk_1 
-            FOREIGN KEY (emr_no) 
-            REFERENCES pasien(emr_no) 
-            ON DELETE CASCADE
-            ON UPDATE CASCADE,
-          
           INDEX idx_pelayanan_id (pelayanan_id),
           INDEX idx_emr_no (emr_no),
           INDEX idx_tanggal (tanggal_pelayanan),
-          
           UNIQUE KEY unique_pelayanan_id (pelayanan_id)
-          
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
       `);
       
-      console.log('✓ pelayanan_rsi table created successfully');
+      console.log('✓ Table created');
+      
+      // ✅ Tambah foreign key terpisah
+      try {
+        await conn.query(`
+          ALTER TABLE pelayanan_rsi
+          ADD CONSTRAINT pelayanan_rsi_ibfk_1 
+          FOREIGN KEY (emr_no) 
+          REFERENCES pasien(emr_no) 
+          ON DELETE CASCADE
+          ON UPDATE CASCADE
+        `);
+        console.log('✓ Foreign key added');
+      } catch (fkErr) {
+        console.warn('⚠️ Could not add foreign key:', fkErr.message);
+      }
       
     } else {
       console.log('✓ pelayanan_rsi table already exists');
-      
-      // ✅ 3. Optional: Verify foreign key exists
-      const [fks] = await conn.query(`
-        SELECT CONSTRAINT_NAME
-        FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS
-        WHERE TABLE_SCHEMA = DATABASE()
-        AND TABLE_NAME = 'pelayanan_rsi'
-        AND CONSTRAINT_TYPE = 'FOREIGN KEY'
-        AND CONSTRAINT_NAME = 'pelayanan_rsi_ibfk_1'
-      `);
-      
-      if (fks.length === 0) {
-        console.log('⚠️ Foreign key constraint missing, adding...');
-        
-        try {
-          await conn.query(`
-            ALTER TABLE pelayanan_rsi
-            ADD CONSTRAINT pelayanan_rsi_ibfk_1 
-            FOREIGN KEY (emr_no) 
-            REFERENCES pasien(emr_no) 
-            ON DELETE CASCADE
-            ON UPDATE CASCADE
-          `);
-          console.log('✓ Foreign key constraint added');
-        } catch (err) {
-          console.warn('⚠️ Could not add foreign key:', err.message);
-        }
-      } else {
-        console.log('✓ Foreign key constraint exists');
-      }
     }
     
   } catch (err) {
     console.error('❌ Migration pelayanan_rsi error:', err);
-    throw err;
+    // ✅ Jangan throw error, biar server tetap jalan
   } finally {
     conn.release();
   }
