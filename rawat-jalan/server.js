@@ -1175,6 +1175,49 @@ app.get('/api/mcu/patients', requireLogin, async (req, res) => {
   }
 });
 
+app.get('/api/mcu/detail/:id', requireLogin, async (req, res) => {
+  const vitalId = parseInt(req.params.id);
+  
+  if (isNaN(vitalId)) {
+    return res.status(400).json({ 
+      success: false, 
+      error: 'ID tidak valid' 
+    });
+  }
+  
+  let conn;
+  try {
+    conn = await pool.getConnection();
+    const [results] = await conn.query(`
+      SELECT v.*, p.nama, p.tanggal_lahir, p.jenis_kelamin, p.alamat
+      FROM vitals v
+      INNER JOIN pasien p ON v.emr_no = p.emr_no
+      WHERE v.id = ?
+    `, [vitalId]);
+    
+    conn.release();
+    
+    if (results.length === 0) {
+      return res.status(404).json({ 
+        success: false, 
+        error: 'Data tidak ditemukan' 
+      });
+    }
+    
+    res.json({ 
+      success: true, 
+      data: results[0] 
+    });
+  } catch (err) {
+    if (conn) conn.release();
+    res.status(500).json({ 
+      success: false, 
+      error: err.message 
+    });
+  }
+});
+
+
 // GET /api/mcu/by-patient/:emr - Dapatkan semua data MCU untuk pasien tertentu
 app.get('/api/mcu/by-patient/:emr', requireLogin, async (req, res) => {
   const emrStr = String(req.params.emr).trim();
@@ -1854,49 +1897,7 @@ function generateMCUHTML(data) {
 </html>
   `;
 }
-// ✅ TAMBAHKAN route baru untuk preview
-app.get('/api/mcu/detail/:id', requireLogin, async (req, res) => {
-  const vitalId = parseInt(req.params.id);
-  
-  if (isNaN(vitalId)) {
-    return res.status(400).json({ 
-      success: false, 
-      error: 'ID tidak valid' 
-    });
-  }
-  
-  let conn;
-  try {
-    conn = await pool.getConnection();
-    const [results] = await conn.query(`
-      SELECT v.*, p.nama, p.tanggal_lahir, p.jenis_kelamin, p.alamat
-      FROM vitals v
-      INNER JOIN pasien p ON v.emr_no = p.emr_no
-      WHERE v.id = ?
-    `, [vitalId]);
-    
-    conn.release();
-    
-    if (results.length === 0) {
-      return res.status(404).json({ 
-        success: false, 
-        error: 'Data tidak ditemukan' 
-      });
-    }
-    
-    res.json({ 
-      success: true, 
-      data: results[0] 
-    });
-  } catch (err) {
-    if (conn) conn.release();
-    res.status(500).json({ 
-      success: false, 
-      error: err.message 
-    });
-  }
-});
-
+// Fetch pelayanan data from RSI API
 /* ============================================================
    RSI API INTEGRATION
    ============================================================ */
@@ -1916,7 +1917,6 @@ app.post('/api/rsi/get-pelayanan', requireLogin, async (req, res) => {
   try {
     console.log(`🔍 Fetching pelayanan data for ID: ${id_pelayanan}`);
     
-    // ✅ STEP 1: Fetch dari RSI API
     const response = await axios.post(
       'https://api.rsisurabaya.com:8008/registration/get-pelayanan-by-id',
       { id_pelayanan: parseInt(id_pelayanan) },
@@ -1931,11 +1931,9 @@ app.post('/api/rsi/get-pelayanan', requireLogin, async (req, res) => {
     
     console.log('✓ RSI API Response:', response.data);
     
-    // ✅ STEP 2: Validasi response
     if (response.data && Array.isArray(response.data) && response.data.length > 0) {
       const data = response.data[0];
       
-      // Validasi data yang diperlukan
       if (!data.no_rm || !data.pasien || !data.pelayanan_id) {
         return res.status(400).json({
           success: false,
@@ -1945,7 +1943,6 @@ app.post('/api/rsi/get-pelayanan', requireLogin, async (req, res) => {
       
       let conn = await pool.getConnection();
       
-      // ✅ STEP 3: CEK apakah pasien sudah terdaftar
       const [existingPatient] = await conn.query(
         'SELECT * FROM pasien WHERE emr_no = ?',
         [data.no_rm]
@@ -1953,64 +1950,29 @@ app.post('/api/rsi/get-pelayanan', requireLogin, async (req, res) => {
       
       const patientExists = existingPatient.length > 0;
       
-      // ✅ STEP 4a: Jika pasien SUDAH terdaftar → Simpan ke pelayanan_rsi
       if (patientExists) {
         try {
-          // Cek apakah pelayanan_id sudah pernah disimpan
           const [existingPelayanan] = await conn.query(
             'SELECT id FROM pelayanan_rsi WHERE pelayanan_id = ?',
             [data.pelayanan_id]
           );
           
           if (existingPelayanan.length === 0) {
-            // Insert data pelayanan baru
             await conn.query(`
               INSERT INTO pelayanan_rsi (
-                pelayanan_id,
-                emr_no,
-                nama_pasien,
-                tanggal_pelayanan,
-                unit
+                pelayanan_id, emr_no, nama_pasien, tanggal_pelayanan, unit
               ) VALUES (?, ?, ?, ?, ?)
-            `, [
-              data.pelayanan_id,
-              data.no_rm,
-              data.pasien,
-              data.tgl,
-              data.unit
-            ]);
+            `, [data.pelayanan_id, data.no_rm, data.pasien, data.tgl, data.unit]);
             
             console.log(`✓ Pelayanan data saved: ID ${data.pelayanan_id}`);
-          } else {
-            // Update jika sudah ada
-            await conn.query(`
-              UPDATE pelayanan_rsi 
-              SET 
-                nama_pasien = ?,
-                tanggal_pelayanan = ?,
-                unit = ?,
-                updated_at = NOW()
-              WHERE pelayanan_id = ?
-            `, [
-              data.pasien,
-              data.tgl,
-              data.unit,
-              data.pelayanan_id
-            ]);
-            
-            console.log(`✓ Pelayanan data updated: ID ${data.pelayanan_id}`);
           }
         } catch (dbErr) {
           console.error('❌ Database error saving pelayanan:', dbErr);
-          // Lanjutkan proses meskipun gagal simpan pelayanan
         }
       }
-      // ✅ STEP 4b: Jika pasien BELUM terdaftar → JANGAN simpan pelayanan_rsi
-      // (akan disimpan setelah pasien berhasil didaftarkan)
       
       conn.release();
       
-      // ✅ STEP 5: Return data ke frontend
       res.json({
         success: true,
         data: {
@@ -2055,7 +2017,6 @@ app.post('/api/rsi/get-pelayanan', requireLogin, async (req, res) => {
   }
 });
 
-// ✅ TAMBAHAN: API untuk menyimpan pelayanan SETELAH pasien terdaftar
 app.post('/api/rsi/save-pelayanan-after-registration', requireLogin, async (req, res) => {
   const { pelayanan_id, emr_no, nama_pasien, tanggal_pelayanan, unit } = req.body;
   
@@ -2070,7 +2031,6 @@ app.post('/api/rsi/save-pelayanan-after-registration', requireLogin, async (req,
   try {
     conn = await pool.getConnection();
     
-    // Verifikasi pasien exists
     const [pasienCheck] = await conn.query(
       'SELECT emr_no FROM pasien WHERE emr_no = ?',
       [emr_no]
@@ -2084,49 +2044,19 @@ app.post('/api/rsi/save-pelayanan-after-registration', requireLogin, async (req,
       });
     }
     
-    // Cek apakah pelayanan sudah ada
     const [existingPelayanan] = await conn.query(
       'SELECT id FROM pelayanan_rsi WHERE pelayanan_id = ?',
       [pelayanan_id]
     );
     
     if (existingPelayanan.length === 0) {
-      // Insert baru
       await conn.query(`
         INSERT INTO pelayanan_rsi (
-          pelayanan_id,
-          emr_no,
-          nama_pasien,
-          tanggal_pelayanan,
-          unit
+          pelayanan_id, emr_no, nama_pasien, tanggal_pelayanan, unit
         ) VALUES (?, ?, ?, ?, ?)
-      `, [
-        pelayanan_id,
-        emr_no,
-        nama_pasien,
-        tanggal_pelayanan,
-        unit
-      ]);
+      `, [pelayanan_id, emr_no, nama_pasien, tanggal_pelayanan, unit]);
       
       console.log(`✓ Pelayanan data saved after registration: ID ${pelayanan_id}`);
-    } else {
-      // Update
-      await conn.query(`
-        UPDATE pelayanan_rsi 
-        SET 
-          nama_pasien = ?,
-          tanggal_pelayanan = ?,
-          unit = ?,
-          updated_at = NOW()
-        WHERE pelayanan_id = ?
-      `, [
-        nama_pasien,
-        tanggal_pelayanan,
-        unit,
-        pelayanan_id
-      ]);
-      
-      console.log(`✓ Pelayanan data updated after registration: ID ${pelayanan_id}`);
     }
     
     conn.release();
@@ -2145,7 +2075,6 @@ app.post('/api/rsi/save-pelayanan-after-registration', requireLogin, async (req,
     });
   }
 });
-
 /* ============================================================
    FALL DETECTION ROUTES
    ============================================================ */
@@ -2517,7 +2446,6 @@ app.delete('/admin/api/users/:emr', requireAdmin, async (req, res) => {
 //   }
 // });
 
-// SESUDAH (✅ PERBAIKAN):
 app.get('/validasi_pasien/:emr', requireLogin, async (req, res) => {
   const emrStr = String(req.params.emr).trim();
   
