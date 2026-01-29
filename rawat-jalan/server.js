@@ -1544,16 +1544,12 @@ app.post('/api/external/get-layanan', async (req, res) => {
       data: {
         pelayanan: {
           pelayanan_id: pelayanan.pelayanan_id,
-          emr_no: pelayanan.emr_no,
           nama_pasien: pelayanan.nama_pasien,
-          tanggal_pelayanan: pelayanan.tanggal_pelayanan,
-          unit: pelayanan.unit
+          tanggal_pelayanan: pelayanan.tanggal_pelayanan
         },
         
         pasien: {
           nama: patientData?.nama || pelayanan.nama_pasien || '-',
-          jenis_kelamin: patientData?.jenis_kelamin || '-',
-          umur: age,
           poli: patientData?.poli || '-'
         },
         
