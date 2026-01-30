@@ -1430,7 +1430,6 @@
                       <button type="button" 
                               class="btn btn-sm btn-warning" 
                               id="btn-lock-mcu-vitals"
-                              disabled
                               title="Klik untuk mengunci data HR/RR agar tidak berubah lagi">
                         <i class="fas fa-lock"></i> Kunci
                       </button>
@@ -3498,9 +3497,6 @@ function handleMCUHeartRateData(event) {
         document.getElementById('mcu-hr-status').innerHTML = 
           '<span class="text-success"><i class="fas fa-check-circle"></i> Heart Rate terukur: ' + hrValue + ' bpm</span>';
         addLog(`MCU Heart Rate terukur: ${hrValue} bpm`, 'success');
-        
-        // ✅ Enable tombol kunci data ketika data sudah diterima
-        document.getElementById('btn-lock-mcu-vitals').disabled = false;
       }
     }
   } catch (err) {
