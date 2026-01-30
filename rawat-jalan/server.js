@@ -45,7 +45,9 @@ const pool = mysql.createPool({
   keepAliveInitialDelay: 10000,
   maxIdle: 10,                      // Jumlah koneksi idle yang dipertahankan
   idleTimeout: 60000,               // Timeout untuk idle connections
-  acquireTimeout: 30000             // Timeout untuk mendapatkan koneksi
+  acquireTimeout: 30000,            // Timeout untuk mendapatkan koneksi
+  timezone: '+07:00',               // ✅ Set timezone ke WIB (UTC+7) untuk Indonesia
+  dateStrings: true                 // ✅ Return dates as strings, not Date objects
 });
 
 
@@ -1437,8 +1439,8 @@ app.post('/api/external/get-mcu-data', async (req, res) => {
           kolesterol: mcu.kolesterol
         },
         
-        // Waktu Pemeriksaan
-        waktu_pemeriksaan: mcu.waktu
+        // Waktu Pemeriksaan (format string, tidak dikonversi timezone)
+        waktu_pemeriksaan: mcu.waktu ? new Date(mcu.waktu).toISOString().replace('Z', '').replace('T', ' ').substring(0, 19) : null
       }
     });
     
@@ -1549,7 +1551,7 @@ app.post('/api/external/get-layanan', async (req, res) => {
         },
         
         mcu: mcu ? {
-          waktu_pemeriksaan: mcu.waktu,
+          waktu_pemeriksaan: mcu.waktu ? new Date(mcu.waktu).toISOString().replace('Z', '').replace('T', ' ').substring(0, 19) : null,
           
           antropometri: {
             tinggi_badan_cm: mcu.tinggi_badan_cm,
@@ -2466,6 +2468,8 @@ app.post('/api/mcu/save-with-registration', requireLogin, async (req, res) => {
     nama_pasien,
     tanggal_pelayanan,
     unit,
+    usia,
+    jenis_kelamin,
     waktu, 
     tinggi_badan_cm,
     berat_badan_kg,
@@ -2507,12 +2511,30 @@ app.post('/api/mcu/save-with-registration', requireLogin, async (req, res) => {
       console.log(`➕ Auto-registering patient: ${nama_pasien} (${emrStr})`);
       
       try {
+        // ✅ Calculate tanggal_lahir dari usia (RSI API)
+        let tanggal_lahir = null;
+        if (usia && usia > 0) {
+          const today = new Date();
+          const birthYear = today.getFullYear() - parseInt(usia);
+          tanggal_lahir = `${birthYear}-01-01`; // Approx birth date
+        }
+        
+        // ✅ Normalize jenis_kelamin dari RSI API (LAKI-LAKI → L, PEREMPUAN → P)
+        let gender = 'L';
+        if (jenis_kelamin) {
+          if (jenis_kelamin.toUpperCase().includes('PEREMPUAN')) {
+            gender = 'P';
+          } else if (jenis_kelamin.toUpperCase().includes('LAKI')) {
+            gender = 'L';
+          }
+        }
+        
         await conn.query(`
           INSERT INTO pasien (emr_no, nama, tanggal_lahir, jenis_kelamin, poli, alamat)
-          VALUES (?, ?, NULL, 'L', 'MCU', '')
-        `, [emrStr, nama_pasien]);
+          VALUES (?, ?, ?, ?, 'MCU', '')
+        `, [emrStr, nama_pasien, tanggal_lahir, gender]);
         
-        console.log(`✓ Patient auto-registered: ${nama_pasien}`);
+        console.log(`✓ Patient auto-registered: ${nama_pasien} (Gender: ${gender}, Age: ${usia})`);
         patientRegistered = true;
         
       } catch (regErr) {

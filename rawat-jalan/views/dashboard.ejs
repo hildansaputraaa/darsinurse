@@ -1214,6 +1214,8 @@
                 <input type="hidden" id="mcu-pelayanan-id" value="">
                 <input type="hidden" id="mcu-tanggal-pelayanan" value="">
                 <input type="hidden" id="mcu-unit" value="">
+                <input type="hidden" id="mcu-usia" value="">
+                <input type="hidden" id="mcu-jenis-kelamin" value="">
                 
                 <!-- ============================================ -->
                 <!-- SECTION 1: ID PELAYANAN RSI -->
@@ -1344,12 +1346,20 @@
 
                   <div class="col-md-4 mb-3">
                     <label class="form-label">IMT</label>
-                    <input type="text" 
-                          class="form-control" 
-                          id="mcu-bmi" 
-                          disabled 
-                          placeholder="Auto" 
-                          style="background-color: #e9ecef; font-weight: bold;">
+                    <div class="input-group">
+                      <input type="text" 
+                            class="form-control" 
+                            id="mcu-bmi" 
+                            disabled 
+                            placeholder="Auto" 
+                            style="background-color: #e9ecef; font-weight: bold;">
+                      <button type="button" 
+                              class="btn btn-sm btn-info" 
+                              id="btn-calculate-mcu-bmi"
+                              title="Klik untuk menghitung ulang IMT">
+                        <i class="fas fa-calculator"></i> Hitung
+                      </button>
+                    </div>
                   </div>
                 </div>
 
@@ -1405,7 +1415,7 @@
                         <i class="fa-brands fa-bluetooth"></i>
                       </button>
                     </div>
-                    <small id="mcu-hr-status" class="text-muted">Siap menerima data - lakukan pengukuran</small>
+                    <small id="mcu-hr-status" class="text-muted">Websocket aktif - siap menerima data dari perangkat</small>
                   </div>
 
                   <!-- Respirasi -->
@@ -1417,8 +1427,15 @@
                             id="mcu-respirasi" 
                             placeholder="Contoh: 18" 
                             required>
+                      <button type="button" 
+                              class="btn btn-sm btn-warning" 
+                              id="btn-lock-mcu-vitals"
+                              disabled
+                              title="Klik untuk mengunci data HR/RR agar tidak berubah lagi">
+                        <i class="fas fa-lock"></i> Kunci
+                      </button>
                     </div>
-                    <small id="mcu-rr-status" class="text-muted">Terukur otomatis dari Heart Rate Monitor</small>
+                    <small id="mcu-rr-status" class="text-muted">Terukur otomatis dari Heart Rate Monitor - data akan terupdate</small>
                   </div>
 
                   <!-- Suhu -->
@@ -2707,6 +2724,25 @@ document.addEventListener('DOMContentLoaded', function() {
     scanMCUBLE('weight', WEIGHT_SCALE_SERVICE, WEIGHT_MEASUREMENT_CHAR, handleMCUWeight);
   });
 
+  // ✅ EVENT LISTENER: Tombol Hitung IMT
+  document.getElementById('btn-calculate-mcu-bmi')?.addEventListener('click', () => {
+    calculateMCUBMI();
+  });
+
+  // ✅ EVENT LISTENER: Tombol Kunci Data HR/RR
+  document.getElementById('btn-lock-mcu-vitals')?.addEventListener('click', () => {
+    lockMCUVitals();
+  });
+
+  // ✅ EVENT LISTENER: Auto-calculate BMI saat input height/weight berubah
+  const mcuHeightInput = document.getElementById('mcu-height');
+  const mcuWeightInput = document.getElementById('mcu-weight');
+  
+  if (mcuHeightInput && mcuWeightInput) {
+    mcuHeightInput.addEventListener('change', calculateMCUBMI);
+    mcuWeightInput.addEventListener('change', calculateMCUBMI);
+  }
+
   // ============ 14. BROWSER COMPATIBILITY CHECK ============
   if (!navigator.bluetooth) {
     addLog('⚠ Browser tidak mendukung Web Bluetooth API', 'error');
@@ -3455,11 +3491,17 @@ function handleMCUHeartRateData(event) {
     }
 
     if (hrValue !== null) {
-      document.getElementById('mcu-heart-rate').value = hrValue;
-      document.getElementById('mcu-hr-source').style.display = 'block';
-      document.getElementById('mcu-hr-status').innerHTML = 
-        '<span class="text-success"><i class="fas fa-check-circle"></i> Heart Rate terukur: ' + hrValue + ' bpm</span>';
-      addLog(`MCU Heart Rate terukur: ${hrValue} bpm`, 'success');
+      // ✅ Hanya update jika data tidak dikunci
+      if (!mcuVitalsLocked) {
+        document.getElementById('mcu-heart-rate').value = hrValue;
+        document.getElementById('mcu-hr-source').style.display = 'block';
+        document.getElementById('mcu-hr-status').innerHTML = 
+          '<span class="text-success"><i class="fas fa-check-circle"></i> Heart Rate terukur: ' + hrValue + ' bpm</span>';
+        addLog(`MCU Heart Rate terukur: ${hrValue} bpm`, 'success');
+        
+        // ✅ Enable tombol kunci data ketika data sudah diterima
+        document.getElementById('btn-lock-mcu-vitals').disabled = false;
+      }
     }
   } catch (err) {
     addLog(`Error parsing MCU heart rate: ${err.message}`, 'error');
@@ -3481,13 +3523,79 @@ function handleMCURespiratoryRateData(event) {
     }
 
     if (rrValue !== null && rrValue > 0 && rrValue < 100) {
-      document.getElementById('mcu-respirasi').value = rrValue;
-      document.getElementById('mcu-rr-status').innerHTML = 
-        '<span class="text-success"><i class="fas fa-check-circle"></i> Respirasi terukur: ' + rrValue + ' per menit</span>';
-      addLog(`MCU Respirasi terukur: ${rrValue} per menit`, 'success');
+      // ✅ Hanya update jika data tidak dikunci
+      if (!mcuVitalsLocked) {
+        document.getElementById('mcu-respirasi').value = rrValue;
+        document.getElementById('mcu-rr-status').innerHTML = 
+          '<span class="text-success"><i class="fas fa-check-circle"></i> Respirasi terukur: ' + rrValue + ' per menit</span>';
+        addLog(`MCU Respirasi terukur: ${rrValue} per menit`, 'success');
+      }
     }
   } catch (err) {
     addLog(`Error parsing MCU respiratory rate: ${err.message}`, 'error');
+  }
+}
+
+// ✅ FUNGSI BARU: Hitung IMT
+function calculateMCUBMI() {
+  const height = parseFloat(document.getElementById('mcu-height').value);
+  const weight = parseFloat(document.getElementById('mcu-weight').value);
+  
+  if (!height || !weight || height <= 0 || weight <= 0) {
+    document.getElementById('mcu-bmi').value = '-';
+    return;
+  }
+  
+  const heightM = height / 100;
+  const bmi = weight / (heightM * heightM);
+  const bmiRounded = Math.round(bmi * 10) / 10;
+  
+  document.getElementById('mcu-bmi').value = bmiRounded.toFixed(1);
+  addLog(`IMT dihitung: ${bmiRounded.toFixed(1)}`, 'success');
+}
+
+// ✅ FUNGSI BARU: Kunci Data HR/RR (prevent updates)
+let mcuVitalsLocked = false;
+
+function lockMCUVitals() {
+  mcuVitalsLocked = !mcuVitalsLocked;
+  
+  const btn = document.getElementById('btn-lock-mcu-vitals');
+  const hrInput = document.getElementById('mcu-heart-rate');
+  const rrInput = document.getElementById('mcu-respirasi');
+  
+  if (mcuVitalsLocked) {
+    // ✅ KUNCI: Disable input fields dan ubah warna button
+    hrInput.disabled = true;
+    rrInput.disabled = true;
+    btn.classList.remove('btn-warning');
+    btn.classList.add('btn-success');
+    btn.innerHTML = '<i class="fas fa-lock"></i> Data Terkunci';
+    
+    // Disconnect HR device jika ada
+    if (mcuDevices['hr']) {
+      stopMCUBLE('hr');
+      addLog('✓ Heart Rate device disconnected - data terkunci', 'info');
+    }
+    
+    addLog('✓ Data HR dan RR sudah dikunci', 'success');
+    document.getElementById('mcu-hr-status').innerHTML = 
+      '<span class="text-info"><i class="fas fa-lock"></i> Data terkunci - tidak akan berubah lagi</span>';
+    document.getElementById('mcu-rr-status').innerHTML = 
+      '<span class="text-info"><i class="fas fa-lock"></i> Data terkunci</span>';
+  } else {
+    // ✅ BUKA KUNCI: Enable input fields dan ubah warna button
+    hrInput.disabled = false;
+    rrInput.disabled = false;
+    btn.classList.remove('btn-success');
+    btn.classList.add('btn-warning');
+    btn.innerHTML = '<i class="fas fa-lock-open"></i> Buka';
+    
+    addLog('✓ Data HR dan RR tidak dikunci - siap update lagi', 'info');
+    document.getElementById('mcu-hr-status').innerHTML = 
+      '<span class="text-warning"><i class="fas fa-unlock"></i> Data tidak dikunci - dapat diubah</span>';
+    document.getElementById('mcu-rr-status').innerHTML = 
+      '<span class="text-warning"><i class="fas fa-unlock"></i> Data tidak dikunci</span>';
   }
 }
 
@@ -3563,6 +3671,8 @@ document.getElementById('btn-fetch-pelayanan')?.addEventListener('click', async 
       document.getElementById('mcu-pelayanan-id').value = data.pelayanan_id;
       document.getElementById('mcu-tanggal-pelayanan').value = data.tgl;
       document.getElementById('mcu-unit').value = data.unit;
+      document.getElementById('mcu-usia').value = result.data.usia || '';
+      document.getElementById('mcu-jenis-kelamin').value = result.data.jenis_kelamin || '';
       
       // ✅ Update UI
       if (result.patient_exists) {
@@ -3655,6 +3765,8 @@ document.getElementById('form-mcu')?.addEventListener('submit', async (e) => {
     pelayanan_id: document.getElementById('mcu-pelayanan-id').value || null,
     tanggal_pelayanan: document.getElementById('mcu-tanggal-pelayanan').value || null,
     unit: document.getElementById('mcu-unit').value || null,
+    usia: document.getElementById('mcu-usia').value || null,
+    jenis_kelamin: document.getElementById('mcu-jenis-kelamin').value || null,
     
     // Data Pasien
     emr_no: emr,
