@@ -571,14 +571,16 @@ app.post('/api/rooms/assign', requireAdminOrPerawat, async (req, res) => {
     if (!room_id || !room_id.trim()) {
       return res.status(400).json({ error: 'Room ID harus diisi' });
     }
-    if (!emr_no) {
+    if (!emr_no && emr_no !== 0) {
       return res.status(400).json({ error: 'EMR Pasien harus diisi' });
     }
     
-    const emrStr = String(emr_no).padStart(11, '0');
+    // Validate emr_no is numeric
     if (!/^\d+$/.test(emr_no.toString())) {
       return res.status(400).json({ error: 'EMR Pasien harus berupa angka' });
     }
+    
+    const emrStr = String(emr_no).padStart(11, '0');
     
     conn = await pool.getConnection();
     
