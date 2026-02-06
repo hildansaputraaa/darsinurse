@@ -194,6 +194,41 @@ curl http://localhost:4000/health
 curl http://localhost:5000/health
 ```
 
+
+# Darsinurse Deployment
+
+## Setup Instructions
+
+1. **Clone repository**
+```bash
+   git clone https://github.com/hildansaputraaa/darsinurse.git
+   cd darsinurse
+```
+
+2. **Setup environment variables**
+```bash
+   cp .env.example .env
+   nano .env  # Edit dengan credentials Anda
+```
+
+3. **Deploy**
+```bash
+   docker-compose up -d
+```
+
+## Important Files
+
+- `.env` - Contains sensitive credentials (NOT in Git)
+- `.env.example` - Template for environment variables (Safe to commit)
+- `docker-compose.yml` - Docker configuration (Safe to commit)
+
+## Security Notes
+
+⚠️ **NEVER commit `.env` file to Git!**
+
+The `.env` file contains sensitive information and is listed in `.gitignore`.
+
+
 ## 🔐 Security Notes
 
 1. **Change Default Passwords**: Update MySQL passwords in `docker-compose.yml`
