@@ -4,7 +4,7 @@
 # Save as: Makefile (di root project)
 # ============================================================
 
-.PHONY: help build up down restart logs clean status health backup test-branch
+.PHONY: help build up down restart logs clean status health db-check backup test-branch
 
 help: ## Show this help message
 	@echo "Darsinurse Gateway - Docker Commands"
@@ -71,6 +71,15 @@ health: ## Check health of all services
 	@echo ""
 	@echo "Monitoring (Port 5000):"
 	@curl -sf http://localhost:5000/health > /dev/null && echo "  ✅ Healthy" || echo "  ❌ Unhealthy"
+
+db-check: ## Run database sanity check
+	@echo "🔎 Running database sanity check..."
+	@if command -v php >/dev/null 2>&1; then \
+		php db_sanity_check.php; \
+	else \
+		echo "⚠️  PHP not found locally, running in Docker..."; \
+		docker compose exec -T darsinurse-app php /var/www/db_sanity_check.php; \
+	fi
 
 clean: ## Stop and remove all containers, volumes, and images
 	@echo "🧹 Cleaning up..."
