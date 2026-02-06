@@ -20,8 +20,8 @@ const PORT = process.env.PORT || 4000;
 // ============================================================
 // 🔧 DEVELOPMENT MODE - SET FALSE UNTUK PRODUCTION
 // ============================================================
-const ENABLE_DEFAULT_DATA = process.env.ENABLE_DEFAULT_DATA === 'true' || true;
-// Ubah menjadi 'false' atau set env variable saat production
+const ENABLE_DEFAULT_DATA = process.env.ENABLE_DEFAULT_DATA !== 'false'; // Default: true (development)
+// Set ENABLE_DEFAULT_DATA=false di .env untuk production
 
 /* ============================================================
    HASH FUNCTION
@@ -164,52 +164,42 @@ async function initDatabase() {
     if (ENABLE_DEFAULT_DATA) {
       console.log('🧪 Development Mode: Inserting default data...');
       
-      // Insert default data perawat
-      const [perawat] = await conn.query(`SELECT COUNT(*) AS c FROM perawat`);
+      // ✅ ALWAYS INSERT default users (no COUNT check)
+      // Use INSERT IGNORE atau ON DUPLICATE KEY UPDATE untuk idempotency
+      await conn.query(`
+        INSERT IGNORE INTO perawat (emr_perawat, nama, password, role) VALUES
+        (1, 'Administrator', ?, 'admin'),
+        (2, 'Siti Nurhaliza', ?, 'perawat'),
+        (3, 'Ahmad Wijaya', ?, 'perawat'),
+        (4, 'Dewi Lestari', ?, 'perawat')
+      `, [
+        hashPassword('admin123'),
+        hashPassword('pass123'),
+        hashPassword('pass456'),
+        hashPassword('pass789')
+      ]);
       
-      if (perawat[0].c === 0) {
-        await conn.query(`
-          INSERT INTO perawat (emr_perawat, nama, password, role) VALUES
-          (1, 'Administrator', ?, 'admin'),
-          (2, 'Siti Nurhaliza', ?, 'perawat'),
-          (3, 'Ahmad Wijaya', ?, 'perawat'),
-          (4, 'Dewi Lestari', ?, 'perawat')
-        `, [
-          hashPassword('admin123'),
-          hashPassword('pass123'),
-          hashPassword('pass456'),
-          hashPassword('pass789')
-        ]);
-        
-        console.log('  ✓ Default users created');
-      }
+      console.log('  ✓ Default users ensured');
 
-      // Insert default data pasien
-      const [pasien] = await conn.query(`SELECT COUNT(*) AS c FROM pasien`);
+      // ✅ ALWAYS INSERT default patients (no COUNT check)
+      await conn.query(`
+        INSERT IGNORE INTO pasien (emr_no, nama, tanggal_lahir, jenis_kelamin, poli, alamat) VALUES
+        ('20251225001','Budi Santoso','1980-05-15','L','Poli Umum','Jl. Merdeka No.10'),
+        ('20251225002','Susi Handini','1975-08-22','P','Poli Gigi','Jl. Ahmad Yani No.25'),
+        ('20251225003','Rudi Hermawan','1985-12-03','L','Poli Umum','Jl. Pemuda No.30'),
+        ('20251225004','Ani Wijaya','1990-03-17','P','Poli Anak','Jl. Diponegoro No.15')
+      `);
       
-      if (pasien[0].c === 0) {
-        await conn.query(`
-          INSERT INTO pasien (emr_no, nama, tanggal_lahir, jenis_kelamin, poli, alamat) VALUES
-          ('20251225001','Budi Santoso','1980-05-15','L','Poli Umum','Jl. Merdeka No.10'),
-          ('20251225002','Susi Handini','1975-08-22','P','Poli Gigi','Jl. Ahmad Yani No.25'),
-          ('20251225003','Rudi Hermawan','1985-12-03','L','Poli Umum','Jl. Pemuda No.30'),
-          ('20251225004','Ani Wijaya','1990-03-17','P','Poli Anak','Jl. Diponegoro No.15')
-        `);      
-        console.log('  ✓ Default patients created');
-      }
+      console.log('  ✓ Default patients ensured');
 
-      // Insert default kunjungan
-      const [kunjungan] = await conn.query(`SELECT COUNT(*) AS c FROM kunjungan`);
+      // ✅ ALWAYS INSERT default kunjungan (no COUNT check)
+      await conn.query(`
+        INSERT IGNORE INTO kunjungan (id_kunjungan, emr_no, emr_perawat, keluhan, status) VALUES
+        (1001, '20251225001', 2, 'Demam dan batuk','selesai'),
+        (1002, '20251225002', 3, 'Sakit gigi','aktif')
+      `);
       
-      if (kunjungan[0].c === 0) {
-        await conn.query(`
-          INSERT INTO kunjungan (id_kunjungan, emr_no, emr_perawat, keluhan, status) VALUES
-          (1001, '20251225001', 2, 'Demam dan batuk','selesai'),
-          (1002, '20251225002', 3, 'Sakit gigi','aktif')
-        `);
-        
-        console.log('  ✓ Default visits created');
-      }
+      console.log('  ✓ Default visits ensured');
     } else {
       console.log('🚀 Production Mode: Skipping default data insertion');
     }
