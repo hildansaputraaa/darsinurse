@@ -132,17 +132,29 @@ test-branch: ## Checkout BRANCH and run tests in subprojects. Usage: make test-b
 	git checkout $(BRANCH); \
 	git pull origin $(BRANCH); \
 	echo "✅ Checked out $(BRANCH)"; \
+	echo "📦 Installing dependencies..."; \
+	if [ -f rawat-jalan/package.json ]; then \
+		echo "  → Installing rawat-jalan..."; \
+		(cd rawat-jalan && npm install) || exit 1; \
+	fi; \
+	if [ -f monitoring/package.json ]; then \
+		echo "  → Installing monitoring..."; \
+		(cd monitoring && npm install) || exit 1; \
+	fi; \
+	echo "✅ Dependencies installed!"; \
+	echo ""; \
 	if [ -f rawat-jalan/package.json ]; then \
 		echo "▶ Running tests in rawat-jalan..."; \
-		(cd rawat-jalan && (npm ci --silent || npm install --no-audit --no-fund --silent)) && (cd rawat-jalan && npm test); \
+		(cd rawat-jalan && npm test); \
 	else \
 		echo "ℹ️  rawat-jalan has no package.json, skipping"; \
 	fi; \
 	if [ -f monitoring/package.json ]; then \
 		echo "▶ Running tests in monitoring..."; \
-		(cd monitoring && (npm ci --silent || npm install --no-audit --no-fund --silent)) && (cd monitoring && npm test); \
+		(cd monitoring && npm test); \
 	else \
 		echo "ℹ️  monitoring has no package.json, skipping"; \
 	fi; \
+	echo ""; \
 	echo "🔁 Restoring branch $$OLD_BRANCH"; \
 	git checkout $$OLD_BRANCH
