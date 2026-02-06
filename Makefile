@@ -25,6 +25,7 @@ up: ## Start all services
 	@echo "📍 Access URLs:"
 	@echo "   - Rawat Jalan: http://localhost:4000"
 	@echo "   - Monitoring:  http://localhost:5000"
+	@echo "   - Vitals API:  (Backend service)"
 	@echo "   - phpMyAdmin:  http://localhost:8080"
 	@echo "   - Metabase:    http://localhost:3000"
 
@@ -44,6 +45,9 @@ restart-app: ## Restart only rawat-jalan
 restart-monitoring: ## Restart only monitoring
 	docker compose restart darsinurse-monitoring
 
+restart-vitals: ## Restart only vitals-api
+	docker compose restart darsinurse-vitals
+
 logs: ## Show logs (all services)
 	docker compose logs -f
 
@@ -52,6 +56,9 @@ logs-app: ## Show logs (rawat-jalan only)
 
 logs-monitoring: ## Show logs (monitoring only)
 	docker compose logs -f darsinurse-monitoring
+
+logs-vitals: ## Show logs (vitals-api only)
+	docker compose logs -f darsinurse-vitals
 
 logs-db: ## Show logs (database only)
 	docker compose logs -f darsinurse-db
@@ -98,6 +105,9 @@ shell-app: ## Open shell in rawat-jalan container
 shell-monitoring: ## Open shell in monitoring container
 	docker exec -it darsinurse-monitoring sh
 
+shell-vitals: ## Open shell in vitals-api container
+	docker exec -it darsinurse-vitals sh
+
 shell-db: ## Open MySQL shell
 	docker exec -it darsinurse-db mysql -u root -proot123 darsinurse
 
@@ -122,17 +132,29 @@ test-branch: ## Checkout BRANCH and run tests in subprojects. Usage: make test-b
 	git checkout $(BRANCH); \
 	git pull origin $(BRANCH); \
 	echo "✅ Checked out $(BRANCH)"; \
+	echo "📦 Installing dependencies..."; \
+	if [ -f rawat-jalan/package.json ]; then \
+		echo "  → Installing rawat-jalan..."; \
+		(cd rawat-jalan && npm install) || exit 1; \
+	fi; \
+	if [ -f monitoring/package.json ]; then \
+		echo "  → Installing monitoring..."; \
+		(cd monitoring && npm install) || exit 1; \
+	fi; \
+	echo "✅ Dependencies installed!"; \
+	echo ""; \
 	if [ -f rawat-jalan/package.json ]; then \
 		echo "▶ Running tests in rawat-jalan..."; \
-		(cd rawat-jalan && (npm ci --silent || npm install --no-audit --no-fund --silent)) && (cd rawat-jalan && npm test); \
+		(cd rawat-jalan && npm test); \
 	else \
 		echo "ℹ️  rawat-jalan has no package.json, skipping"; \
 	fi; \
 	if [ -f monitoring/package.json ]; then \
 		echo "▶ Running tests in monitoring..."; \
-		(cd monitoring && (npm ci --silent || npm install --no-audit --no-fund --silent)) && (cd monitoring && npm test); \
+		(cd monitoring && npm test); \
 	else \
 		echo "ℹ️  monitoring has no package.json, skipping"; \
 	fi; \
+	echo ""; \
 	echo "🔁 Restoring branch $$OLD_BRANCH"; \
 	git checkout $$OLD_BRANCH
