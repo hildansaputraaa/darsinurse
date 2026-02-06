@@ -1,9 +1,4 @@
 
-# ============================================================
-# README.md
-# Save as: README.md
-# ============================================================
-
 # 🏥 Darsinurse Gateway - Medical IoT Platform
 
 > Sistem IoT medis terintegrasi dengan Web Bluetooth API untuk monitoring pasien real-time
