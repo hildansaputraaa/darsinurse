@@ -22,7 +22,8 @@ MQTT Broker
    ↓
 Vitals Aggregator (Node.js)
    ├─ In-memory buffer (per room)
-   ├─ Daily temp log files (3-day retention)
+   ├─ Minute snapshots (every 60 seconds)
+   ├─ Daily temp log files (14-day retention)
    └─ 15-minute aggregation job
            ↓
         MySQL Database
@@ -32,14 +33,16 @@ Vitals Aggregator (Node.js)
 
 ## Features
 
-* MQTT subscription (`rsi/data`, `hitam`)
-* Per-room buffering of raw vitals
-* Filtering of invalid readings (e.g. HR = 0)
+* MQTT subscription to `rsi/data` and `hitam` topics
+* Per-room buffering of raw vitals (HR, RR, distance)
+* Filtering of invalid readings (zero values excluded)
+* 60-second minute summaries and snapshots
 * 15-minute average aggregation
-* Fall detection and recording
-* Room → patient resolution at insert time
+* Fall detection and recording with vital context
+* Room → patient resolution via `room_device` table at insert time
 * Immutable inserts into `vitals` table
-* Daily raw-data temp files with 14-day retention
+* Per-room daily log files with 14-day retention
+* Home Assistant (HA) discovery and state publishing
 * Designed to run as a long-lived containerized service
 
 ---
@@ -48,7 +51,7 @@ Vitals Aggregator (Node.js)
 
 ```bash
 # MQTT Configuration
-MQTT_URL=mqtt://broker:1883
+MQTT_URL=mqtt://103.106.72.181:1883
 MQTT_USERNAME=MEDLOC
 MQTT_PASSWORD=MEDLOC
 
@@ -90,12 +93,14 @@ The service writes a timestamp to `health.txt` every 60 seconds. Docker health c
 
 ## Data Flow
 
-1. **MQTT Ingestion** — listens on `rsi/data` and `hitam` topics
-2. **In-Memory Buffer** — stores vitals by room
-3. **Minute Snapshot** — every 60 seconds, creates a snapshot
-4. **15-Minute Aggregation** — computes averages and inserts into database
-5. **HA Publishing** — publishes to Home Assistant discovery topics
-6. **Fall Detection** — records detected falls with vital context
+1. **MQTT Ingestion** — listens on `rsi/data` and `hitam` topics for HR, RR, distance readings
+2. **In-Memory Buffer** — stores vitals by room, filters out invalid readings (≤ 0)
+3. **Minute Snapshot** — every 60 seconds, captures buffer state and publishes HA state updates
+4. **Minute Summary** — writes room-level snapshots to daily per-room log files
+5. **15-Minute Aggregation** — computes HR/RR averages, looks up room → EMR mapping, inserts into database
+6. **HA Publishing** — publishes device discovery and state to Home Assistant topics
+7. **Fall Detection** — every 60 seconds, checks for fall conditions and records with vital context
+8. **Cleanup** — daily cleanup of log files older than 14 days
 
 ---
 
@@ -104,18 +109,21 @@ The service writes a timestamp to `health.txt` every 60 seconds. Docker health c
 ```sql
 CREATE TABLE vitals (
   id INT AUTO_INCREMENT PRIMARY KEY,
-  emr_no VARCHAR(50),
+  emr_no VARCHAR(50) NOT NULL,
   waktu TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   heart_rate INT,
   respirasi INT,
   jarak_kasur_cm INT,
-  fall_detected BOOLEAN DEFAULT 0
+  fall_detected BOOLEAN DEFAULT 0,
+  INDEX idx_emr (emr_no),
+  INDEX idx_waktu (waktu)
 );
 
 CREATE TABLE room_device (
   room_id VARCHAR(50) PRIMARY KEY,
-  emr_no VARCHAR(50),
-  device_id VARCHAR(50)
+  emr_no VARCHAR(50) NOT NULL,
+  device_id VARCHAR(50),
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 ```
 
@@ -123,6 +131,9 @@ CREATE TABLE room_device (
 
 ## Troubleshooting
 
-- **MQTT Connection Failed** — verify broker URL, username, password
-- **Database Connection Failed** — verify DB_HOST is reachable, credentials correct
-- **No Data Being Written** — check MQTT topics, verify room has EMR assignment
+- **MQTT Connection Failed** — verify `MQTT_URL`, `MQTT_USERNAME`, `MQTT_PASSWORD` are correct and broker is reachable
+- **Database Connection Failed** — verify `DB_HOST` is reachable, credentials correct, database `darsinurse` exists
+- **No Data Being Written** — check MQTT topics receive data (`rsi/data`, `hitam`), verify room→EMR mapping in `room_device` table
+- **Zero readings not recorded** — HR and RR values ≤ 0 are filtered out by design
+- **Health check failing** — ensure `/app/tmp` directory exists and is writable
+- **Missing minute summaries** — check container disk space, verify write permissions on `/app/tmp/summary`
