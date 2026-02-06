@@ -1,0 +1,7 @@
+node_modules
+tmp
+health.txt
+npm-debug.log
+.git
+.gitignore
+README.md

@@ -25,6 +25,7 @@ up: ## Start all services
 	@echo "📍 Access URLs:"
 	@echo "   - Rawat Jalan: http://localhost:4000"
 	@echo "   - Monitoring:  http://localhost:5000"
+	@echo "   - Vitals API:  (Backend service)"
 	@echo "   - phpMyAdmin:  http://localhost:8080"
 	@echo "   - Metabase:    http://localhost:3000"
 
@@ -44,6 +45,9 @@ restart-app: ## Restart only rawat-jalan
 restart-monitoring: ## Restart only monitoring
 	docker compose restart darsinurse-monitoring
 
+restart-vitals: ## Restart only vitals-api
+	docker compose restart darsinurse-vitals
+
 logs: ## Show logs (all services)
 	docker compose logs -f
 
@@ -52,6 +56,9 @@ logs-app: ## Show logs (rawat-jalan only)
 
 logs-monitoring: ## Show logs (monitoring only)
 	docker compose logs -f darsinurse-monitoring
+
+logs-vitals: ## Show logs (vitals-api only)
+	docker compose logs -f darsinurse-vitals
 
 logs-db: ## Show logs (database only)
 	docker compose logs -f darsinurse-db
@@ -97,6 +104,9 @@ shell-app: ## Open shell in rawat-jalan container
 
 shell-monitoring: ## Open shell in monitoring container
 	docker exec -it darsinurse-monitoring sh
+
+shell-vitals: ## Open shell in vitals-api container
+	docker exec -it darsinurse-vitals sh
 
 shell-db: ## Open MySQL shell
 	docker exec -it darsinurse-db mysql -u root -proot123 darsinurse
