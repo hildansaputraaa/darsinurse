@@ -2242,7 +2242,11 @@ app.get('/health', async (req, res) => {
    DEBUG ENDPOINT - Show perawat table contents (REMOVE IN PRODUCTION!)
    ============================================================ */
 app.get('/debug/users', async (req, res) => {
-  if (process.env.NODE_ENV === 'production') {
+  // Allow debug in development, or if explicitly enabled
+  const isDev = process.env.NODE_ENV?.toLowerCase() === 'development' || 
+                process.env.DEBUG_MODE === 'true';
+  
+  if (process.env.NODE_ENV === 'production' && !isDev) {
     return res.status(403).json({ error: 'Debug endpoint disabled in production' });
   }
   
@@ -2253,7 +2257,8 @@ app.get('/debug/users', async (req, res) => {
     
     res.json({
       total: users.length,
-      users: users
+      users: users,
+      nodeEnv: process.env.NODE_ENV
     });
   } catch (err) {
     console.error('❌ Debug error:', err);
