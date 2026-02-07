@@ -994,8 +994,13 @@
     document.getElementById('form-assign-patient').addEventListener('submit', async (e) => {
       e.preventDefault();
       
-      const roomId = document.getElementById('assign-room-id').value;
-      const emrNo = document.getElementById('assign-emr-no').value;
+      const roomId = document.getElementById('assign-room-id').value.trim();
+      const emrNo = document.getElementById('assign-emr-no').value.trim();
+      
+      if (!roomId) {
+        showAlert('danger', 'Room ID tidak valid!');
+        return;
+      }
       
       if (!emrNo) {
         showAlert('warning', 'Pilih pasien terlebih dahulu!');

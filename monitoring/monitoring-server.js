@@ -616,18 +616,25 @@ app.post('/api/rooms/assign', requireAdminOrPerawat, async (req, res) => {
   try {
     const { room_id, emr_no } = req.body;
     
-    if (!room_id || !room_id.trim()) {
-      return res.status(400).json({ error: 'Room ID harus diisi' });
+    // Validate room_id
+    if (!room_id || !room_id.toString().trim()) {
+      console.warn('❌ Room ID validation failed:', { received: room_id, type: typeof room_id });
+      return res.status(400).json({ error: 'Room ID harus diisi dan tidak boleh kosong' });
     }
-    if (!emr_no && emr_no !== 0) {
+    
+    // Validate emr_no
+    if (emr_no === null || emr_no === undefined || emr_no === '') {
+      console.warn('❌ EMR validation failed:', { received: emr_no, type: typeof emr_no });
       return res.status(400).json({ error: 'EMR Pasien harus diisi' });
     }
     
     // Validate emr_no is numeric
     if (!/^\d+$/.test(emr_no.toString())) {
+      console.warn('❌ EMR format validation failed:', { received: emr_no, type: typeof emr_no });
       return res.status(400).json({ error: 'EMR Pasien harus berupa angka' });
     }
     
+    const trimmedRoomId = room_id.toString().trim();
     const emrStr = String(emr_no).padStart(11, '0');
     
     conn = await pool.getConnection();
@@ -639,25 +646,28 @@ app.post('/api/rooms/assign', requireAdminOrPerawat, async (req, res) => {
     
     if (patient.length === 0) {
       conn.release();
+      console.warn('❌ Patient not found:', emrStr);
       return res.status(400).json({ error: 'Pasien tidak ditemukan' });
     }
     
     const [room] = await conn.query(
       'SELECT 1 FROM room_device WHERE room_id = ?',
-      [room_id.trim()]
+      [trimmedRoomId]
     );
     
     if (room.length === 0) {
       conn.release();
+      console.warn('❌ Room not found:', trimmedRoomId);
       return res.status(404).json({ error: 'Ruangan tidak ditemukan' });
     }
     
     await conn.query(
       'UPDATE room_device SET emr_no = ? WHERE room_id = ?',
-      [emrStr, room_id.trim()]
+      [emrStr, trimmedRoomId]
     );
     
     conn.release();
+    console.log('✓ Patient assigned to room:', { room_id: trimmedRoomId, emr_no: emrStr });
     res.json({ success: true, message: 'Pasien berhasil dimasukkan ke ruangan' });
   } catch (err) {
     console.error('❌ POST /api/rooms/assign error:', err.message);
