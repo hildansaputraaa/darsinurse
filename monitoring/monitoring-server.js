@@ -175,6 +175,21 @@ mqttClient.on('reconnect', () => {
    EXPRESS CONFIGURATION (CORRECT ORDER!)
    ============================================================ */
 
+// 0. Request logging
+app.use((req, res, next) => {
+  if (req.path === '/login' || req.path === '/health' || req.path === '/debug/users') {
+    console.log(`📨 ${req.method} ${req.path}`);
+    if (req.method === 'POST') {
+      console.log('   Body:', req.body);
+      console.log('   Headers:', { 
+        'content-type': req.headers['content-type'],
+        'origin': req.headers['origin']
+      });
+    }
+  }
+  next();
+});
+
 // 1. Trust proxy
 app.set('trust proxy', 1);
 
@@ -349,9 +364,8 @@ app.post('/login', async (req, res) => {
     console.error('   Code:', err.code);
     console.error('   Message:', err.message);
     console.error('   SQL:', err.sql);
-    return res.status(500).json({ 
-      error: 'Terjadi kesalahan sistem: ' + err.message,
-      code: err.code
+    return res.render('monitoring-login', { 
+      error: 'Terjadi kesalahan sistem: ' + err.message 
     });
   }
 });
@@ -2220,6 +2234,31 @@ app.get('/health', async (req, res) => {
       database: 'disconnected',
       error: err.message,
       timestamp: new Date().toISOString()
+    });
+  }
+});
+
+/* ============================================================
+   DEBUG ENDPOINT - Show perawat table contents (REMOVE IN PRODUCTION!)
+   ============================================================ */
+app.get('/debug/users', async (req, res) => {
+  if (process.env.NODE_ENV === 'production') {
+    return res.status(403).json({ error: 'Debug endpoint disabled in production' });
+  }
+  
+  try {
+    const conn = await pool.getConnection();
+    const [users] = await conn.query('SELECT emr_perawat, nama, role FROM perawat LIMIT 10');
+    conn.release();
+    
+    res.json({
+      total: users.length,
+      users: users
+    });
+  } catch (err) {
+    console.error('❌ Debug error:', err);
+    res.status(500).json({
+      error: err.message
     });
   }
 });
