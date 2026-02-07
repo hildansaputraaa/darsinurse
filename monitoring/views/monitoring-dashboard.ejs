@@ -1999,10 +1999,6 @@
             <i class="fas fa-door-open"></i> Ruangan
           </a>
           <span>|</span>
-          <a href="/vitals">
-            <i class="fas fa-heartbeat"></i> Vitals API
-          </a>
-          <span>|</span>
           <a href="/logout" onclick="return confirm('Yakin logout?')">
             <i class="fas fa-sign-out-alt"></i> Logout
           </a>
@@ -2039,13 +2035,6 @@
           <div class="stat-label">Total Pengukuran</div>
           <div class="stat-number" id="total-measurements">-</div>
           <div class="stat-change">Data</div>
-        </div>
-
-        <div class="stat-card" onclick="window.location.href='/vitals'" style="cursor: pointer;">
-          <div class="stat-icon"><i class="fas fa-chart-line"></i></div>
-          <div class="stat-label">Vitals API Status</div>
-          <div class="stat-number" id="vitals-api-status">-</div>
-          <div class="stat-change">Click untuk detail</div>
         </div>
       </div>
 
@@ -3367,34 +3356,6 @@ function updateChartsRealtime(vitals, timestamp) {
       }
     }
 
-    // ============================================
-    // VITALS API STATUS LOADING
-    // ============================================
-    async function loadVitalsStatus() {
-      try {
-        const response = await fetch('/api/vitals/status');
-        const data = await response.json();
-        
-        const statusEl = document.getElementById('vitals-api-status');
-        if (statusEl) {
-          if (data.healthy) {
-            statusEl.textContent = '✅ Healthy';
-            statusEl.style.color = '#00B14F';
-          } else {
-            statusEl.textContent = '⚠️ No Data';
-            statusEl.style.color = '#ffc107';
-          }
-        }
-      } catch (err) {
-        console.error('Error loading vitals status:', err);
-        const statusEl = document.getElementById('vitals-api-status');
-        if (statusEl) {
-          statusEl.textContent = '❌ Error';
-          statusEl.style.color = '#dc3545';
-        }
-      }
-    }
-
 async function loadVisitsData() {
   try {
     const visitsResponse = await fetch('/api/visits/today');
@@ -3585,7 +3546,6 @@ async function loadVisitsData() {
       
       // Load initial data
       loadRawatJalanData();
-      loadVitalsStatus();
 
           // Auto-refresh Rawat Inap data setiap 30 detik saat tab aktif
       setInterval(() => {

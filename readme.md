@@ -5,26 +5,24 @@
 
 ## 📋 Overview
 
-Darsinurse Gateway adalah platform IoT medis yang terdiri dari tiga aplikasi terpisah:
+Darsinurse Gateway adalah platform IoT medis yang terdiri dari dua aplikasi terpisah:
 
-1. **[Rawat Jalan](rawat-jalan/README.md)** (Port 4000) - Sistem untuk pengelolaan pasien rawat jalan dan pengukuran vital sign menggunakan Web Bluetooth
-2. **[Monitoring](monitoring/README.md)** (Port 5000) - Dashboard monitoring real-time dengan analytics dan fall detection alerts
-3. **[Vitals API](vitals-api/README.md)** (Port 6000) - Microservice untuk MQTT data ingestion dan vital signs aggregation
+1. **Rawat Jalan** (Port 4000) - Sistem untuk pengelolaan pasien rawat jalan dan pengukuran vital sign menggunakan Web Bluetooth
+2. **Monitoring** (Port 5000) - Dashboard monitoring real-time dengan analytics dan fall detection alerts
 
 ## 🏗️ Architecture
 
 ```
-┌────────────────────────────────────────────────────────┐
-│                 Docker Compose                         │
-├──────────────┬──────────────┬─────────────┬────────────┤
-│ Rawat Jalan  │  Monitoring  │ Vitals API  │   Shared   │
-│ (Port 4000)  │ (Port 5000)  │ (Port 6000) │  Services  │
-│              │              │ (MQTT)      │            │
-├──────────────┴──────────────┴─────────────┴────────────┤
-│   MySQL Database (Port 3306)                           │
-│   phpMyAdmin (Port 8080)                               │
-│   Metabase (Port 3000)                                 │
-└────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────┐
+│              Docker Compose                     │
+├──────────────┬──────────────┬───────────────────┤
+│ Rawat Jalan  │  Monitoring  │  Shared Services  │
+│  (Port 4000) │ (Port 5000)  │                   │
+├──────────────┴──────────────┴───────────────────┤
+│         MySQL Database (Port 3306)              │
+│         phpMyAdmin (Port 8080)                  │
+│         Metabase (Port 3000)                    │
+└─────────────────────────────────────────────────┘
 ```
 
 ## 🚀 Quick Start
@@ -32,7 +30,7 @@ Darsinurse Gateway adalah platform IoT medis yang terdiri dari tiga aplikasi ter
 ### Prerequisites
 
 - Docker & Docker Compose installed
-- Ports 3000, 3306, 4000, 5000, 6000, 8080 available
+- Port 3000, 3306, 4000, 5000, 8080 available
 
 ### Installation
 
@@ -52,7 +50,6 @@ docker-compose up -d
 
 - **Rawat Jalan**: http://localhost:4000
 - **Monitoring**: http://localhost:5000
-- **Vitals API**: (Backend service - Port 6000)
 - **phpMyAdmin**: http://localhost:8080
 - **Metabase**: http://localhost:3000
 
@@ -81,22 +78,13 @@ darsinurse-gateway/
 │       ├── dashboard.ejs
 │       └── admin-users.ejs
 │
-├── monitoring/
-│   ├── Dockerfile
-│   ├── package.json
-│   ├── monitoring-server.js    # Monitoring server
-│   └── views/
-│       ├── monitoring-login.ejs
-│       └── monitoring-dashboard.ejs
-│
-└── vitals-api/
+└── monitoring/
     ├── Dockerfile
     ├── package.json
-    ├── index.js                # MQTT ingester
-    ├── mqtt.js                 # MQTT client
-    ├── db.js                   # Database queries
-    ├── aggregator.js           # Data aggregation
-    └── fallDetection.js        # Fall detection logic
+    ├── monitoring-server.js    # Monitoring server
+    └── views/
+        ├── monitoring-login.ejs
+        └── monitoring-dashboard.ejs
 ```
 
 ## 🛠️ Available Commands
@@ -110,7 +98,6 @@ make restart           # Restart all services
 make logs              # Show logs (all)
 make logs-app          # Show logs (rawat-jalan)
 make logs-monitoring   # Show logs (monitoring)
-make logs-vitals       # Show logs (vitals-api)
 make status            # Show services status
 make health            # Health check all services
 make backup            # Backup database
@@ -132,29 +119,7 @@ npm run dev
 # Terminal 2 - Monitoring
 cd monitoring
 npm run dev
-
-# Terminal 3 - Vitals API
-cd vitals-api
-npm run dev
 ```
-
-### MQTT Configuration
-
-The Vitals API service connects to an MQTT broker to receive vital signs data from IoT devices. Configure the following environment variables:
-
-```bash
-MQTT_URL=mqtt://broker.example.com:1883
-MQTT_USERNAME=your_username
-MQTT_PASSWORD=your_password
-FALLBACK_EMR=1  # Default EMR for unidentified devices
-```
-
-**Supported MQTT Topics:**
-- `vital-signs/{emr}/glucose` - Glucose measurements
-- `vital-signs/{emr}/bp` - Blood pressure readings
-- `vital-signs/{emr}/heart-rate` - Heart rate
-- `vital-signs/{emr}/weight` - Weight measurements
-- `fall-detection/{emr}` - Fall detection alerts
 
 ## 🚨 Troubleshooting
 
@@ -177,7 +142,6 @@ make restart
 # Check what's using the ports
 lsof -i :4000
 lsof -i :5000
-lsof -i :6000
 
 # Kill the process or change ports in docker-compose.yml
 ```
@@ -288,13 +252,6 @@ The `.env` file contains sensitive information and is listed in `.gitignore`.
 - ✅ Measurement history
 - ✅ Fall detection alerts (Socket.IO)
 - ✅ Metabase embedded analytics
-
-### Vitals API
-- ✅ MQTT data ingestion from IoT devices
-- ✅ Vital signs aggregation and summarization
-- ✅ Fall detection algorithm
-- ✅ Buffer management for data consistency
-- ✅ Automatic data cleanup and maintenance
 
 ## 🤝 Contributing
 

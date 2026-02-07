@@ -384,15 +384,6 @@ app.get('/rooms', requireLogin, (req, res) => {
     emr_perawat: req.session.emr_perawat
   });
 });
-
-app.get('/vitals', requireLogin, (req, res) => {
-  res.render('vitals-monitoring', {
-    nama_perawat: req.session.nama_perawat,
-    emr_perawat: req.session.emr_perawat,
-    role: req.session.role
-  });
-});
-
 app.get('/api/rooms', requireAdminOrPerawat, async (req, res) => {
   let conn;
   try {
@@ -580,16 +571,14 @@ app.post('/api/rooms/assign', requireAdminOrPerawat, async (req, res) => {
     if (!room_id || !room_id.trim()) {
       return res.status(400).json({ error: 'Room ID harus diisi' });
     }
-    if (!emr_no && emr_no !== 0) {
+    if (!emr_no) {
       return res.status(400).json({ error: 'EMR Pasien harus diisi' });
     }
     
-    // Validate emr_no is numeric
+    const emrStr = String(emr_no).padStart(11, '0');
     if (!/^\d+$/.test(emr_no.toString())) {
       return res.status(400).json({ error: 'EMR Pasien harus berupa angka' });
     }
-    
-    const emrStr = String(emr_no).padStart(11, '0');
     
     conn = await pool.getConnection();
     
@@ -1920,166 +1909,6 @@ process.on('SIGTERM', () => {
   clearInterval(vitalCheckIntervalId); // ✅ NEW
   rawajalanSocket.disconnect();
   server.close(() => process.exit(0));
-});
-
-/* ============================================================
-   VITALS API ENDPOINTS
-   ============================================================ */
-
-// Get vitals-api service status
-app.get('/api/vitals/status', requireAdminOrPerawat, async (req, res) => {
-  try {
-    const conn = await pool.getConnection();
-    
-    // Check if there are recent vitals entries
-    const [recent] = await conn.query(
-      'SELECT id, waktu FROM vitals ORDER BY waktu DESC LIMIT 1'
-    );
-    conn.release();
-    
-    const healthy = recent.length > 0;
-    const lastCheck = recent.length > 0 ? recent[0].waktu : new Date();
-    
-    res.json({
-      healthy,
-      lastCheck,
-      status: healthy ? 'operational' : 'no_data'
-    });
-  } catch (err) {
-    res.status(500).json({ 
-      healthy: false, 
-      error: err.message,
-      lastCheck: new Date()
-    });
-  }
-});
-
-// Get ingestion statistics
-app.get('/api/vitals/ingestion-stats', requireAdminOrPerawat, async (req, res) => {
-  try {
-    const conn = await pool.getConnection();
-    
-    // Get today's date
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    // Total entries today
-    const [totalResult] = await conn.query(
-      'SELECT COUNT(*) as count FROM vitals WHERE DATE(waktu) = DATE(?)',
-      [today]
-    );
-    
-    // Active rooms today
-    const [roomsResult] = await conn.query(
-      'SELECT COUNT(DISTINCT emr_no) as count FROM vitals WHERE DATE(waktu) = DATE(?)',
-      [today]
-    );
-    
-    // Average vital rates
-    const [avgResult] = await conn.query(
-      'SELECT AVG(heart_rate) as avg_hr, AVG(respirasi) as avg_rr FROM vitals WHERE DATE(waktu) = DATE(?)',
-      [today]
-    );
-    
-    // Fall events today
-    const [fallResult] = await conn.query(
-      'SELECT COUNT(*) as count FROM vitals WHERE DATE(waktu) = DATE(?) AND fall_detected = 1',
-      [today]
-    );
-    
-    conn.release();
-    
-    res.json({
-      totalEntries: totalResult[0].count || 0,
-      activeRooms: roomsResult[0].count || 0,
-      avgHeartRate: avgResult[0].avg_hr || 0,
-      avgBreathRate: avgResult[0].avg_rr || 0,
-      fallEvents: fallResult[0].count || 0
-    });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// Get recent ingestion data
-app.get('/api/vitals/recent-ingestion', requireAdminOrPerawat, async (req, res) => {
-  try {
-    const conn = await pool.getConnection();
-    
-    const [vitals] = await conn.query(`
-      SELECT 
-        id,
-        emr_no,
-        waktu as timestamp,
-        heart_rate,
-        respirasi as breath_rate,
-        jarak_kasur_cm as distance,
-        fall_detected,
-        (SELECT room_id FROM room_device WHERE emr_no = vitals.emr_no LIMIT 1) as room_id
-      FROM vitals
-      ORDER BY waktu DESC
-      LIMIT 50
-    `);
-    
-    conn.release();
-    
-    const entries = vitals.map(v => ({
-      timestamp: v.timestamp,
-      room_id: v.room_id || 'Unknown',
-      heart_rate: v.heart_rate,
-      breath_rate: v.breath_rate,
-      distance: v.distance,
-      type: v.fall_detected ? 'fall' : 'normal'
-    }));
-    
-    res.json({ entries });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// Get MQTT configuration
-app.get('/api/vitals/mqtt-config', requireAdminOrPerawat, (req, res) => {
-  try {
-    res.json({
-      mqtt_url: process.env.MQTT_URL || 'mqtt://103.106.72.181:1883',
-      mqtt_username: process.env.MQTT_USERNAME || 'MEDLOC',
-      mqtt_password: process.env.MQTT_PASSWORD || 'MEDLOC',
-      fallback_emr: process.env.FALLBACK_EMR || 'UNASSIGNED'
-    });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// Update MQTT configuration
-app.post('/api/vitals/mqtt-config', requireAdminOrPerawat, (req, res) => {
-  try {
-    const { mqtt_url, mqtt_username, mqtt_password, fallback_emr } = req.body;
-    
-    // In production, you would update environment variables or config file
-    // For now, just acknowledge the request
-    console.log(`📝 MQTT Config update requested:`, {
-      mqtt_url,
-      mqtt_username,
-      fallback_emr
-    });
-    
-    res.json({
-      success: true,
-      message: 'Configuration update registered. Container restart required for changes to take effect.',
-      config: {
-        mqtt_url,
-        mqtt_username,
-        fallback_emr
-      }
-    });
-  } catch (err) {
-    res.status(500).json({ 
-      success: false,
-      error: err.message 
-    });
-  }
 });
 
 /* ============================================================

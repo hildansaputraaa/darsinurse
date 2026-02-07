@@ -110,42 +110,6 @@ services:
       start_period: 40s
 
   # ========================================
-  # Vitals API (Port 6000) - MQTT Data Ingestor
-  # ========================================
-  darsinurse-vitals:
-    build:
-      context: ./vitals-api
-      dockerfile: Dockerfile
-    container_name: darsinurse-vitals
-    restart: always
-    environment:
-      DB_HOST: ${DB_HOST}
-      DB_PORT: ${DB_PORT}
-      DB_USER: ${DB_USER}
-      DB_PASSWORD: ${DB_PASSWORD}
-      DB_NAME: ${DB_NAME}
-      TZ: ${TZ}
-      NODE_ENV: production
-      MQTT_URL: ${MQTT_URL}
-      MQTT_USERNAME: ${MQTT_USERNAME}
-      MQTT_PASSWORD: ${MQTT_PASSWORD}
-      FALLBACK_EMR: ${FALLBACK_EMR}
-    depends_on:
-      darsinurse-db:
-        condition: service_healthy
-    volumes:
-      - /etc/localtime:/etc/localtime:ro
-      - darsinurse_vitals_tmp:/app/tmp
-    networks:
-      - darsinurse_network
-    healthcheck:
-      test: ["CMD", "test", "-f", "/app/health.txt"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-
-  # ========================================
   # phpMyAdmin
   # ========================================
   phpmyadmin:
@@ -200,7 +164,6 @@ networks:
 volumes:
   darsinurse_mysql_data:
   metabase_data:
-  darsinurse_vitals_tmp:
 
 # ============================================================
 # DEPLOYMENT STEPS:
