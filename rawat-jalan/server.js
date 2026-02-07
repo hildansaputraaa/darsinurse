@@ -2377,81 +2377,129 @@ const axios = require('axios');
 
 // Fetch pelayanan data from RSI API
 app.post('/api/rsi/get-pelayanan', requireLogin, async (req, res) => {
-  const { id_pelayanan } = req.body;
+  const { id_pelayanan, nama_pasien } = req.body;
   
-  if (!id_pelayanan) {
+  if (!id_pelayanan && !nama_pasien) {
     return res.status(400).json({
       success: false,
-      error: 'ID Pelayanan harus diisi'
+      error: 'ID Pelayanan atau Nama Pasien harus diisi'
     });
   }
   
   try {
-    console.log(`🔍 Fetching pelayanan data for ID: ${id_pelayanan}`);
+    let response;
     
-    const response = await axios.post(
-      'https://api.rsisurabaya.com:8008/registration/get-pelayanan-by-id',
-      { id_pelayanan: parseInt(id_pelayanan) },
-      {
-        headers: { 'Content-Type': 'application/json' },
-        timeout: 10000,
-        httpsAgent: new (require('https').Agent)({
-          rejectUnauthorized: false
-        })
-      }
-    );
-    
-    console.log('✓ RSI API Response:', response.data);
-    
-    // ✅ Parse response dari RSI API
-    if (response.data && response.data.metadata && response.data.metadata.status) {
-      const responseData = response.data.response;
+    if (id_pelayanan) {
+      // Search by ID Pelayanan from RSI API
+      console.log(`🔍 Fetching pelayanan data for ID: ${id_pelayanan}`);
       
-      if (Array.isArray(responseData) && responseData.length > 0) {
-        const data = responseData[0];
+      response = await axios.post(
+        'https://api.rsisurabaya.com:8008/registration/get-pelayanan-by-id',
+        { id_pelayanan: parseInt(id_pelayanan) },
+        {
+          headers: { 'Content-Type': 'application/json' },
+          timeout: 10000,
+          httpsAgent: new (require('https').Agent)({
+            rejectUnauthorized: false
+          })
+        }
+      );
+      
+      console.log('✓ RSI API Response:', response.data);
+      
+      // ✅ Parse response dari RSI API
+      if (response.data && response.data.metadata && response.data.metadata.status) {
+        const responseData = response.data.response;
         
-        // ✅ Cek apakah pasien sudah ada di database
-        let conn = await pool.getConnection();
-        const [existingPatient] = await conn.query(
-          'SELECT * FROM pasien WHERE emr_no = ?',
-          [data.no_rm]
-        );
-        conn.release();
-        
-        const patientExists = existingPatient.length > 0;
+        if (Array.isArray(responseData) && responseData.length > 0) {
+          const data = responseData[0];
+          
+          // ✅ Cek apakah pasien sudah ada di database
+          let conn = await pool.getConnection();
+          const [existingPatient] = await conn.query(
+            'SELECT * FROM pasien WHERE emr_no = ?',
+            [data.no_rm]
+          );
+          conn.release();
+          
+          const patientExists = existingPatient.length > 0;
+          
+          res.json({
+            success: true,
+            data: {
+              pelayanan_id: data.pelayanan_id,
+              no_rm: data.no_rm,
+              pasien: data.pasien,
+              tgl: data.tgl,
+              unit: data.unit,
+              usia: data.usia,
+              jenis_kelamin: data.jenis_kelamin
+            },
+            patient_exists: patientExists,
+            patient_info: patientExists ? existingPatient[0] : null,
+            message: patientExists 
+              ? 'Pasien sudah terdaftar, data siap untuk MCU' 
+              : 'Pasien belum terdaftar, akan otomatis didaftarkan saat simpan MCU'
+          });
+          
+        } else {
+          res.status(404).json({
+            success: false,
+            error: 'Data pelayanan tidak ditemukan'
+          });
+        }
+      } else {
+        res.status(404).json({
+          success: false,
+          error: 'Response tidak valid dari RSI API'
+        });
+      }
+    } else {
+      // Search by Nama Pasien from LOCAL DATABASE
+      console.log(`🔍 Searching for patient by name: ${nama_pasien}`);
+      
+      let conn = await pool.getConnection();
+      const [patients] = await conn.query(
+        'SELECT * FROM pasien WHERE nama_pasien LIKE ? LIMIT 5',
+        [`%${nama_pasien}%`]
+      );
+      conn.release();
+      
+      if (patients.length > 0) {
+        const patient = patients[0]; // Return first match
+        console.log('✓ Patient found in database:', patient);
         
         res.json({
           success: true,
           data: {
-            pelayanan_id: data.pelayanan_id,
-            no_rm: data.no_rm,
-            pasien: data.pasien,
-            tgl: data.tgl,
-            unit: data.unit,
-            usia: data.usia,
-            jenis_kelamin: data.jenis_kelamin
+            pelayanan_id: null,
+            no_rm: patient.emr_no,
+            pasien: patient.nama_pasien,
+            tgl: null,
+            unit: null,
+            usia: patient.usia || null,
+            jenis_kelamin: patient.jenis_kelamin || null
           },
-          patient_exists: patientExists,
-          patient_info: patientExists ? existingPatient[0] : null,
-          message: patientExists 
-            ? 'Pasien sudah terdaftar, data siap untuk MCU' 
-            : 'Pasien belum terdaftar, akan otomatis didaftarkan saat simpan MCU'
+          patient_exists: true,
+          patient_info: patient,
+          search_method: 'local_db',
+          message: 'Pasien ditemukan di database lokal'
         });
-        
       } else {
-        res.status(404).json({
+        // Patient not found - return not found but allow manual entry
+        console.log('⚠️ Patient not found in database, allow manual entry');
+        
+        res.json({
           success: false,
-          error: 'Data pelayanan tidak ditemukan'
+          error: 'Pasien tidak ditemukan di database. Silakan input EMR dan nama pasien secara manual.',
+          patient_exists: false,
+          allow_manual_entry: true,
+          search_method: 'local_db'
         });
       }
-    } else {
-      res.status(404).json({
-        success: false,
-        error: 'Response tidak valid dari RSI API'
-      });
     }
   } catch (err) {
-    console.error('❌ RSI API Error:', err.message);
+    console.error('❌ Error:', err.message);
     
     if (err.code === 'ECONNABORTED') {
       res.status(408).json({
@@ -2466,7 +2514,7 @@ app.post('/api/rsi/get-pelayanan', requireLogin, async (req, res) => {
     } else {
       res.status(500).json({
         success: false,
-        error: 'Gagal mengambil data dari RSI API: ' + err.message
+        error: 'Error: ' + err.message
       });
     }
   }

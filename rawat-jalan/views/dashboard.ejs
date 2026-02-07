@@ -1226,7 +1226,24 @@
                     <h6 class="mb-0">Integrasi RSI Surabaya</h6>
                   </div>
                   
+                  <!-- Search Method Toggle -->
                   <div class="mb-3">
+                    <label class="form-label">Metode Pencarian</label>
+                    <div class="btn-group w-100" role="group">
+                      <input type="radio" class="btn-check" name="mcu-search-method" id="search-by-id" value="id" checked>
+                      <label class="btn btn-outline-primary" for="search-by-id">
+                        <i class="fas fa-id-card"></i> Cari by ID Pelayanan
+                      </label>
+                      
+                      <input type="radio" class="btn-check" name="mcu-search-method" id="search-by-name" value="name">
+                      <label class="btn btn-outline-primary" for="search-by-name">
+                        <i class="fas fa-user-search"></i> Cari by Nama Pasien
+                      </label>
+                    </div>
+                  </div>
+                  
+                  <!-- ID Pelayanan Search -->
+                  <div class="mb-3" id="search-id-section">
                     <label class="form-label">ID Pelayanan RSI</label>
                     <div class="input-group">
                       <input type="text" 
@@ -1243,8 +1260,29 @@
                       <i class="fas fa-info-circle"></i> 
                       Masukkan ID Pelayanan untuk auto-fill data pasien dari RSI
                     </small>
-                    <div id="pelayanan-status" class="mt-2"></div>
                   </div>
+                  
+                  <!-- Name Search -->
+                  <div class="mb-3" id="search-name-section" style="display: none;">
+                    <label class="form-label">Nama Pasien</label>
+                    <div class="input-group">
+                      <input type="text" 
+                            class="form-control" 
+                            id="mcu-nama-search-input" 
+                            placeholder="Contoh: John Doe">
+                      <button type="button" 
+                              class="btn btn-primary" 
+                              id="btn-search-by-name">
+                        <i class="fas fa-search"></i> Cari
+                      </button>
+                    </div>
+                    <small class="text-muted">
+                      <i class="fas fa-info-circle"></i> 
+                      Masukkan nama pasien untuk mencari data dari RSI
+                    </small>
+                  </div>
+                  
+                  <div id="pelayanan-status" class="mt-2"></div>
                 </div>
 
                 <hr>
@@ -3717,6 +3755,136 @@ document.getElementById('btn-fetch-pelayanan')?.addEventListener('click', async 
       }
       
       addLog(`✓ Data RSI loaded: Pelayanan ID ${data.pelayanan_id}`, 'success');
+      
+    } else {
+      statusDiv.innerHTML = `<div class="alert alert-danger"><i class="fas fa-times-circle"></i> ${result.error}</div>`;
+      addLog(`❌ Error: ${result.error}`, 'error');
+    }
+  } catch (err) {
+    statusDiv.innerHTML = `<div class="alert alert-danger"><i class="fas fa-times-circle"></i> Error: ${err.message}</div>`;
+    addLog(`❌ Network error: ${err.message}`, 'error');
+    console.error('❌ Exception:', err);
+  } finally {
+    this.disabled = false;
+    this.innerHTML = '<i class="fas fa-search"></i> Cari';
+  }
+});
+
+// ============================================
+// Search Method Toggle Handler
+// ============================================
+document.querySelectorAll('input[name="mcu-search-method"]').forEach(radio => {
+  radio.addEventListener('change', function() {
+    const searchIdSection = document.getElementById('search-id-section');
+    const searchNameSection = document.getElementById('search-name-section');
+    
+    if (this.value === 'id') {
+      searchIdSection.style.display = 'block';
+      searchNameSection.style.display = 'none';
+    } else {
+      searchIdSection.style.display = 'none';
+      searchNameSection.style.display = 'block';
+    }
+    
+    // Clear status
+    document.getElementById('pelayanan-status').innerHTML = '';
+  });
+});
+
+// ============================================
+// Button handler untuk search by name
+// ============================================
+document.getElementById('btn-search-by-name')?.addEventListener('click', async function() {
+  const namaSearch = document.getElementById('mcu-nama-search-input').value.trim();
+  const statusDiv = document.getElementById('pelayanan-status');
+  
+  if (!namaSearch) {
+    statusDiv.innerHTML = '<div class="alert alert-warning"><i class="fas fa-exclamation-triangle"></i> Masukkan nama pasien terlebih dahulu</div>';
+    return;
+  }
+  
+  this.disabled = true;
+  this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Mencari...';
+  
+  try {
+    statusDiv.innerHTML = '<div class="alert alert-info"><i class="fas fa-spinner fa-spin"></i> Mencari di database...</div>';
+    addLog(`Searching by name: ${namaSearch}`, 'info');
+    
+    const response = await fetch('/api/rsi/get-pelayanan', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nama_pasien: namaSearch })
+    });
+    
+    const result = await response.json();
+    console.log('📥 API Response:', result);
+    
+    if (result.success) {
+      // PATIENT FOUND IN DATABASE
+      const data = result.data;
+      
+      // ✅ Set EMR field
+      const emrField = document.getElementById('mcu-emr-pasien');
+      emrField.value = data.no_rm;
+      
+      // ✅ Set Nama field (readonly)
+      const namaField = document.getElementById('mcu-nama-pasien');
+      namaField.removeAttribute('readonly');
+      namaField.value = data.pasien;
+      namaField.setAttribute('readonly', true);
+      
+      // Make EMR readonly too since patient exists
+      emrField.setAttribute('readonly', true);
+      emrField.style.backgroundColor = '#e9ecef';
+      
+      // ✅ Update status
+      statusDiv.innerHTML = `
+        <div class="alert alert-success">
+          <strong><i class="fas fa-check-circle"></i> Pasien Ditemukan di Database</strong><br>
+          <small>EMR: ${data.no_rm} | Nama: ${data.pasien}</small>
+        </div>
+      `;
+      
+      document.getElementById('mcu-patient-info').innerHTML = `
+        <div class="alert alert-info mt-2">
+          <i class="fas fa-user-check"></i> 
+          <strong>Data Pasien dari Database</strong><br>
+          <small>Data MCU akan ditambahkan ke rekam medis yang sudah ada</small>
+        </div>
+      `;
+      
+      addLog(`✓ Pasien ditemukan: ${data.pasien} (${data.no_rm})`, 'success');
+      
+    } else if (result.allow_manual_entry) {
+      // PATIENT NOT FOUND - ALLOW MANUAL ENTRY
+      statusDiv.innerHTML = `
+        <div class="alert alert-warning">
+          <strong><i class="fas fa-user-plus"></i> Pasien Tidak Ditemukan</strong><br>
+          <small>Silakan input EMR dan nama pasien secara manual. Pasien akan otomatis ditambahkan ke database saat Anda klik "Simpan Data MCU".</small>
+        </div>
+      `;
+      
+      // Make fields editable
+      const emrField = document.getElementById('mcu-emr-pasien');
+      const namaField = document.getElementById('mcu-nama-pasien');
+      
+      emrField.removeAttribute('readonly');
+      emrField.style.backgroundColor = 'white';
+      emrField.focus();
+      
+      namaField.removeAttribute('readonly');
+      namaField.style.backgroundColor = 'white';
+      namaField.placeholder = 'Masukkan nama pasien lengkap';
+      
+      document.getElementById('mcu-patient-info').innerHTML = `
+        <div class="alert alert-info mt-2">
+          <i class="fas fa-edit"></i> 
+          <strong>Input Manual - Pasien Baru</strong><br>
+          <small>Pasien belum ada di database. Isi EMR dan nama, kemudian klik "Simpan Data MCU" untuk mendaftarkan pasien baru.</small>
+        </div>
+      `;
+      
+      addLog(`⚠️ Pasien tidak ditemukan di database. Mode input manual diaktifkan.`, 'warning');
       
     } else {
       statusDiv.innerHTML = `<div class="alert alert-danger"><i class="fas fa-times-circle"></i> ${result.error}</div>`;
